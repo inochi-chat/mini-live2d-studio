@@ -47,7 +47,8 @@ hr{border:0;border-top:1px solid #403956;margin:13px 0}
 <div class="stage-wrap"><canvas id="stage" width="600" height="600"></canvas></div>
 <div class="toolbar">
 <label class="file-label">画像を読み込む<input id="imageFile" type="file" accept="image/*"></label>
-<label class="file-label">PSDを読み込む<input id="psdFile" type="file" accept=".psd,image/vnd.adobe.photoshop,application/photoshop"></label>
+<button type="button" id="psdOpenButton" class="primary">PSDを読み込む</button>
+<input id="psdFile" type="file" accept=".psd,image/vnd.adobe.photoshop,application/photoshop">
 <button id="downloadImage" class="primary">PNGを書き出す</button>
 </div>
 <div class="toolbar">
@@ -208,7 +209,21 @@ stage.addEventListener('pointerup',e=>{
 });
 function brushAt(p){const q=sourcePoint(p),r=brushSize/2/fit.scale;if(!sourceCanvas.width)return;sourceCtx.save();sourceCtx.beginPath();sourceCtx.arc(q.x,q.y,r,0,Math.PI*2);sourceCtx.clip();if(mode==='erase')sourceCtx.clearRect(q.x-r-1,q.y-r-1,r*2+2,r*2+2);else sourceCtx.drawImage(originalCanvas,q.x-r,q.y-r,r*2,r*2,q.x-r,q.y-r,r*2,r*2);sourceCtx.restore();render()}
 $('imageFile').onchange=e=>loadImageFile(e.target.files[0]);
-$('psdFile').onchange=e=>{importPSD(e.target.files[0]);e.target.value=''};
+$('psdOpenButton').addEventListener('click',()=>{
+  $('psdFile').click();
+});
+
+$('psdFile').addEventListener('change',async e=>{
+  const file=e.target.files?.[0];
+  if(!file){
+    status('PSDファイルが選択されていないよ。');
+    return;
+  }
+
+  status('PSDファイルを選択したよ。読み込みを開始するね。');
+  await importPSD(file);
+  e.target.value='';
+});
 $('cropMode').onclick=()=>{mode=mode==='rect'?'normal':'rect';freePoints=[];startPoint=null;setModeButtons();status(mode==='rect'?'ステージ上をドラッグして四角く切り出してね。':'通常モード')};
 $('freeCropMode').onclick=()=>{mode=mode==='free'?'normal':'free';freePoints=[];setModeButtons();status(mode==='free'?'指で輪郭をなぞって、指を離すと切り出すよ。':'通常モード')};
 function setModeButtons(){['cropMode','freeCropMode','brushErase','brushRestore','brushOff'].forEach(id=>$(id).classList.remove('active'));({rect:'cropMode',free:'freeCropMode',erase:'brushErase',restore:'brushRestore',normal:'brushOff'})[mode]&&$(({rect:'cropMode',free:'freeCropMode',erase:'brushErase',restore:'brushRestore',normal:'brushOff'})[mode]).classList.add('active')}
