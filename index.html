@@ -112,6 +112,13 @@ hr{border:0;border-top:1px solid #403956;margin:13px 0}
 <script src="https://cdn.jsdelivr.net/npm/ag-psd@31.0.3/dist/bundle.js"></script>
 <script>
 (() => {
+window.onerror = function(message, source, line, column) {
+  alert(
+    'JavaScriptエラー\n' +
+    message + '\n' +
+    '行番号: ' + line
+  );
+};
 const $ = id => document.getElementById(id);
 alert('JavaScriptは動いているよ！');
 const stage=$('stage'),ctx=stage.getContext('2d');
