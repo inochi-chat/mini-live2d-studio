@@ -263,7 +263,9 @@ $('saveProject').onclick=()=>{const data={version:2,base:baseImageData,parts:par
 $('loadProject').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());parts=(data.parts||[]).map(p=>({...p}));nextId=data.nextId||Math.max(0,...parts.map(p=>p.id))+1;selectedId=parts.length?parts[parts.length-1].id:null;if(data.base){baseImageData=data.base;const im=await imageFromURL(data.base);sourceCanvas.width=im.width;sourceCanvas.height=im.height;sourceCtx=sourceCanvas.getContext('2d');sourceCtx.drawImage(im,0,0);originalCanvas=cloneCanvas(sourceCanvas);originalCtx=originalCanvas.getContext('2d')}updatePartList();syncEditor();render();status('プロジェクトを読み込んだよ。')}catch(err){status('JSONを読み込めなかったよ。')}e.target.value=''};
 function downloadBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500)}
 $('downloadImage').onclick=()=>{const out=document.createElement('canvas');out.width=W;out.height=H;const oc=out.getContext('2d');oc.drawImage(stage,0,0);out.toBlob(b=>downloadBlob(b,'mini-live2d.png'))};
-calculateFit();render();
+calculateFit();
+render();
+status('✅ 画面表示テスト成功！');
 })();
 </script>
 </body>
