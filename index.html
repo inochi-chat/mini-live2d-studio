@@ -3,1001 +3,232 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#171625">
 <title>Mini Live2D Studio</title>
 <style>
+:root{--bg:#171625;--panel:#242238;--panel2:#302c49;--accent:#c5a5ff;--text:#f5f1ff;--muted:#aaa3bd;--danger:#ff8298}
 *{box-sizing:border-box}
-:root{color-scheme:dark;--bg:#171625;--panel:#242238;--line:#403b59;--accent:#c5a5ff;--text:#f5f1ff;--muted:#b8b2cc}
-body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif}
-header{padding:16px;background:#201e31;border-bottom:1px solid var(--line)}
-h1{font-size:21px;margin:0 0 5px}header p{font-size:12px;color:var(--muted);margin:0}
-main{max-width:1000px;margin:auto;padding:12px;display:grid;gap:12px}
-.panel{border:1px solid var(--line);border-radius:15px;background:var(--panel);padding:12px;min-width:0}
-h2{font-size:15px;margin:0 0 12px}
-button,.fileButton{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#35304b;color:white;font-size:13px;cursor:pointer;touch-action:manipulation}
-button:active,.fileButton:active{opacity:.75}button.primary{background:#7254b4;border-color:#9474d5}button.active{background:#a47ae5;color:#171027}button.danger{background:#532e43}
-input,select{max-width:100%;min-height:38px;border-radius:8px;border:1px solid var(--line);background:#171625;color:white;padding:8px;font-size:14px}
-input[type=range]{width:100%;accent-color:var(--accent)}input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}input[type=file]{display:none}
-label{font-size:12px;color:var(--muted)}.field{display:grid;gap:7px;margin:12px 0}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row>*{flex:1;min-width:0}.row .small{flex:1 1 130px}
-.workspace{padding:8px;background:#11101a;border-radius:12px;overflow:hidden}
-#stage{display:block;width:100%;height:auto;max-height:58vh;object-fit:contain;touch-action:none;background:conic-gradient(#262436 25%,#1e1c2c 0 50%,#262436 0 75%,#1e1c2c 0);background-size:20px 20px;border-radius:6px}
-.hint{font-size:12px;line-height:1.7;color:var(--muted);margin:10px 2px 2px}.status{font-size:12px;line-height:1.6;color:#d7c5ff;margin-top:10px;white-space:pre-wrap}
-#parts{display:grid;gap:7px}.partItem{display:flex;gap:8px;align-items:center;padding:9px;border:1px solid var(--line);border-radius:10px}.partItem.selected{border-color:var(--accent);background:#38304d}.partName{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.partItem button{min-height:34px;padding:6px 9px}
-.toolGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.toolGrid button{width:100%}.checkRow{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)}footer{text-align:center;color:var(--muted);font-size:11px;padding:10px 12px 25px}
-@media(min-width:760px){main{grid-template-columns:minmax(0,1.45fr) minmax(270px,1fr);align-items:start}.editor{grid-column:2;grid-row:1}.stagePanel{grid-column:1;grid-row:1}#stage{max-height:72vh}}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif}
+header{padding:14px 16px;background:#211e34;border-bottom:1px solid #403956}
+header h1{font-size:19px;margin:0 0 4px}
+header p{margin:0;color:var(--muted);font-size:12px}
+main{max-width:1100px;margin:auto;padding:12px;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);gap:12px}
+.panel{background:var(--panel);border:1px solid #39344f;border-radius:14px;padding:12px;min-width:0}
+h2{font-size:15px;margin:0 0 10px}
+.stage-wrap{background:#11101b;border-radius:10px;overflow:hidden;display:flex;justify-content:center;align-items:center;min-height:280px;touch-action:none}
+canvas#stage{display:block;width:100%;height:auto;max-height:65vh;object-fit:contain;touch-action:none;background-color:#27243a;background-image:linear-gradient(45deg,#383449 25%,transparent 25%),linear-gradient(-45deg,#383449 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#383449 75%),linear-gradient(-45deg,transparent 75%,#383449 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
+.toolbar,.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:9px}
+button,.file-label{border:1px solid #51496b;border-radius:9px;padding:9px 11px;background:var(--panel2);color:var(--text);font-size:13px;cursor:pointer}
+button:active,.file-label:active{opacity:.75}
+button.primary{background:#7054a6;border-color:#9475c9}
+button.danger{color:#ffb0bd;border-color:#875064}
+button.active{outline:2px solid var(--accent)}
+input[type=file]{display:none}
+input[type=range]{width:100%;accent-color:var(--accent)}
+label.control{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+input[type=text]{width:100%;background:#171625;color:white;border:1px solid #51496b;border-radius:8px;padding:9px}
+input[type=checkbox]{accent-color:var(--accent)}
+.small{font-size:11px;color:var(--muted);line-height:1.5}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#parts{display:flex;flex-direction:column;gap:6px;max-height:250px;overflow:auto;margin-top:8px}
+.part{display:flex;align-items:center;gap:7px;background:#1c1a2b;border:1px solid #403956;border-radius:8px;padding:7px}
+.part.selected{border-color:var(--accent);background:#302844}
+.part button{padding:5px 8px}
+.part-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+hr{border:0;border-top:1px solid #403956;margin:13px 0}
+#status{min-height:20px;color:#d7c7ff;font-size:12px;margin-top:8px}
+@media(max-width:760px){main{grid-template-columns:1fr;padding:9px}.stage-wrap{min-height:230px}canvas#stage{max-height:48svh}header{padding:12px}.panel{padding:10px}}
 </style>
 </head>
 <body>
-<header><h1>✦ Mini Live2D Studio</h1><p>2D Character Animation Editor · Prototype 1.2</p></header>
+<header><h1>Mini Live2D Studio</h1><p>2D Character Animation Editor · Prototype 1.3</p></header>
 <main>
-<section class="panel stagePanel">
-  <h2>① キャンバス</h2>
-  <div class="row">
-    <label class="fileButton primary" for="imageFile">画像を読み込む</label><input id="imageFile" type="file" accept="image/*">
-    <button id="cropMode" class="small">＋ 四角形切り出し</button>
-    <button id="freeCropMode" class="small">✎ 自由形状切り出し</button>
-  </div>
-  <div class="panel" style="margin-top:12px">
-    <h2>画像加工ツール</h2>
-    <div class="row"><button id="brushErase">消しゴム</button><button id="brushRestore">復元ブラシ</button><button id="brushOff" class="active">通常操作</button></div>
-    <div class="field"><label for="brushSize">ブラシの太さ</label><input id="brushSize" type="range" min="2" max="100" value="24"></div>
-    <div class="row"><button id="undoEdit">↶ 元に戻す</button><button id="redoEdit">↷ やり直す</button></div>
-    <p class="hint">消しゴムは画像を透明にするよ。復元ブラシは読み込み直後の画像から復元するよ。</p>
-  </div>
-  <div class="workspace" style="margin-top:12px"><canvas id="stage" width="600" height="600"></canvas></div>
-  <p class="hint" id="canvasHint">画像を読み込んでね。切り出し方法を選んでパーツを作ろう。</p>
-  <div class="field"><label>表示設定</label><label class="checkRow"><input type="checkbox" id="hideBase">元画像を隠す（切り出したパーツだけ表示）</label><label class="checkRow"><input type="checkbox" id="animation">アニメーションを再生</label></div>
-  <div class="row"><button id="resetView">位置をリセット</button><button id="downloadImage">PNG画像を書き出す</button></div>
-  <div id="status" class="status">画像を読み込んで制作を始めよう。</div>
+<section class="panel">
+<h2>ステージ</h2>
+<div class="stage-wrap"><canvas id="stage" width="600" height="600"></canvas></div>
+<div class="toolbar">
+<label class="file-label">画像を読み込む<input id="imageFile" type="file" accept="image/*"></label>
+<label class="file-label">PSDを読み込む<input id="psdFile" type="file" accept=".psd,image/vnd.adobe.photoshop,application/photoshop"></label>
+<button id="downloadImage" class="primary">PNGを書き出す</button>
+</div>
+<div class="toolbar">
+<button id="cropMode">▧ 四角で切り出し</button>
+<button id="freeCropMode">✎ 指で切り出し</button>
+<button id="brushErase">消しゴム</button>
+<button id="brushRestore">復元</button>
+<button id="brushOff" class="active">通常</button>
+</div>
+<div class="row">
+<label class="control" style="flex:1;margin:0">ブラシサイズ <span id="brushValue">24</span><input id="brushSize" type="range" min="2" max="100" value="24"></label>
+</div>
+<div class="toolbar">
+<button id="undoEdit">↶ 戻す</button><button id="redoEdit">↷ やり直し</button>
+<button id="resetView">表示をリセット</button>
+</div>
+<div class="toolbar">
+<label><input id="hideBase" type="checkbox"> 元画像を隠す</label>
+<label><input id="animation" type="checkbox"> アニメーション</label>
+</div>
+<div id="status">画像またはPSDを読み込んでね。</div>
+<p class="small">PSDは端末内で読み込み、各レイヤーをパーツとして追加するよ。大きなPSDはiPhoneのメモリを多く使う場合があるよ。</p>
 </section>
-<section class="panel editor">
-  <h2>② パーツ一覧</h2>
-  <div class="row" style="margin-bottom:10px"><button id="addCircle">＋ 円形パーツ</button><button id="addRect">＋ 四角パーツ</button></div>
-  <div id="parts"><p class="hint">まだパーツがないよ。</p></div>
-  <div id="partEditor" hidden>
-    <h2 style="margin-top:18px">③ 選択パーツの編集</h2>
-    <div class="field"><label for="partName">パーツ名</label><input id="partName" placeholder="例：前髪"></div>
-    <div class="field"><label for="posX">横位置</label><input id="posX" type="range" min="-300" max="1400" value="0"></div>
-    <div class="field"><label for="posY">縦位置</label><input id="posY" type="range" min="-300" max="1400" value="0"></div>
-    <div class="field"><label for="scale">大きさ</label><input id="scale" type="range" min="20" max="250" value="100"></div>
-    <div class="field"><label for="rotation">回転</label><input id="rotation" type="range" min="-180" max="180" value="0"></div>
-    <div class="field"><label for="sway">揺れの強さ</label><input id="sway" type="range" min="0" max="30" value="8"></div>
-    <div class="field"><label for="speed">揺れの速さ</label><input id="speed" type="range" min="1" max="30" value="10"></div>
-    <div class="row"><button id="togglePart">表示 / 非表示</button><button id="deletePart" class="danger">削除</button></div>
-  </div>
-  <h2 style="margin-top:20px">④ プロジェクト保存</h2>
-  <div class="toolGrid"><button id="saveProject" class="primary">制作データを保存</button><label class="fileButton" style="text-align:center" for="loadProject">制作データを開く</label><input id="loadProject" type="file" accept=".json,application/json"></div>
-  <p class="hint">JSONには加工済み画像・復元用の元画像・切り出したパーツが保存されるよ。</p>
-</section>
-</main>
-<footer>Mini Live2D Studio · iPhone Web Prototype</footer>
 
+<aside class="panel">
+<h2>パーツ一覧</h2>
+<div class="toolbar">
+<button id="addCircle">＋ 円パーツ</button><button id="addRect">＋ 四角パーツ</button>
+</div>
+<div id="parts"></div>
+<hr>
+<h2>選択中のパーツ</h2>
+<label class="control">パーツ名</label><input id="partName" type="text" placeholder="パーツ名">
+<label class="control">位置 X <span id="posXValue">0</span></label><input id="posX" type="range" min="-300" max="900" value="300">
+<label class="control">位置 Y <span id="posYValue">0</span></label><input id="posY" type="range" min="-300" max="900" value="300">
+<label class="control">大きさ <span id="scaleValue">100</span>%</label><input id="scale" type="range" min="10" max="300" value="100">
+<label class="control">回転 <span id="rotationValue">0</span>°</label><input id="rotation" type="range" min="-180" max="180" value="0">
+<label class="control">揺れ <span id="swayValue">8</span></label><input id="sway" type="range" min="0" max="40" value="8">
+<label class="control">速さ <span id="speedValue">10</span></label><input id="speed" type="range" min="1" max="30" value="10">
+<div class="toolbar"><button id="togglePart">表示/非表示</button><button id="deletePart" class="danger">削除</button></div>
+<hr>
+<h2>プロジェクト</h2>
+<div class="toolbar"><button id="saveProject" class="primary">JSON保存</button><label class="file-label">JSON読込<input id="loadProject" type="file" accept=".json,application/json"></label></div>
+<p class="small">JSONには元画像と切り出したパーツが保存されるよ。</p>
+</aside>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/ag-psd@31.0.3/dist/bundle.js"></script>
 <script>
 (() => {
-"use strict";
-
 const $ = id => document.getElementById(id);
-const stage = $("stage");
-const ctx = stage.getContext("2d");
-const sourceCanvas = document.createElement("canvas");
-const sourceCtx = sourceCanvas.getContext("2d");
-const originalCanvas = document.createElement("canvas");
-const originalCtx = originalCanvas.getContext("2d");
-
-let originalImageData = null;
-let baseImageData = null;
-let brushMode = "off";
-let brushDrawing = false;
-let lastBrushPoint = null;
-let editUndo = [];
-let editRedo = [];
-const MAX_EDIT_HISTORY = 12;
-
-let parts = [];
-let selectedId = null;
-let nextId = 1;
-let cropMode = false;
-let freeCropMode = false;
-let freeCropPoints = [];
-let pointerStart = null;
-let pointerNow = null;
-let dragPart = null;
-let elapsed = 0;
-let lastFrame = 0;
-
-const state = { imageName: "", hideBase: false, animation: false };
-
-function say(message) { $("status").textContent = message; }
-function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
-function makeId() { return nextId++; }
-function selectedPart() { return parts.find(p => p.id === selectedId) || null; }
-function canvasToDataURL(canvas) { return canvas.toDataURL("image/png"); }
-
-function readSourceImage(dataUrl) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("画像を開けなかったよ。"));
-    img.src = dataUrl;
-  });
+const stage=$('stage'),ctx=stage.getContext('2d');
+const W=stage.width,H=stage.height;
+let sourceCanvas=document.createElement('canvas'),sourceCtx=sourceCanvas.getContext('2d');
+let originalCanvas=document.createElement('canvas'),originalCtx=originalCanvas.getContext('2d');
+let baseImageData=null,parts=[],selectedId=null,nextId=1;
+let mode='normal',brushSize=24,drawing=false,startPoint=null,freePoints=[];
+let undoStack=[],redoStack=[],animFrame=0,raf=null;
+let fit={scale:1,ox:0,oy:0};
+const status=t=>$('status').textContent=t;
+const cloneCanvas=c=>{const n=document.createElement('canvas');n.width=c.width;n.height=c.height;n.getContext('2d').drawImage(c,0,0);return n};
+const canvasURL=c=>c.toDataURL('image/png');
+const imageFromURL=url=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=url});
+function saveUndo(){undoStack.push(canvasURL(sourceCanvas));if(undoStack.length>12)undoStack.shift();redoStack=[]}
+async function restoreCanvas(url){const im=await imageFromURL(url);sourceCanvas.width=im.width;sourceCanvas.height=im.height;sourceCtx=sourceCanvas.getContext('2d');sourceCtx.drawImage(im,0,0);render()}
+function calculateFit(){if(!sourceCanvas.width)return;const s=Math.min(W/sourceCanvas.width,H/sourceCanvas.height);fit={scale:s,ox:(W-sourceCanvas.width*s)/2,oy:(H-sourceCanvas.height*s)/2}}
+function stagePoint(e){const r=stage.getBoundingClientRect();return {x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
+function sourcePoint(p){return {x:(p.x-fit.ox)/fit.scale,y:(p.y-fit.oy)/fit.scale}}
+function render(){
+ ctx.clearRect(0,0,W,H);
+ if(sourceCanvas.width&&!$('hideBase').checked){calculateFit();ctx.drawImage(sourceCanvas,fit.ox,fit.oy,sourceCanvas.width*fit.scale,sourceCanvas.height*fit.scale)}
+ parts.forEach(p=>{
+  if(!p.visible)return;
+  if(!p.img){const im=new Image();im.onload=()=>{p.img=im;render()};im.src=p.data;return}
+  const sway=$('animation').checked?Math.sin(animFrame*p.speed/100+p.phase)*p.sway:0;
+  const dw=p.w*fit.scale*p.scale/100,dh=p.h*fit.scale*p.scale/100;
+  const cx=fit.ox+p.x*fit.scale,cy=fit.oy+p.y*fit.scale+sway;
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(p.rotation*Math.PI/180);ctx.drawImage(p.img,-dw/2,-dh/2,dw,dh);ctx.restore();
+ });
+ if(mode==='rect'&&startPoint){const p=stagePoint(lastPointer||{clientX:0,clientY:0});ctx.save();ctx.strokeStyle='#c5a5ff';ctx.setLineDash([6,4]);ctx.strokeRect(startPoint.x,startPoint.y,p.x-startPoint.x,p.y-startPoint.y);ctx.restore()}
+ if(mode==='free'&&freePoints.length){ctx.save();ctx.strokeStyle='#c5a5ff';ctx.lineWidth=2;ctx.beginPath();freePoints.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke();ctx.restore()}
 }
-
-function snapshot() {
-  if (!sourceCanvas.width || !sourceCanvas.height) return;
-  editUndo.push(sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height));
-  if (editUndo.length > MAX_EDIT_HISTORY) editUndo.shift();
-  editRedo = [];
+let lastPointer=null;
+function addPart(name,canvas,x,y){const p={id:nextId++,name,data:canvasURL(canvas),x,y,w:canvas.width,h:canvas.height,scale:100,rotation:0,sway:8,speed:10,visible:true,phase:Math.random()*6.28};parts.push(p);selectedId=p.id;updatePartList();syncEditor();render()}
+function updatePartList(){
+ const box=$('parts');box.innerHTML='';
+ if(!parts.length){box.innerHTML='<div class="small">まだパーツがありません。</div>';return}
+ parts.slice().reverse().forEach(p=>{const row=document.createElement('div');row.className='part'+(p.id===selectedId?' selected':'');
+ const name=document.createElement('div');name.className='part-name';name.textContent=p.name;
+ const vis=document.createElement('button');vis.textContent=p.visible?'表示':'非表示';vis.onclick=()=>{p.visible=!p.visible;updatePartList();render()};
+ const sel=document.createElement('button');sel.textContent='選択';sel.onclick=()=>{selectedId=p.id;updatePartList();syncEditor()};
+ row.append(name,vis,sel);row.onclick=e=>{if(e.target===row||e.target===name){selectedId=p.id;updatePartList();syncEditor()}};box.append(row)
+ })
 }
-
-function refreshBaseData() {
-  if (sourceCanvas.width && sourceCanvas.height) {
-    baseImageData = canvasToDataURL(sourceCanvas);
-  }
+function selected(){return parts.find(p=>p.id===selectedId)}
+function syncEditor(){
+ const p=selected(),ids=['partName','posX','posY','scale','rotation','sway','speed','togglePart','deletePart'];
+ ids.forEach(id=>$(id).disabled=!p);
+ if(!p)return;
+ $('partName').value=p.name;$('posX').value=Math.round(p.x+300);$('posY').value=Math.round(p.y+300);
+ $('scale').value=p.scale;$('rotation').value=p.rotation;$('sway').value=p.sway;$('speed').value=p.speed;
+ updateValues()
 }
-
-function restoreEditImage(imageData) {
-  sourceCtx.putImageData(imageData, 0, 0);
-  refreshBaseData();
-  render();
+function updateValues(){['posX','posY','scale','rotation','sway','speed'].forEach(id=>{const el=$(id),out=$(id+'Value');if(out)out.textContent=id==='posX'||id==='posY'?Number(el.value)-300:el.value})}
+function loadImageFile(file){if(!file)return;const url=URL.createObjectURL(file);const im=new Image();im.onload=()=>{sourceCanvas.width=im.width;sourceCanvas.height=im.height;sourceCtx=sourceCanvas.getContext('2d');sourceCtx.drawImage(im,0,0);originalCanvas=cloneCanvas(sourceCanvas);originalCtx=originalCanvas.getContext('2d');baseImageData=canvasURL(sourceCanvas);parts=[];selectedId=null;nextId=1;undoStack=[];redoStack=[];calculateFit();updatePartList();syncEditor();render();status('画像を読み込んだよ。切り出したい部分を選んでね。');URL.revokeObjectURL(url)};im.onerror=()=>status('画像を読み込めなかったよ。');im.src=url}
+function cropRect(a,b){const p1=sourcePoint(a),p2=sourcePoint(b);const x=Math.max(0,Math.floor(Math.min(p1.x,p2.x))),y=Math.max(0,Math.floor(Math.min(p1.y,p2.y))),r=Math.min(sourceCanvas.width,Math.ceil(Math.max(p1.x,p2.x))),bt=Math.min(sourceCanvas.height,Math.ceil(Math.max(p1.y,p2.y)));if(r-x<2||bt-y<2)return;const c=document.createElement('canvas');c.width=r-x;c.height=bt-y;c.getContext('2d').drawImage(sourceCanvas,x,y,c.width,c.height,0,0,c.width,c.height);addPart('切り出しパーツ',c,(x+c.width/2),(y+c.height/2));status('パーツを追加したよ。')}
+function cropFree(points){if(points.length<3)return;const src=sourcePoint(points[0]);let pts=points.map(sourcePoint);let minX=Math.max(0,Math.floor(Math.min(...pts.map(p=>p.x)))),minY=Math.max(0,Math.floor(Math.min(...pts.map(p=>p.y)))),maxX=Math.min(sourceCanvas.width,Math.ceil(Math.max(...pts.map(p=>p.x)))),maxY=Math.min(sourceCanvas.height,Math.ceil(Math.max(...pts.map(p=>p.y))));if(maxX-minX<2||maxY-minY<2)return;const c=document.createElement('canvas');c.width=maxX-minX;c.height=maxY-minY;const cc=c.getContext('2d');cc.save();cc.beginPath();pts.forEach((p,i)=>i?cc.lineTo(p.x-minX,p.y-minY):cc.moveTo(p.x-minX,p.y-minY));cc.closePath();cc.clip();cc.drawImage(sourceCanvas,minX,minY,c.width,c.height,0,0,c.width,c.height);cc.restore();addPart('自由切り抜き',c,minX+c.width/2,minY+c.height/2);status('自由切り抜きパーツを追加したよ。')}
+function addShape(type){const c=document.createElement('canvas');c.width=type==='circle'?180:200;c.height=type==='circle'?180:140;const cc=c.getContext('2d');cc.fillStyle='#c5a5ff';if(type==='circle'){cc.beginPath();cc.arc(90,90,75,0,Math.PI*2);cc.fill()}else{cc.fillRect(10,10,180,120)}addPart(type==='circle'?'円パーツ':'四角パーツ',c,W/2,H/2)}
+async function importPSD(file){
+ if(!file)return;
+ if(!window.agPsd||!window.agPsd.readPsd){status('PSD読み込みライブラリを読み込めなかったよ。通信状態を確認してね。');return}
+ status('PSDを解析中…大きなファイルは少し待ってね。');
+ try{
+  const buffer=await file.arrayBuffer();
+  const psd=window.agPsd.readPsd(buffer,{skipThumbnail:true});
+  if(!psd.width||!psd.height)throw new Error('PSDのサイズを取得できません');
+  const s=Math.min(W/psd.width,H/psd.height),ox=(W-psd.width*s)/2,oy=(H-psd.height*s)/2;
+  // PSD全体の合成画像を元画像としてセット
+  if(psd.canvas){sourceCanvas.width=psd.width;sourceCanvas.height=psd.height;sourceCtx=sourceCanvas.getContext('2d');sourceCtx.drawImage(psd.canvas,0,0);originalCanvas=cloneCanvas(sourceCanvas);originalCtx=originalCanvas.getContext('2d');baseImageData=canvasURL(sourceCanvas)}
+  // PSDの合成画像と各レイヤーが二重に表示されないよう、読み込み直後は元画像を隠す
+  $('hideBase').checked=true;
+  const added=[];
+  function walk(layers,parentName=''){
+   (layers||[]).forEach(layer=>{
+    if(layer.children&&layer.children.length){walk(layer.children,layer.name||parentName);return}
+    if(layer.hidden||!layer.canvas)return;
+    const c=layer.canvas;
+    if(!c.width||!c.height)return;
+    const left=Number.isFinite(layer.left)?layer.left:0,top=Number.isFinite(layer.top)?layer.top:0;
+    const nm=(parentName?parentName+' / ':'')+(layer.name||'レイヤー '+(added.length+1));
+    const p={id:nextId++,name:nm,data:canvasURL(c),x:left+c.width/2,y:top+c.height/2,w:c.width,h:c.height,scale:100,rotation:0,sway:4,speed:10,visible:true,phase:Math.random()*6.28};
+    parts.push(p);added.push(p)
+   })
+  }
+  walk(psd.children||[]);
+  if(!added.length)throw new Error('読み込める画像レイヤーが見つからなかったよ。');
+  selectedId=added[added.length-1].id;calculateFit();updatePartList();syncEditor();render();
+  status(added.length+'個のレイヤーをパーツとして取り込んだよ！');
+ }catch(err){console.error(err);status('PSDの読み込みに失敗したよ：'+(err.message||'形式を確認してね。'))}
 }
-
-function selectBrush(mode) {
-  brushMode = mode;
-  $("brushErase").classList.toggle("active", mode === "erase");
-  $("brushRestore").classList.toggle("active", mode === "restore");
-  $("brushOff").classList.toggle("active", mode === "off");
-
-  if (mode === "erase") {
-    $("canvasHint").textContent = "画像をなぞして透明にするよ。";
-  } else if (mode === "restore") {
-    $("canvasHint").textContent = "画像をなぞして読み込み直後の状態に戻すよ。";
-  } else if (freeCropMode) {
-    $("canvasHint").textContent = "指で切り出したい形をなぞってね。指を離すとパーツになるよ。";
-  } else if (cropMode) {
-    $("canvasHint").textContent = "画像上をドラッグして四角い範囲を選んでね。";
-  } else {
-    $("canvasHint").textContent = "通常操作：パーツの選択・移動や切り出しができるよ。";
-  }
-
-  stage.style.cursor = mode === "off" ? "default" : "crosshair";
-}
-
-function setCropMode(on) {
-  cropMode = on;
-  if (on) setFreeCropMode(false);
-  $("cropMode").classList.toggle("active", on);
-  $("cropMode").textContent = on ? "四角形切り出し中" : "＋ 四角形切り出し";
-  pointerStart = null;
-  pointerNow = null;
-  render();
-}
-
-function setFreeCropMode(on) {
-  freeCropMode = on;
-  if (on) {
-    cropMode = false;
-    $("cropMode").classList.remove("active");
-    $("cropMode").textContent = "＋ 四角形切り出し";
-    selectBrush("off");
-  }
-  $("freeCropMode").classList.toggle("active", on);
-  $("freeCropMode").textContent = on ? "自由形状切り出し中" : "✎ 自由形状切り出し";
-  freeCropPoints = [];
-  pointerStart = null;
-  pointerNow = null;
-
-  if (on) {
-    $("canvasHint").textContent = "指で切り出したい形をなぞってね。指を離すとパーツになるよ。";
-    stage.style.cursor = "crosshair";
-  }
-  render();
-}
-
-$("brushErase").addEventListener("click", () => {
-  setCropMode(false);
-  setFreeCropMode(false);
-  selectBrush("erase");
+stage.addEventListener('pointerdown',e=>{
+ if(!sourceCanvas.width&&mode!=='normal')return;
+ const p=stagePoint(e);lastPointer=e;
+ if(mode==='rect'){startPoint=p;stage.setPointerCapture(e.pointerId);render();return}
+ if(mode==='free'){freePoints=[p];drawing=true;stage.setPointerCapture(e.pointerId);return}
+ if(mode==='erase'||mode==='restore'){saveUndo();drawing=true;stage.setPointerCapture(e.pointerId);brushAt(p);return}
 });
-$("brushRestore").addEventListener("click", () => {
-  setCropMode(false);
-  setFreeCropMode(false);
-  selectBrush("restore");
+stage.addEventListener('pointermove',e=>{
+ if(!drawing&&mode!=='rect')return;lastPointer=e;const p=stagePoint(e);
+ if(mode==='free'){freePoints.push(p);render()}
+ else if(mode==='erase'||mode==='restore')brushAt(p);
+ else if(mode==='rect')render();
 });
-$("brushOff").addEventListener("click", () => selectBrush("off"));
-
-$("undoEdit").addEventListener("click", () => {
-  if (!editUndo.length || !sourceCanvas.width) {
-    say("元に戻せる加工がないよ。");
-    return;
-  }
-  editRedo.push(sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height));
-  restoreEditImage(editUndo.pop());
-  say("画像加工を元に戻したよ。");
+stage.addEventListener('pointerup',e=>{
+ const p=stagePoint(e);
+ if(mode==='rect'&&startPoint){cropRect(startPoint,p);startPoint=null;render()}
+ if(mode==='free'&&drawing){cropFree(freePoints);freePoints=[]}
+ drawing=false;lastPointer=null;render()
 });
-
-$("redoEdit").addEventListener("click", () => {
-  if (!editRedo.length || !sourceCanvas.width) {
-    say("やり直せる加工がないよ。");
-    return;
-  }
-  editUndo.push(sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height));
-  if (editUndo.length > MAX_EDIT_HISTORY) editUndo.shift();
-  restoreEditImage(editRedo.pop());
-  say("画像加工をやり直したよ。");
-});
-
-function paintDot(point) {
-  const size = Number($("brushSize").value);
-  sourceCtx.save();
-  sourceCtx.beginPath();
-  sourceCtx.arc(point.x, point.y, size / 2, 0, Math.PI * 2);
-  sourceCtx.clip();
-
-  if (brushMode === "erase") {
-    sourceCtx.globalCompositeOperation = "destination-out";
-    sourceCtx.fillStyle = "#000";
-    sourceCtx.fillRect(point.x - size / 2, point.y - size / 2, size, size);
-  } else if (brushMode === "restore") {
-    sourceCtx.globalCompositeOperation = "source-over";
-    sourceCtx.drawImage(originalCanvas, 0, 0);
-  }
-
-  sourceCtx.restore();
-}
-
-function paintStroke(point) {
-  if (!lastBrushPoint) {
-    paintDot(point);
-    lastBrushPoint = point;
-  } else {
-    const dx = point.x - lastBrushPoint.x;
-    const dy = point.y - lastBrushPoint.y;
-    const dist = Math.hypot(dx, dy);
-    const step = Math.max(1, Number($("brushSize").value) * 0.22);
-    const n = Math.max(1, Math.ceil(dist / step));
-
-    for (let i = 1; i <= n; i++) {
-      paintDot({
-        x: lastBrushPoint.x + dx * i / n,
-        y: lastBrushPoint.y + dy * i / n
-      });
-    }
-    lastBrushPoint = point;
-  }
-  render();
-}
-
-function pointerPosition(e) {
-  const r = stage.getBoundingClientRect();
-  return {
-    x: (e.clientX - r.left) * stage.width / r.width,
-    y: (e.clientY - r.top) * stage.height / r.height
-  };
-}
-
-async function loadBaseData(dataUrl, name, originalDataUrl = null) {
-  const img = await readSourceImage(dataUrl);
-  const maxSide = 1400;
-  const factor = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
-
-  sourceCanvas.width = Math.max(1, Math.round(img.naturalWidth * factor));
-  sourceCanvas.height = Math.max(1, Math.round(img.naturalHeight * factor));
-  sourceCtx.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);
-  sourceCtx.drawImage(img, 0, 0, sourceCanvas.width, sourceCanvas.height);
-
-  originalCanvas.width = sourceCanvas.width;
-  originalCanvas.height = sourceCanvas.height;
-  originalCtx.clearRect(0, 0, originalCanvas.width, originalCanvas.height);
-
-  if (originalDataUrl) {
-    const originalImg = await readSourceImage(originalDataUrl);
-    originalCtx.drawImage(originalImg, 0, 0, originalCanvas.width, originalCanvas.height);
-  } else {
-    originalCtx.drawImage(img, 0, 0, originalCanvas.width, originalCanvas.height);
-  }
-
-  originalImageData = canvasToDataURL(originalCanvas);
-  stage.width = sourceCanvas.width;
-  stage.height = sourceCanvas.height;
-  refreshBaseData();
-  editUndo = [];
-  editRedo = [];
-  state.imageName = name || "image.png";
-  render();
-}
-
-$("imageFile").addEventListener("change", async e => {
-  const file = e.target.files && e.target.files[0];
-  if (!file) return;
-
-  if (!file.type.startsWith("image/")) {
-    say("画像ファイルを選んでね。");
-    return;
-  }
-
-  try {
-    const data = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-
-    await loadBaseData(data, file.name);
-    parts = [];
-    selectedId = null;
-    nextId = 1;
-    state.hideBase = false;
-    $("hideBase").checked = false;
-    $("partEditor").hidden = true;
-    setCropMode(false);
-    setFreeCropMode(false);
-    selectBrush("off");
-    updatePartList();
-    render();
-    say("画像を読み込んだよ。切り出しモードでパーツを作ろう。");
-  } catch (err) {
-    say("読み込みエラー：" + err.message);
-  }
-
-  e.target.value = "";
-});
-
-$("cropMode").addEventListener("click", () => {
-  if (!baseImageData) {
-    say("先に画像を読み込んでね。");
-    return;
-  }
-  selectBrush("off");
-  setFreeCropMode(false);
-  setCropMode(!cropMode);
-});
-
-$("freeCropMode").addEventListener("click", () => {
-  if (!baseImageData) {
-    say("先に画像を読み込んでね。");
-    return;
-  }
-  selectBrush("off");
-  setCropMode(false);
-  setFreeCropMode(!freeCropMode);
-});
-
-function hitTest(x, y) {
-  for (let i = parts.length - 1; i >= 0; i--) {
-    const p = parts[i];
-    if (!p.visible) continue;
-
-    const w = p.w * p.scale;
-    const h = p.h * p.scale;
-    const cx = p.x + w / 2;
-    const cy = p.y + h / 2;
-    const a = -(p.rotation * Math.PI / 180);
-    const dx = x - cx;
-    const dy = y - cy;
-    const lx = dx * Math.cos(a) - dy * Math.sin(a) + w / 2;
-    const ly = dx * Math.sin(a) + dy * Math.cos(a) + h / 2;
-
-    if (lx >= 0 && ly >= 0 && lx <= w && ly <= h) return p;
-  }
-  return null;
-}
-
-function addFreeCropPart() {
-  if (freeCropPoints.length < 3) {
-    freeCropPoints = [];
-    render();
-    say("切り出すには、指で3点以上なぞって囲んでね。");
-    return;
-  }
-
-  const points = freeCropPoints.slice();
-  freeCropPoints = [];
-
-  const minX = clamp(Math.floor(Math.min(...points.map(p => p.x))), 0, stage.width);
-  const minY = clamp(Math.floor(Math.min(...points.map(p => p.y))), 0, stage.height);
-  const maxX = clamp(Math.ceil(Math.max(...points.map(p => p.x))), 0, stage.width);
-  const maxY = clamp(Math.ceil(Math.max(...points.map(p => p.y))), 0, stage.height);
-  const w = maxX - minX;
-  const h = maxY - minY;
-
-  if (w < 5 || h < 5) {
-    render();
-    say("もう少し大きく囲んでね。");
-    return;
-  }
-
-  const patch = document.createElement("canvas");
-  patch.width = w;
-  patch.height = h;
-  const pc = patch.getContext("2d");
-
-  pc.save();
-  pc.beginPath();
-  pc.moveTo(points[0].x - minX, points[0].y - minY);
-
-  for (let i = 1; i < points.length; i++) {
-    pc.lineTo(points[i].x - minX, points[i].y - minY);
-  }
-
-  pc.closePath();
-  pc.clip();
-  pc.drawImage(sourceCanvas, minX, minY, w, h, 0, 0, w, h);
-  pc.restore();
-
-  const id = makeId();
-  const p = {
-    id,
-    name: "自由形状パーツ " + id,
-    data: canvasToDataURL(patch),
-    x: minX,
-    y: minY,
-    w,
-    h,
-    scale: 1,
-    rotation: 0,
-    sway: 8,
-    speed: 1,
-    visible: true,
-    phase: Math.random() * Math.PI * 2
-  };
-
-  parts.push(p);
-  selectedId = p.id;
-  updatePartList();
-  syncEditor();
-  render();
-  say("自由形状のパーツを作成したよ！");
-}
-
-stage.addEventListener("pointerdown", e => {
-  if (!baseImageData) return;
-  e.preventDefault();
-  try { stage.setPointerCapture(e.pointerId); } catch (_) {}
-
-  const pt = pointerPosition(e);
-
-  if (freeCropMode) {
-    freeCropPoints = [pt];
-    render();
-    return;
-  }
-
-  if (brushMode !== "off" && !cropMode) {
-    snapshot();
-    brushDrawing = true;
-    lastBrushPoint = null;
-    paintStroke(pt);
-    return;
-  }
-
-  if (cropMode) {
-    pointerStart = pt;
-    pointerNow = pt;
-    render();
-    return;
-  }
-
-  const p = hitTest(pt.x, pt.y);
-  if (p) {
-    selectedId = p.id;
-    dragPart = { id: p.id, start: pt, x: p.x, y: p.y };
-    updatePartList();
-    syncEditor();
-  } else {
-    selectedId = null;
-    syncEditor();
-    updatePartList();
-  }
-
-  render();
-});
-
-stage.addEventListener("pointermove", e => {
-  const pt = pointerPosition(e);
-
-  if (freeCropMode && freeCropPoints.length > 0) {
-    e.preventDefault();
-    const last = freeCropPoints[freeCropPoints.length - 1];
-    if (Math.hypot(pt.x - last.x, pt.y - last.y) >= 2) {
-      freeCropPoints.push(pt);
-      render();
-    }
-    return;
-  }
-
-  if (brushDrawing && brushMode !== "off") {
-    e.preventDefault();
-    paintStroke(pt);
-    return;
-  }
-
-  if (cropMode && pointerStart) {
-    pointerNow = pt;
-    render();
-    return;
-  }
-
-  if (dragPart) {
-    const p = parts.find(v => v.id === dragPart.id);
-    if (!p) return;
-    p.x = dragPart.x + pt.x - dragPart.start.x;
-    p.y = dragPart.y + pt.y - dragPart.start.y;
-    syncEditor();
-    render();
-  }
-});
-
-function finishPointer() {
-  if (brushDrawing) {
-    brushDrawing = false;
-    lastBrushPoint = null;
-    refreshBaseData();
-    render();
-    say(brushMode === "erase" ? "画像を透明化したよ。" : "元画像から復元したよ。");
-    return;
-  }
-
-  if (cropMode && pointerStart && pointerNow) {
-    const x = clamp(Math.min(pointerStart.x, pointerNow.x), 0, stage.width);
-    const y = clamp(Math.min(pointerStart.y, pointerNow.y), 0, stage.height);
-    const right = clamp(Math.max(pointerStart.x, pointerNow.x), 0, stage.width);
-    const bottom = clamp(Math.max(pointerStart.y, pointerNow.y), 0, stage.height);
-    const w = Math.floor(right - x);
-    const h = Math.floor(bottom - y);
-
-    if (w >= 5 && h >= 5) {
-      const patch = document.createElement("canvas");
-      patch.width = w;
-      patch.height = h;
-      patch.getContext("2d").drawImage(sourceCanvas, x, y, w, h, 0, 0, w, h);
-
-      const id = makeId();
-      const p = {
-        id,
-        name: "パーツ " + id,
-        data: canvasToDataURL(patch),
-        x, y, w, h,
-        scale: 1,
-        rotation: 0,
-        sway: 8,
-        speed: 1,
-        visible: true,
-        phase: Math.random() * Math.PI * 2
-      };
-
-      parts.push(p);
-      selectedId = p.id;
-      updatePartList();
-      syncEditor();
-      say("パーツを追加したよ。名前や揺れを編集してね。");
-    } else {
-      say("選択範囲が小さすぎるよ。");
-    }
-
-    pointerStart = null;
-    pointerNow = null;
-    render();
-  }
-
-  dragPart = null;
-}
-
-stage.addEventListener("pointerup", e => {
-  if (freeCropMode) {
-    addFreeCropPart();
-    return;
-  }
-  finishPointer();
-});
-
-stage.addEventListener("pointercancel", () => {
-  brushDrawing = false;
-  lastBrushPoint = null;
-  pointerStart = null;
-  pointerNow = null;
-  dragPart = null;
-  freeCropPoints = [];
-  render();
-});
-
-function addShape(shape) {
-  if (!baseImageData) {
-    say("先に画像を読み込んでね。");
-    return;
-  }
-
-  const w = Math.round(stage.width * 0.15);
-  const h = shape === "circle" ? w : Math.round(stage.height * 0.12);
-  const c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
-  const cc = c.getContext("2d");
-  cc.fillStyle = "#c5a5ff";
-  cc.strokeStyle = "#fff";
-  cc.lineWidth = Math.max(2, w * 0.025);
-
-  if (shape === "circle") {
-    cc.beginPath();
-    cc.ellipse(w / 2, h / 2, w / 2 - 2, h / 2 - 2, 0, 0, Math.PI * 2);
-    cc.fill();
-    cc.stroke();
-  } else {
-    cc.fillRect(2, 2, w - 4, h - 4);
-    cc.strokeRect(2, 2, w - 4, h - 4);
-  }
-
-  const id = makeId();
-  const p = {
-    id,
-    name: shape === "circle" ? "円形パーツ" : "四角パーツ",
-    data: canvasToDataURL(c),
-    x: (stage.width - w) / 2,
-    y: (stage.height - h) / 2,
-    w, h,
-    scale: 1,
-    rotation: 0,
-    sway: 8,
-    speed: 1,
-    visible: true,
-    phase: Math.random() * Math.PI * 2
-  };
-
-  parts.push(p);
-  selectedId = p.id;
-  updatePartList();
-  syncEditor();
-  render();
-  say("図形パーツを追加したよ。");
-}
-
-$("addCircle").addEventListener("click", () => addShape("circle"));
-$("addRect").addEventListener("click", () => addShape("rect"));
-
-function updatePartList() {
-  const root = $("parts");
-  root.innerHTML = "";
-
-  if (!parts.length) {
-    const p = document.createElement("p");
-    p.className = "hint";
-    p.textContent = "まだパーツがないよ。画像から切り出すか、図形を追加してね。";
-    root.appendChild(p);
-    return;
-  }
-
-  parts.forEach(p => {
-    const row = document.createElement("div");
-    row.className = "partItem" + (p.id === selectedId ? " selected" : "");
-
-    const sel = document.createElement("button");
-    sel.className = "partName";
-    sel.textContent = p.name;
-    sel.addEventListener("click", () => {
-      selectedId = p.id;
-      updatePartList();
-      syncEditor();
-      render();
-    });
-
-    const vis = document.createElement("button");
-    vis.textContent = p.visible ? "表示" : "非表示";
-    vis.addEventListener("click", () => {
-      p.visible = !p.visible;
-      updatePartList();
-      syncEditor();
-      render();
-    });
-
-    row.append(sel, vis);
-    root.appendChild(row);
-  });
-}
-
-function syncEditor() {
-  const p = selectedPart();
-  $("partEditor").hidden = !p;
-  if (!p) return;
-
-  $("partName").value = p.name;
-  $("posX").value = clamp(p.x, -300, 1400);
-  $("posY").value = clamp(p.y, -300, 1400);
-  $("scale").value = Math.round(p.scale * 100);
-  $("rotation").value = p.rotation;
-  $("sway").value = p.sway;
-  $("speed").value = Math.round(p.speed * 10);
-  $("togglePart").textContent = p.visible ? "非表示にする" : "表示する";
-}
-
-$("partName").addEventListener("input", () => {
-  const p = selectedPart();
-  if (!p) return;
-  p.name = $("partName").value;
-  updatePartList();
-});
-
-[
-  ["posX", "x", v => Number(v)],
-  ["posY", "y", v => Number(v)],
-  ["scale", "scale", v => Number(v) / 100],
-  ["rotation", "rotation", v => Number(v)],
-  ["sway", "sway", v => Number(v)],
-  ["speed", "speed", v => Number(v) / 10]
-].forEach(([id, key, convert]) => {
-  $(id).addEventListener("input", () => {
-    const p = selectedPart();
-    if (!p) return;
-    p[key] = convert($(id).value);
-    render();
-  });
-});
-
-$("togglePart").addEventListener("click", () => {
-  const p = selectedPart();
-  if (!p) return;
-  p.visible = !p.visible;
-  updatePartList();
-  syncEditor();
-  render();
-});
-
-$("deletePart").addEventListener("click", () => {
-  if (!selectedPart()) return;
-  parts = parts.filter(p => p.id !== selectedId);
-  selectedId = null;
-  updatePartList();
-  syncEditor();
-  render();
-  say("パーツを削除したよ。");
-});
-
-$("hideBase").addEventListener("change", e => {
-  state.hideBase = e.target.checked;
-  render();
-});
-
-$("animation").addEventListener("change", e => {
-  state.animation = e.target.checked;
-  say(state.animation ? "アニメーション再生中。" : "アニメーションを停止したよ。");
-  render();
-});
-
-$("resetView").addEventListener("click", () => {
-  parts.forEach(p => {
-    p.x = p.x;
-    p.y = p.y;
-    p.scale = 1;
-    p.rotation = 0;
-    p.sway = 8;
-  });
-  syncEditor();
-  render();
-  say("大きさ・回転・揺れを初期値に戻したよ。位置はそのままだよ。");
-});
-
-function render() {
-  ctx.clearRect(0, 0, stage.width, stage.height);
-
-  if (baseImageData && !state.hideBase) {
-    ctx.drawImage(sourceCanvas, 0, 0);
-  }
-
-  for (const p of parts) {
-    if (!p.visible) continue;
-
-    if (!p.image) {
-      p.image = new Image();
-      p.image.onload = () => render();
-      p.image.src = p.data;
-    }
-
-    if (!p.image.complete || !p.image.naturalWidth) continue;
-
-    const w = p.w * p.scale;
-    const h = p.h * p.scale;
-    let sx = 0, sy = 0, sr = 0;
-
-    if (state.animation) {
-      const t = elapsed * p.speed + p.phase;
-      sx = Math.sin(t) * p.sway;
-      sy = Math.cos(t * 0.7) * p.sway * 0.35;
-      sr = Math.sin(t * 0.8) * p.sway * 0.012;
-    }
-
-    ctx.save();
-    ctx.translate(p.x + w / 2 + sx, p.y + h / 2 + sy);
-    ctx.rotate(p.rotation * Math.PI / 180 + sr);
-    ctx.drawImage(p.image, -w / 2, -h / 2, w, h);
-    ctx.restore();
-
-    if (p.id === selectedId) {
-      ctx.save();
-      ctx.translate(p.x + w / 2, p.y + h / 2);
-      ctx.rotate(p.rotation * Math.PI / 180);
-      ctx.strokeStyle = "#d8b9ff";
-      ctx.lineWidth = Math.max(1.5, stage.width / 500);
-      ctx.setLineDash([6, 4]);
-      ctx.strokeRect(-w / 2, -h / 2, w, h);
-      ctx.restore();
-    }
-  }
-
-  if (cropMode && pointerStart && pointerNow) {
-    const x = Math.min(pointerStart.x, pointerNow.x);
-    const y = Math.min(pointerStart.y, pointerNow.y);
-    const w = Math.abs(pointerNow.x - pointerStart.x);
-    const h = Math.abs(pointerNow.y - pointerStart.y);
-
-    ctx.save();
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = Math.max(2, stage.width / 400);
-    ctx.setLineDash([8, 4]);
-    ctx.strokeRect(x, y, w, h);
-    ctx.fillStyle = "rgba(180,140,255,.18)";
-    ctx.fillRect(x, y, w, h);
-    ctx.restore();
-  }
-
-  if (freeCropMode && freeCropPoints.length > 0) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(freeCropPoints[0].x, freeCropPoints[0].y);
-
-    for (let i = 1; i < freeCropPoints.length; i++) {
-      ctx.lineTo(freeCropPoints[i].x, freeCropPoints[i].y);
-    }
-
-    if (freeCropPoints.length >= 3) {
-      ctx.lineTo(freeCropPoints[0].x, freeCropPoints[0].y);
-    }
-
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = Math.max(2, stage.width / 400);
-    ctx.setLineDash([6, 4]);
-    ctx.stroke();
-    ctx.restore();
-  }
-}
-
-function frame(timestamp) {
-  if (lastFrame) elapsed += Math.min(0.05, (timestamp - lastFrame) / 1000);
-  lastFrame = timestamp;
-  if (state.animation) render();
-  requestAnimationFrame(frame);
-}
-requestAnimationFrame(frame);
-
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 3000);
-}
-
-$("saveProject").addEventListener("click", () => {
-  if (!baseImageData) {
-    say("保存する前に画像を読み込んでね。");
-    return;
-  }
-
-  const project = {
-    format: "MiniLive2DStudio",
-    version: 2,
-    imageName: state.imageName,
-    baseImageData,
-    originalImageData,
-    hideBase: state.hideBase,
-    parts: parts.map(p => ({
-      id: p.id,
-      name: p.name,
-      data: p.data,
-      x: p.x,
-      y: p.y,
-      w: p.w,
-      h: p.h,
-      scale: p.scale,
-      rotation: p.rotation,
-      sway: p.sway,
-      speed: p.speed,
-      visible: p.visible,
-      phase: p.phase
-    }))
-  };
-
-  downloadBlob(
-    new Blob([JSON.stringify(project)], { type: "application/json" }),
-    "mini-live2d-project.json"
-  );
-
-  say("加工済み画像・復元用画像・パーツをJSONに保存したよ。");
-});
-
-$("loadProject").addEventListener("change", async e => {
-  const file = e.target.files && e.target.files[0];
-  if (!file) return;
-
-  try {
-    const project = JSON.parse(await file.text());
-
-    if (project.format !== "MiniLive2DStudio" ||
-        !project.baseImageData ||
-        !Array.isArray(project.parts)) {
-      throw new Error("このファイルは対応していない制作データだよ。");
-    }
-
-    await loadBaseData(
-      project.baseImageData,
-      project.imageName || "image.png",
-      project.originalImageData || null
-    );
-
-    parts = await Promise.all(project.parts.map(async raw => {
-      if (!raw.data) throw new Error("パーツ画像が見つからないよ。");
-      const img = await readSourceImage(raw.data);
-
-      return {
-        id: Number(raw.id) || makeId(),
-        name: String(raw.name || "パーツ"),
-        data: raw.data,
-        image: img,
-        x: Number(raw.x) || 0,
-        y: Number(raw.y) || 0,
-        w: Number(raw.w) || img.naturalWidth,
-        h: Number(raw.h) || img.naturalHeight,
-        scale: Number(raw.scale) || 1,
-        rotation: Number(raw.rotation) || 0,
-        sway: Number(raw.sway) || 0,
-        speed: Number(raw.speed) || 1,
-        visible: raw.visible !== false,
-        phase: Number(raw.phase) || 0
-      };
-    }));
-
-    nextId = Math.max(0, ...parts.map(p => p.id)) + 1;
-    selectedId = parts.length ? parts[0].id : null;
-    state.hideBase = !!project.hideBase;
-    $("hideBase").checked = state.hideBase;
-
-    setCropMode(false);
-    setFreeCropMode(false);
-    selectBrush("off");
-    editUndo = [];
-    editRedo = [];
-    updatePartList();
-    syncEditor();
-    render();
-    say("制作データを読み込んだよ。");
-  } catch (err) {
-    say("読み込みエラー：" + err.message);
-  }
-
-  e.target.value = "";
-});
-
-$("downloadImage").addEventListener("click", () => {
-  if (!baseImageData) {
-    say("先に画像を読み込んでね。");
-    return;
-  }
-
-  render();
-  stage.toBlob(blob => {
-    if (!blob) {
-      say("PNGを書き出せなかったよ。");
-      return;
-    }
-    downloadBlob(blob, "mini-live2d-preview.png");
-    say("現在の表示をPNGで書き出したよ。");
-  }, "image/png");
-});
-
-updatePartList();
-render();
-
+function brushAt(p){const q=sourcePoint(p),r=brushSize/2/fit.scale;if(!sourceCanvas.width)return;sourceCtx.save();sourceCtx.beginPath();sourceCtx.arc(q.x,q.y,r,0,Math.PI*2);sourceCtx.clip();if(mode==='erase')sourceCtx.clearRect(q.x-r-1,q.y-r-1,r*2+2,r*2+2);else sourceCtx.drawImage(originalCanvas,q.x-r,q.y-r,r*2,r*2,q.x-r,q.y-r,r*2,r*2);sourceCtx.restore();render()}
+$('imageFile').onchange=e=>loadImageFile(e.target.files[0]);
+$('psdFile').onchange=e=>{importPSD(e.target.files[0]);e.target.value=''};
+$('cropMode').onclick=()=>{mode=mode==='rect'?'normal':'rect';freePoints=[];startPoint=null;setModeButtons();status(mode==='rect'?'ステージ上をドラッグして四角く切り出してね。':'通常モード')};
+$('freeCropMode').onclick=()=>{mode=mode==='free'?'normal':'free';freePoints=[];setModeButtons();status(mode==='free'?'指で輪郭をなぞって、指を離すと切り出すよ。':'通常モード')};
+function setModeButtons(){['cropMode','freeCropMode','brushErase','brushRestore','brushOff'].forEach(id=>$(id).classList.remove('active'));({rect:'cropMode',free:'freeCropMode',erase:'brushErase',restore:'brushRestore',normal:'brushOff'})[mode]&&$(({rect:'cropMode',free:'freeCropMode',erase:'brushErase',restore:'brushRestore',normal:'brushOff'})[mode]).classList.add('active')}
+$('brushErase').onclick=()=>{mode='erase';setModeButtons()};$('brushRestore').onclick=()=>{mode='restore';setModeButtons()};$('brushOff').onclick=()=>{mode='normal';setModeButtons()};
+$('brushSize').oninput=e=>{brushSize=+e.target.value;$('brushValue').textContent=brushSize};
+$('undoEdit').onclick=async()=>{if(!undoStack.length)return;redoStack.push(canvasURL(sourceCanvas));await restoreCanvas(undoStack.pop());status('ひとつ戻したよ。')};
+$('redoEdit').onclick=async()=>{if(!redoStack.length)return;undoStack.push(canvasURL(sourceCanvas));await restoreCanvas(redoStack.pop());status('やり直したよ。')};
+$('hideBase').onchange=render;
+$('animation').onchange=()=>{if($('animation').checked){if(!raf){const tick=()=>{animFrame++;render();raf=requestAnimationFrame(tick)};raf=requestAnimationFrame(tick)}}else{if(raf)cancelAnimationFrame(raf);raf=null;render()}};
+$('resetView').onclick=()=>{parts.forEach(p=>{p.scale=100;p.rotation=0;p.sway=8;p.speed=10});syncEditor();render();status('パーツの大きさ・回転・揺れを初期値に戻したよ。')};
+$('addCircle').onclick=()=>addShape('circle');$('addRect').onclick=()=>addShape('rect');
+$('partName').oninput=e=>{const p=selected();if(p){p.name=e.target.value;updatePartList()}};
+['posX','posY','scale','rotation','sway','speed'].forEach(id=>$(id).oninput=e=>{const p=selected();if(!p)return;const v=+e.target.value;if(id==='posX')p.x=v-300;else if(id==='posY')p.y=v-300;else p[id]=v;updateValues();render()}));
+$('togglePart').onclick=()=>{const p=selected();if(p){p.visible=!p.visible;updatePartList();render()}};
+$('deletePart').onclick=()=>{if(!selected())return;parts=parts.filter(p=>p.id!==selectedId);selectedId=parts.length?parts[parts.length-1].id:null;updatePartList();syncEditor();render()};
+$('saveProject').onclick=()=>{const data={version:2,base:baseImageData,parts:parts.map(({img,...p})=>p),nextId};const blob=new Blob([JSON.stringify(data)],{type:'application/json'});downloadBlob(blob,'mini-live2d-project.json');status('プロジェクトを保存したよ。')};
+$('loadProject').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());parts=(data.parts||[]).map(p=>({...p}));nextId=data.nextId||Math.max(0,...parts.map(p=>p.id))+1;selectedId=parts.length?parts[parts.length-1].id:null;if(data.base){baseImageData=data.base;const im=await imageFromURL(data.base);sourceCanvas.width=im.width;sourceCanvas.height=im.height;sourceCtx=sourceCanvas.getContext('2d');sourceCtx.drawImage(im,0,0);originalCanvas=cloneCanvas(sourceCanvas);originalCtx=originalCanvas.getContext('2d')}updatePartList();syncEditor();render();status('プロジェクトを読み込んだよ。')}catch(err){status('JSONを読み込めなかったよ。')}e.target.value=''};
+function downloadBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500)}
+$('downloadImage').onclick=()=>{const out=document.createElement('canvas');out.width=W;out.height=H;const oc=out.getContext('2d');oc.drawImage(stage,0,0);out.toBlob(b=>downloadBlob(b,'mini-live2d.png'))};
+calculateFit();render();
 })();
 </script>
 </body>
