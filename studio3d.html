@@ -1,1 +1,351 @@
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#171625">
+<title>Mini 3D Studio</title>
+
+<script type="module"
+src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js">
+</script>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  padding:18px;
+  background:#171625;
+  color:#f5f0ff;
+  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+}
+header{text-align:center;margin:10px 0 24px}
+h1{font-size:25px;margin:0 0 8px}
+.sub{font-size:12px;color:#aaa2c5}
+.panel{
+  background:#242237;
+  border:1px solid #49415f;
+  border-radius:17px;
+  padding:16px;
+  margin-bottom:16px;
+}
+h2{font-size:16px;margin:0 0 13px}
+button,.file-label{
+  display:block;
+  width:100%;
+  border:0;
+  border-radius:12px;
+  padding:14px;
+  font-size:15px;
+  font-weight:bold;
+  text-align:center;
+  color:#211a30;
+  background:#c5a5ff;
+  margin-top:10px;
+  cursor:pointer;
+}
+button:disabled{opacity:.4}
+.file-label{background:#39334f;color:white}
+input[type=file]{display:none}
+.preview{
+  width:100%;
+  max-height:360px;
+  object-fit:contain;
+  border-radius:12px;
+  background:#171625;
+}
+#imagePreview{display:none}
+#modelViewer{
+  display:none;
+  width:100%;
+  height:380px;
+  background:#171625;
+  border-radius:12px;
+}
+.status{
+  padding:13px;
+  background:#171625;
+  border-radius:10px;
+  color:#d8c9ff;
+  font-size:13px;
+  line-height:1.7;
+  overflow-wrap:anywhere;
+}
+.note{
+  color:#aaa2c5;
+  font-size:12px;
+  line-height:1.7;
+}
+footer{
+  text-align:center;
+  color:#817995;
+  font-size:11px;
+  padding:20px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>Mini 3D Studio</h1>
+  <div class="sub">AI Character to 3D Model · Prototype 1.0</div>
+</header>
+
+<section class="panel">
+  <h2>① キャラクター画像</h2>
+
+  <label class="file-label" for="imageFile">
+    🖼️ 画像を選択する
+  </label>
+
+  <input
+    id="imageFile"
+    type="file"
+    accept="image/png,image/jpeg,image/webp"
+  >
+
+  <p class="note">
+    正面を向いた全身画像がおすすめ。
+    背景がシンプルで、キャラクター全体が見える画像を選んでね。
+    PNG・JPEG・WebP、20MB以下に対応。
+  </p>
+
+  <img id="imagePreview" class="preview" alt="画像プレビュー">
+</section>
+
+<section class="panel">
+  <h2>② 3Dモデルを生成</h2>
+
+  <button id="generateButton" disabled>
+    ✨ 3Dモデルを生成する
+  </button>
+
+  <p class="note">
+    Tripoの生成サービスを使用するよ。
+    生成には時間とクレジットが必要になる場合があるよ。
+  </p>
+</section>
+
+<section class="panel">
+  <h2>③ 生成状況</h2>
+  <div id="status" class="status">
+    画像を選択すると生成できるよ。
+  </div>
+</section>
+
+<section class="panel">
+  <h2>④ 3Dモデルプレビュー</h2>
+
+  <model-viewer
+    id="modelViewer"
+    camera-controls
+    auto-rotate
+    shadow-intensity="1"
+    exposure="1"
+    environment-image="neutral"
+    alt="生成した3Dキャラクター"
+  ></model-viewer>
+
+  <a
+    id="downloadLink"
+    href="#"
+    download="character.glb"
+    style="display:none;color:#d8c9ff;margin-top:15px;text-align:center"
+  >
+    ⬇ 3Dモデルを保存する
+  </a>
+
+  <p class="note">
+    モデルが表示されたら、指でドラッグして回転できるよ。
+    ピンチ操作で拡大・縮小もできるよ。
+  </p>
+</section>
+
+<footer>
+  Mini 3D Studio · iPhone Web Prototype
+</footer>
+
+<script>
+const API = "https://inochi-3d-api.0207yokotayu.workers.dev";
+
+const imageFile = document.getElementById("imageFile");
+const imagePreview = document.getElementById("imagePreview");
+const generateButton = document.getElementById("generateButton");
+const statusBox = document.getElementById("status");
+const modelViewer = document.getElementById("modelViewer");
+const downloadLink = document.getElementById("downloadLink");
+
+let selectedFile = null;
+let previewUrl = null;
+let busy = false;
+
+function setStatus(message) {
+  statusBox.textContent = message;
+}
+
+imageFile.addEventListener("change", () => {
+  const file = imageFile.files[0];
+
+  if (!file) return;
+
+  if (!["image/png","image/jpeg","image/webp"].includes(file.type)) {
+    setStatus("PNG・JPEG・WebP画像を選んでね。");
+    return;
+  }
+
+  if (file.size > 20 * 1024 * 1024) {
+    setStatus("画像は20MB以下にしてね。");
+    return;
+  }
+
+  selectedFile = file;
+
+  if (previewUrl) URL.revokeObjectURL(previewUrl);
+  previewUrl = URL.createObjectURL(file);
+
+  imagePreview.src = previewUrl;
+  imagePreview.style.display = "block";
+
+  generateButton.disabled = false;
+  modelViewer.style.display = "none";
+  downloadLink.style.display = "none";
+
+  setStatus("画像を読み込んだよ。生成ボタンを押してね。");
+});
+
+async function readJson(response) {
+  const text = await response.text();
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error("サーバーから正しい応答がありません。");
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data.error || data.message || "通信エラー: " + response.status
+    );
+  }
+
+  return data;
+}
+
+async function checkTask(taskId) {
+  const response = await fetch(
+    API + "/task?id=" + encodeURIComponent(taskId)
+  );
+
+  return await readJson(response);
+}
+
+function getTaskData(result) {
+  return result && result.data ? result.data : result;
+}
+
+function getModelUrl(task) {
+  const output = task.output || {};
+
+  return (
+    output.model_url ||
+    output.pbr_model ||
+    output.model ||
+    output.base_model ||
+    null
+  );
+}
+
+async function waitForModel(taskId) {
+  const maxChecks = 120;
+
+  for (let i = 0; i < maxChecks; i++) {
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    const result = await checkTask(taskId);
+    const task = getTaskData(result);
+
+    const state = String(task.status || "").toLowerCase();
+
+    setStatus(
+      "3Dモデルを生成中...\n" +
+      "状態: " + (state || "確認中") +
+      "\n確認回数: " + (i + 1)
+    );
+
+    if (state === "success") {
+      const modelUrl = getModelUrl(task);
+
+      if (!modelUrl) {
+        throw new Error(
+          "生成は完了したけど、モデルURLが見つからないよ。"
+        );
+      }
+
+      modelViewer.src = modelUrl;
+      modelViewer.style.display = "block";
+
+      downloadLink.href = modelUrl;
+      downloadLink.style.display = "block";
+
+      setStatus("🎉 3Dモデルが完成したよ！回転して確認してね。");
+      return;
+    }
+
+    if (["failed","cancelled","canceled"].includes(state)) {
+      throw new Error(
+        task.message || "3Dモデルの生成に失敗したよ。"
+      );
+    }
+  }
+
+  throw new Error(
+    "確認時間の上限に達したよ。時間をおいてもう一度確認してね。"
+  );
+}
+
+generateButton.addEventListener("click", async () => {
+  if (!selectedFile || busy) return;
+
+  busy = true;
+  generateButton.disabled = true;
+  modelViewer.style.display = "none";
+  downloadLink.style.display = "none";
+
+  try {
+    setStatus("画像を送信しているよ...");
+
+    const form = new FormData();
+    form.append("file", selectedFile);
+
+    const response = await fetch(API + "/generate", {
+      method: "POST",
+      body: form
+    });
+
+    const result = await readJson(response);
+
+    if (!result.task_id) {
+      throw new Error("生成タスクIDを受け取れなかったよ。");
+    }
+
+    setStatus(
+      "生成を開始したよ！\nタスクID: " + result.task_id
+    );
+
+    await waitForModel(result.task_id);
+
+  } catch (error) {
+    console.error(error);
+    setStatus("エラー: " + error.message);
+  } finally {
+    busy = false;
+    generateButton.disabled = !selectedFile;
+  }
+});
+</script>
+
+</body>
+</html>
