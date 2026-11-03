@@ -215,6 +215,7 @@ imageFile.addEventListener("change", () => {
   setStatus("画像を読み込んだよ。生成ボタンを押してね。");
 });
 
+
 async function readJson(response) {
   const text = await response.text();
 
@@ -222,17 +223,19 @@ async function readJson(response) {
   try {
     data = JSON.parse(text);
   } catch {
-    throw new Error("サーバーから正しい応答がありません。");
+    throw new Error("サーバーから正しい応答がありません: " + text);
   }
 
   if (!response.ok) {
     throw new Error(
-      data.error || data.message || "通信エラー: " + response.status
+      (data.error || data.message || "通信エラー: " + response.status) +
+      "\n詳細: " + JSON.stringify(data.detail || data)
     );
   }
 
   return data;
 }
+
 
 async function checkTask(taskId) {
   const response = await fetch(
