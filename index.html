@@ -80,7 +80,10 @@ hr{border:0;border-top:1px solid #403956;margin:13px 0}
 <label><input id="hideBase" type="checkbox"> 元画像を隠す</label>
 <label><input id="animation" type="checkbox"> アニメーション</label>
 </div>
-<div id="status">画像またはPSDを読み込んでね。</div>
+<div id="status">
+  <strong>📂 読み込み状況</strong>
+  <div>画像またはPSDを読み込んでね。</div>
+</div>
 <p class="small">PSDは端末内で読み込み、各レイヤーをパーツとして追加するよ。大きなPSDはiPhoneのメモリを多く使う場合があるよ。</p>
 </section>
 
@@ -118,7 +121,14 @@ let baseImageData=null,parts=[],selectedId=null,nextId=1;
 let mode='normal',brushSize=24,drawing=false,startPoint=null,freePoints=[];
 let undoStack=[],redoStack=[],animFrame=0,raf=null;
 let fit={scale:1,ox:0,oy:0};
-const status=t=>$('status').textContent=t;
+const status=t=>{
+  $('status').innerHTML='';
+  const title=document.createElement('strong');
+  title.textContent='📂 読み込み状況';
+  const message=document.createElement('div');
+  message.textContent=t;
+  $('status').append(title,message);
+};
 const cloneCanvas=c=>{const n=document.createElement('canvas');n.width=c.width;n.height=c.height;n.getContext('2d').drawImage(c,0,0);return n};
 const canvasURL=c=>c.toDataURL('image/png');
 const imageFromURL=url=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=url});
