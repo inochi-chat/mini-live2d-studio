@@ -1,4 +1,4 @@
-import * as THREE from "three";
+
 import { createScene } from "./scene.js";
 
 import {
