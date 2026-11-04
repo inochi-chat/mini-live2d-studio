@@ -1,1 +1,73 @@
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#171824">
+<title>Inochi 3D Studio</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <header class="topbar">
+    <button id="menuButton">☰</button>
+    <div class="brand">
+      <strong>INOCHI 3D</strong>
+      <small>3D MODELING STUDIO</small>
+    </div>
+    <button id="saveButton">保存</button>
+  </header>
+
+  <main id="workspace">
+
+    <section id="viewport">
+      <canvas id="threeCanvas"></canvas>
+
+      <div class="viewport-label">
+        PERSPECTIVE
+      </div>
+
+      <div id="objectCount">Objects: 0</div>
+    </section>
+
+    <section id="bottomPanel">
+
+      <div class="panel-handle"></div>
+
+      <div class="tool-row">
+        <button id="addButton">＋ 追加</button>
+        <button id="moveButton">移動</button>
+        <button id="rotateButton">回転</button>
+        <button id="scaleButton">拡縮</button>
+      </div>
+
+      <div class="section-title">
+        オブジェクト
+      </div>
+
+      <div id="objectList">
+        <p class="empty-message">オブジェクトがありません</p>
+      </div>
+
+      <div class="tool-row secondary">
+        <button id="duplicateButton">複製</button>
+        <button id="deleteButton">削除</button>
+      </div>
+
+      <div id="properties">
+        <div class="section-title">プロパティ</div>
+        <p>オブジェクトを選択してください</p>
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
