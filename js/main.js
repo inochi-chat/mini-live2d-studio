@@ -45,7 +45,7 @@ let historyIndex = -1;
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
-raycaster.params.Points.threshold = 0.15;
+raycaster.params.Points.threshold = 0.5;
 
 // -------------------------
 // ポインター座標
@@ -171,6 +171,8 @@ function startVertexDrag(event) {
   updatePointer(event);
 
   const hits = raycaster.intersectObject(vertexHelper, false);
+
+　console.log("頂点タップ:", hits.length);
 
   if (hits.length === 0) return false;
 
