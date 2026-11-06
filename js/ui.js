@@ -20,19 +20,19 @@ const vertexModeButton = document.getElementById("vertexModeButton");
 const edgeModeButton = document.getElementById("edgeModeButton");
 const faceModeButton = document.getElementById("faceModeButton");
 
-objectModeButton.addEventListener("click", () => {
+objectModeButton?.addEventListener("click", () => {
   setEditMode("object");
 });
 
-vertexModeButton.addEventListener("click", () => {
+vertexModeButton?.addEventListener("click", () => {
   setEditMode("vertex");
 });
 
-edgeModeButton.addEventListener("click", () => {
+edgeModeButton?.addEventListener("click", () => {
   setEditMode("edge");
 });
 
-faceModeButton.addEventListener("click", () => {
+faceModeButton?.addEventListener("click", () => {
   setEditMode("face");
 });
 
