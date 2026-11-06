@@ -258,3 +258,88 @@ loadFileInput.addEventListener("change", async () => {
 }
 
 console.log("INOCHI 3D STUDIO STARTED");
+// ===== 操作履歴システム =====
+
+let historyStack = [];
+let historyIndex = -1;
+const MAX_HISTORY = 50;
+
+// 現在の状態を記録
+function saveHistory() {
+  const state = getObjects().map(object => ({
+    name: object.name,
+    type: object.geometry.type,
+    position: object.position.toArray(),
+    rotation: object.rotation.toArray(),
+    scale: object.scale.toArray(),
+    color: "#" + object.material.color.getHexString()
+  }));
+
+  // Undo後に新しい操作をした場合、先の履歴を削除
+  historyStack = historyStack.slice(0, historyIndex + 1);
+
+  historyStack.push(JSON.stringify(state));
+
+  if (historyStack.length > MAX_HISTORY) {
+    historyStack.shift();
+  }
+
+  historyIndex = historyStack.length - 1;
+}
+
+// 状態を復元
+function restoreHistory(index) {
+  if (index < 0 || index >= historyStack.length) return;
+
+  const state = JSON.parse(historyStack[index]);
+
+  detachObject();
+
+  [...getObjects()].forEach(object => {
+    selectObject(object);
+    deleteSelectedObject();
+  });
+
+  state.forEach(item => {
+    let type;
+
+    if (item.type === "BoxGeometry") type = "cube";
+    if (item.type === "SphereGeometry") type = "sphere";
+    if (item.type === "CylinderGeometry") type = "cylinder";
+
+    if (!type) return;
+
+    const object = addObject(type);
+    object.name = item.name;
+    object.position.fromArray(item.position);
+    object.rotation.fromArray(item.rotation);
+    object.scale.fromArray(item.scale);
+    object.material.color.set(item.color);
+  });
+
+  const objects = getObjects();
+
+  if (objects.length > 0) {
+    selectObject(objects[objects.length - 1]);
+    attachObject(getSelectedObject());
+  }
+
+  historyIndex = index;
+  refreshObjectList();
+  refreshProperties();
+}
+
+// Undo
+function undoHistory() {
+  if (historyIndex <= 0) return;
+  restoreHistory(historyIndex - 1);
+}
+
+// Redo
+function redoHistory() {
+  if (historyIndex >= historyStack.length - 1) return;
+  restoreHistory(historyIndex + 1);
+}
+
+// 最初の状態を記録
+saveHistory();
