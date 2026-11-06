@@ -185,21 +185,60 @@ export function refreshObjectList() {
 }
 
 // プロパティ表示
-export function refreshProperties() {
-  const panel = document.getElementById("properties");
+export function refreshProperties(){
+ const panel=document.getElementById("properties");
+ if(!panel)return;
 
-  if (!panel) return;
+ const object=callbacks.getSelected?.();
 
-  const object = callbacks.getSelected?.();
+ panel.innerHTML='<div class="section-title">プロパティ</div>';
 
-  panel.innerHTML = '<div class="section-title">プロパティ</div>';
+ if(!object){
+  const message=document.createElement("p");
+  message.textContent="オブジェクトを選択してください";
+  panel.appendChild(message);
+  return;
+ }
 
-  if (!object) {
-    const message = document.createElement("p");
-    message.textContent = "オブジェクトを選択してください";
-    panel.appendChild(message);
-    return;
-  }
+ const groups=[
+  {title:"位置",key:"position"},
+  {title:"回転",key:"rotation"},
+  {title:"サイズ",key:"scale"}
+ ];
+
+ groups.forEach(group=>{
+  const heading=document.createElement("div");
+  heading.textContent=group.title;
+  heading.style.cssText="margin-top:12px;font-size:12px;color:#c5a5ff;";
+  panel.appendChild(heading);
+
+  ["x","y","z"].forEach(axis=>{
+   const row=document.createElement("div");
+   row.style.cssText="display:flex;align-items:center;gap:8px;margin:7px 0;";
+
+   const label=document.createElement("span");
+   label.textContent=axis.toUpperCase();
+   label.style.width="20px";
+
+   const input=document.createElement("input");
+   input.type="number";
+   input.step="0.1";
+   input.value=object[group.key][axis].toFixed(2);
+   input.style.cssText="flex:1;min-width:0;background:#171824;color:white;border:1px solid #555;border-radius:8px;padding:9px;";
+
+   input.addEventListener("change",()=>{
+    const value=Number(input.value);
+    if(!Number.isFinite(value))return;
+
+    object[group.key][axis]=value;
+    refreshProperties();
+   });
+
+   row.append(label,input);
+   panel.appendChild(row);
+  });
+ });
+}
 
   const rows = [
     ["位置 X", object.position.x],
