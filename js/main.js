@@ -256,6 +256,21 @@ initUI({
     setToolMode(mode);
   },
 
+  // 編集モード切り替え
+onEditMode(mode) {
+  const selected = getSelectedObject();
+
+  if (mode === "object") {
+    if (selected) {
+      attachObject(selected);
+    }
+  } else {
+    // 頂点・辺・面モードでは
+    // オブジェクト全体の操作ハンドルを隠す
+    detachObject();
+  }
+},
+  
   // 選択
   onSelect(object) {
     selectMesh(object);
