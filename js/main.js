@@ -1,4 +1,6 @@
+
 import * as THREE from "three";
+
 import { createScene } from "./scene.js";
 
 import {
@@ -24,20 +26,23 @@ import {
   refreshProperties
 } from "./ui.js";
 
-// 3D画面の起動
+// ===================================
+// 1. 3Dエンジン起動
+// ===================================
+
 const canvas = document.getElementById("threeCanvas");
 
 const engine = createScene(canvas);
 
 const { scene, camera, renderer, controls } = engine;
 
-// オブジェクト管理
 initObjects(scene);
-
-// 編集ツール
 initTools(camera, renderer, scene);
 
-// 選択機能
+// ===================================
+// 2. オブジェクト選択処理
+// ===================================
+
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
@@ -47,14 +52,23 @@ let isDragging = false;
 window.addEventListener("transform-dragging", event => {
   isDragging = event.detail;
   controls.enabled = !isDragging;
+
+  // 操作終了時に履歴を保存
+  if (!isDragging) {
+    saveHistory();
+    refreshProperties();
+  }
 });
 
-// オブジェクト選択
 canvas.addEventListener("pointerdown", event => {
   pointerStart = {
     x: event.clientX,
     y: event.clientY
   };
+});
+
+canvas.addEventListener("pointercancel", () => {
+  pointerStart = null;
 });
 
 canvas.addEventListener("pointerup", event => {
@@ -69,8 +83,11 @@ canvas.addEventListener("pointerup", event => {
 
   const rect = canvas.getBoundingClientRect();
 
-  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  pointer.x =
+    ((event.clientX - rect.left) / rect.width) * 2 - 1;
+
+  pointer.y =
+    -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
   raycaster.setFromCamera(pointer, camera);
 
@@ -92,193 +109,47 @@ function selectMesh(object) {
   refreshProperties();
 }
 
-// UI接続
-initUI({
-
-  onAdd(type) {
-    const object = addObject(type);
-
-    if (object) {
-      attachObject(object);
-    }
-  },
-
-  onMode(mode) {
-    setToolMode(mode);
-  },
-
-  onSelect(object) {
-    selectMesh(object);
-  },
-
-  onDelete() {
-    detachObject();
-    deleteSelectedObject();
-  },
-
-  onDuplicate() {
-    const object = duplicateSelectedObject();
-
-    if (object) {
-      attachObject(object);
-    }
-  },
-
-  getObjects() {
-    return getObjects();
-  },
-
-  getSelected() {
-    return getSelectedObject();
-  },
-
-  onSave() {
-    saveProject();
-  }
-});
-
-// 初期オブジェクト
-const initialCube = addObject("cube");
-
-if (initialCube) {
-  attachObject(initialCube);
-}
-
-// プロジェクト保存
-function saveProject() {
-  const data = {
-    version: 1,
-    name: "Inochi 3D Project",
-    objects: getObjects().map(object => ({
-      name: object.name,
-      type: object.geometry.type,
-      position: object.position.toArray(),
-      rotation: object.rotation.toArray(),
-      scale: object.scale.toArray(),
-      color: "#" + object.material.color.getHexString()
-    }))
-  };
-  // プロジェクト読み込み
-const loadButton = document.getElementById("loadButton");
-const loadFileInput = document.getElementById("loadFileInput");
-
-loadButton.addEventListener("click", () => {
-  loadFileInput.click();
-});
-
-loadFileInput.addEventListener("change", async () => {
-  const file = loadFileInput.files[0];
-  if (!file) return;
-
-  try {
-    const text = await file.text();
-    const data = JSON.parse(text);
-
-    if (!Array.isArray(data.objects)) {
-      throw new Error("不正なプロジェクトファイルです");
-    }
-
-    // 現在のオブジェクトをすべて削除
-    detachObject();
-    [...getObjects()].forEach(object => {
-      selectObject(object);
-      deleteSelectedObject();
-    });
-
-    // 読み込んだオブジェクトを復元
-    data.objects.forEach(item => {
-      let type;
-
-      if (item.type === "BoxGeometry") type = "cube";
-      if (item.type === "SphereGeometry") type = "sphere";
-      if (item.type === "CylinderGeometry") type = "cylinder";
-
-      if (!type) return;
-
-      const object = addObject(type);
-      if (!object) return;
-
-      object.name = item.name || type;
-      object.position.fromArray(item.position);
-      object.rotation.fromArray(item.rotation);
-      object.scale.fromArray(item.scale);
-
-      if (item.color) {
-        object.material.color.set(item.color);
-      }
-    });
-
-    detachObject();
-
-    const objects = getObjects();
-    if (objects.length > 0) {
-      selectObject(objects[objects.length - 1]);
-      attachObject(getSelectedObject());
-    }
-
-    refreshObjectList();
-    refreshProperties();
-
-    alert("プロジェクトを読み込みました！");
-  } catch (error) {
-    console.error(error);
-    alert("読み込みに失敗しました。JSONファイルを確認してください。");
-  }
-
-  loadFileInput.value = "";
-});
-
-  const json = JSON.stringify(data, null, 2);
-
-  try {
-    localStorage.setItem(
-      "inochi3d_project",
-      json
-    );
-
-    const blob = new Blob(
-      [json],
-      { type: "application/json" }
-    );
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-
-    link.href = url;
-    link.download = "inochi3d-project.json";
-    link.click();
-
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-
-    alert("プロジェクトを保存しました！");
-  } catch (error) {
-    console.error(error);
-    alert("保存に失敗しました。");
-  }
-}
-
-console.log("INOCHI 3D STUDIO STARTED");
-// ===== 操作履歴システム =====
+// ===================================
+// 3. 操作履歴システム
+// ===================================
 
 let historyStack = [];
 let historyIndex = -1;
+
 const MAX_HISTORY = 50;
 
-// 現在の状態を記録
-function saveHistory() {
-  const state = getObjects().map(object => ({
+function createSnapshot() {
+  return getObjects().map(object => ({
     name: object.name,
     type: object.geometry.type,
+
     position: object.position.toArray(),
     rotation: object.rotation.toArray(),
     scale: object.scale.toArray(),
+
     color: "#" + object.material.color.getHexString()
   }));
+}
 
-  // Undo後に新しい操作をした場合、先の履歴を削除
-  historyStack = historyStack.slice(0, historyIndex + 1);
+function saveHistory() {
+  const state = JSON.stringify(createSnapshot());
 
-  historyStack.push(JSON.stringify(state));
+  // 同じ状態は重複保存しない
+  if (
+    historyIndex >= 0 &&
+    historyStack[historyIndex] === state
+  ) {
+    return;
+  }
+
+  // Undo後に新しい操作をした場合、
+  // 未来の履歴を削除
+  historyStack = historyStack.slice(
+    0,
+    historyIndex + 1
+  );
+
+  historyStack.push(state);
 
   if (historyStack.length > MAX_HISTORY) {
     historyStack.shift();
@@ -287,12 +158,17 @@ function saveHistory() {
   historyIndex = historyStack.length - 1;
 }
 
-// 状態を復元
 function restoreHistory(index) {
-  if (index < 0 || index >= historyStack.length) return;
+  if (
+    index < 0 ||
+    index >= historyStack.length
+  ) {
+    return;
+  }
 
   const state = JSON.parse(historyStack[index]);
 
+  // 現在のオブジェクトを削除
   detachObject();
 
   [...getObjects()].forEach(object => {
@@ -300,46 +176,295 @@ function restoreHistory(index) {
     deleteSelectedObject();
   });
 
+  // 履歴からオブジェクトを再生成
   state.forEach(item => {
-    let type;
+    let type = null;
 
-    if (item.type === "BoxGeometry") type = "cube";
-    if (item.type === "SphereGeometry") type = "sphere";
-    if (item.type === "CylinderGeometry") type = "cylinder";
+    if (item.type === "BoxGeometry") {
+      type = "cube";
+    }
+
+    if (item.type === "SphereGeometry") {
+      type = "sphere";
+    }
+
+    if (item.type === "CylinderGeometry") {
+      type = "cylinder";
+    }
 
     if (!type) return;
 
     const object = addObject(type);
+
+    if (!object) return;
+
     object.name = item.name;
+
     object.position.fromArray(item.position);
     object.rotation.fromArray(item.rotation);
     object.scale.fromArray(item.scale);
+
     object.material.color.set(item.color);
   });
 
+  // 最後のオブジェクトを選択
   const objects = getObjects();
 
   if (objects.length > 0) {
-    selectObject(objects[objects.length - 1]);
-    attachObject(getSelectedObject());
+    const lastObject = objects[objects.length - 1];
+
+    selectObject(lastObject);
+    attachObject(lastObject);
   }
 
   historyIndex = index;
+
   refreshObjectList();
   refreshProperties();
 }
 
-// Undo
 function undoHistory() {
   if (historyIndex <= 0) return;
+
   restoreHistory(historyIndex - 1);
 }
 
-// Redo
 function redoHistory() {
   if (historyIndex >= historyStack.length - 1) return;
+
   restoreHistory(historyIndex + 1);
 }
 
+// ===================================
+// 4. UIとの接続
+// ===================================
+
+initUI({
+
+  // オブジェクト追加
+  onAdd(type) {
+    const object = addObject(type);
+
+    if (object) {
+      attachObject(object);
+      saveHistory();
+    }
+  },
+
+  // 操作モード
+  onMode(mode) {
+    setToolMode(mode);
+  },
+
+  // 選択
+  onSelect(object) {
+    selectMesh(object);
+  },
+
+  // 削除
+  onDelete() {
+    detachObject();
+    deleteSelectedObject();
+    saveHistory();
+  },
+
+  // 複製
+  onDuplicate() {
+    const object = duplicateSelectedObject();
+
+    if (object) {
+      attachObject(object);
+      saveHistory();
+    }
+  },
+
+  // 数値編集
+  onPropertyChange() {
+    saveHistory();
+  },
+
+  // 一覧取得
+  getObjects() {
+    return getObjects();
+  },
+
+  // 選択中のオブジェクト取得
+  getSelected() {
+    return getSelectedObject();
+  },
+
+  // 保存
+  onSave() {
+    saveProject();
+  },
+
+  // Undo
+  onUndo() {
+    undoHistory();
+  },
+
+  // Redo
+  onRedo() {
+    redoHistory();
+  }
+
+});
+
+// ===================================
+// 5. 最初の立方体
+// ===================================
+
+const initialCube = addObject("cube");
+
+if (initialCube) {
+  attachObject(initialCube);
+}
+
+refreshObjectList();
+refreshProperties();
+
 // 最初の状態を記録
 saveHistory();
+
+// ===================================
+// 6. プロジェクト保存
+// ===================================
+
+function saveProject() {
+  const data = {
+    version: 1,
+    name: "Inochi 3D Project",
+    objects: createSnapshot()
+  };
+
+  const json = JSON.stringify(data, null, 2);
+
+  try {
+    localStorage.setItem("inochi3d_project", json);
+
+    const blob = new Blob(
+      [json],
+      { type: "application/json" }
+    );
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "inochi3d-project.json";
+
+    link.click();
+
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1000);
+
+    alert("プロジェクトを保存しました！");
+
+  } catch (error) {
+    console.error(error);
+    alert("保存に失敗しました。");
+  }
+}
+
+// ===================================
+// 7. プロジェクト読み込み
+// ===================================
+
+const loadButton = document.getElementById("loadButton");
+const loadFileInput = document.getElementById("loadFileInput");
+
+if (loadButton && loadFileInput) {
+
+  loadButton.addEventListener("click", () => {
+    loadFileInput.click();
+  });
+
+  loadFileInput.addEventListener("change", async () => {
+
+    const file = loadFileInput.files[0];
+
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      if (!Array.isArray(data.objects)) {
+        throw new Error("不正なプロジェクトファイルです");
+      }
+
+      detachObject();
+
+      // 現在のモデルを削除
+      [...getObjects()].forEach(object => {
+        selectObject(object);
+        deleteSelectedObject();
+      });
+
+      // モデルを復元
+      data.objects.forEach(item => {
+
+        let type = null;
+
+        if (item.type === "BoxGeometry") {
+          type = "cube";
+        }
+
+        if (item.type === "SphereGeometry") {
+          type = "sphere";
+        }
+
+        if (item.type === "CylinderGeometry") {
+          type = "cylinder";
+        }
+
+        if (!type) return;
+
+        const object = addObject(type);
+
+        if (!object) return;
+
+        object.name = item.name || type;
+
+        object.position.fromArray(item.position);
+        object.rotation.fromArray(item.rotation);
+        object.scale.fromArray(item.scale);
+
+        if (item.color) {
+          object.material.color.set(item.color);
+        }
+      });
+
+      // 最後のモデルを選択
+      const objects = getObjects();
+
+      if (objects.length > 0) {
+        const lastObject = objects[objects.length - 1];
+
+        selectObject(lastObject);
+        attachObject(lastObject);
+      }
+
+      // 読み込み後の状態を履歴に保存
+      saveHistory();
+
+      refreshObjectList();
+      refreshProperties();
+
+      alert("プロジェクトを読み込みました！");
+
+    } catch (error) {
+      console.error(error);
+
+      alert(
+        "読み込みに失敗しました。JSONファイルを確認してください。"
+      );
+    }
+
+    loadFileInput.value = "";
+  });
+}
+
+console.log("INOCHI 3D STUDIO STARTED");
