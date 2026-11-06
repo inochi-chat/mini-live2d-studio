@@ -14,6 +14,27 @@ export function initUI(options = {}) {
   const saveButton = document.getElementById("saveButton");
   const undoButton = document.getElementById("undoButton");
   const redoButton = document.getElementById("redoButton");
+  // 編集モードボタン
+const objectModeButton = document.getElementById("objectModeButton");
+const vertexModeButton = document.getElementById("vertexModeButton");
+const edgeModeButton = document.getElementById("edgeModeButton");
+const faceModeButton = document.getElementById("faceModeButton");
+
+objectModeButton.addEventListener("click", () => {
+  setEditMode("object");
+});
+
+vertexModeButton.addEventListener("click", () => {
+  setEditMode("vertex");
+});
+
+edgeModeButton.addEventListener("click", () => {
+  setEditMode("edge");
+});
+
+faceModeButton.addEventListener("click", () => {
+  setEditMode("face");
+});
 
   addButton.addEventListener("click", showAddMenu);
   moveButton.addEventListener("click", () => setMode("translate"));
@@ -220,4 +241,30 @@ export function refreshProperties() {
       panel.appendChild(row);
     });
   });
+}
+// 編集モード切り替え
+let currentEditMode = "object";
+
+function setEditMode(mode) {
+  currentEditMode = mode;
+
+  const buttons = {
+    object: "objectModeButton",
+    vertex: "vertexModeButton",
+    edge: "edgeModeButton",
+    face: "faceModeButton"
+  };
+
+  Object.entries(buttons).forEach(([key, id]) => {
+    document.getElementById(id)?.classList.toggle(
+      "active",
+      key === mode
+    );
+  });
+
+  callbacks.onEditMode?.(mode);
+}
+
+export function getEditMode() {
+  return currentEditMode;
 }
