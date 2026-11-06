@@ -29,6 +29,7 @@
       <small>3D MODELING STUDIO</small>
     </div>
     <button id="saveButton">保存</button>
+    <button id="loadButton">読込</button>
   </header>
 
   <main id="workspace">
@@ -79,5 +80,11 @@
 </div>
 
 <script type="module" src="js/main.js"></script>
+<input
+  type="file"
+  id="loadFileInput"
+  accept=".json,application/json"
+  hidden
+>
 </body>
 </html>
