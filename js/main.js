@@ -158,6 +158,75 @@ function saveProject() {
       color: "#" + object.material.color.getHexString()
     }))
   };
+  // プロジェクト読み込み
+const loadButton = document.getElementById("loadButton");
+const loadFileInput = document.getElementById("loadFileInput");
+
+loadButton.addEventListener("click", () => {
+  loadFileInput.click();
+});
+
+loadFileInput.addEventListener("change", async () => {
+  const file = loadFileInput.files[0];
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+
+    if (!Array.isArray(data.objects)) {
+      throw new Error("不正なプロジェクトファイルです");
+    }
+
+    // 現在のオブジェクトをすべて削除
+    detachObject();
+    [...getObjects()].forEach(object => {
+      selectObject(object);
+      deleteSelectedObject();
+    });
+
+    // 読み込んだオブジェクトを復元
+    data.objects.forEach(item => {
+      let type;
+
+      if (item.type === "BoxGeometry") type = "cube";
+      if (item.type === "SphereGeometry") type = "sphere";
+      if (item.type === "CylinderGeometry") type = "cylinder";
+
+      if (!type) return;
+
+      const object = addObject(type);
+      if (!object) return;
+
+      object.name = item.name || type;
+      object.position.fromArray(item.position);
+      object.rotation.fromArray(item.rotation);
+      object.scale.fromArray(item.scale);
+
+      if (item.color) {
+        object.material.color.set(item.color);
+      }
+    });
+
+    detachObject();
+
+    const objects = getObjects();
+    if (objects.length > 0) {
+      selectObject(objects[objects.length - 1]);
+      attachObject(getSelectedObject());
+    }
+
+    refreshObjectList();
+    refreshProperties();
+
+    alert("プロジェクトを読み込みました！");
+  } catch (error) {
+    console.error(error);
+    alert("読み込みに失敗しました。JSONファイルを確認してください。");
+  }
+
+  loadFileInput.value = "";
+});
 
   const json = JSON.stringify(data, null, 2);
 
