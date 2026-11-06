@@ -1,4 +1,4 @@
-
+import { setEditMode as setEditorEditMode } from "./edit-mode.js";
 let callbacks = {};
 let selectedMode = "translate";
 
@@ -247,7 +247,7 @@ let currentEditMode = "object";
 
 function setEditMode(mode) {
   currentEditMode = mode;
-
+  setEditorEditMode(mode);
   const buttons = {
     object: "objectModeButton",
     vertex: "vertexModeButton",
