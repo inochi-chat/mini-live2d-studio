@@ -1,4 +1,3 @@
-
 let currentMode = "object";
 
 export function setEditMode(mode) {
