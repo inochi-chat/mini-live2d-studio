@@ -48,6 +48,17 @@ export function initUI(options = {}) {
   // 保存
   saveButton.addEventListener("click", () => {
     callbacks.onSave?.();
+    // 元に戻す・やり直す
+const undoButton = document.getElementById("undoButton");
+const redoButton = document.getElementById("redoButton");
+
+undoButton.addEventListener("click", () => {
+  callbacks.onUndo?.();
+});
+
+redoButton.addEventListener("click", () => {
+  callbacks.onRedo?.();
+});
   });
 
   updateModeButtons();
