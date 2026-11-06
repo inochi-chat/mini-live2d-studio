@@ -30,21 +30,35 @@ import { getEditMode } from "./edit-mode.js";
 
 const canvas = document.getElementById("threeCanvas");
 
-const {
-  scene,
-  camera,
-  renderer,
-  controls
-} = createScene(canvas);
+const { scene, camera, renderer, controls } = createScene(canvas);
 
 initObjects(scene);
 initTools(camera, renderer, scene);
 
 let isDragging = false;
 let vertexHelper = null;
+let vertexDrag = null;
 
 let history = [];
 let historyIndex = -1;
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+
+raycaster.params.Points.threshold = 0.15;
+
+// -------------------------
+// ポインター座標
+// -------------------------
+
+function updatePointer(event) {
+  const rect = canvas.getBoundingClientRect();
+
+  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+  raycaster.setFromCamera(pointer, camera);
+}
 
 // -------------------------
 // 頂点表示
@@ -68,8 +82,7 @@ function showVertices(object) {
 
   if (!object || !object.geometry) return;
 
-  const geometry = object.geometry;
-  const positions = geometry.attributes.position;
+  const positions = object.geometry.attributes.position;
 
   if (!positions) return;
 
@@ -83,25 +96,21 @@ function showVertices(object) {
     );
   }
 
-  const vertexGeometry = new THREE.BufferGeometry();
+  const geometry = new THREE.BufferGeometry();
 
-  vertexGeometry.setAttribute(
+  geometry.setAttribute(
     "position",
     new THREE.Float32BufferAttribute(points, 3)
   );
 
-  const vertexMaterial = new THREE.PointsMaterial({
+  const material = new THREE.PointsMaterial({
     color: 0xffff00,
     size: 0.09,
     sizeAttenuation: true,
     depthTest: false
   });
 
-  vertexHelper = new THREE.Points(
-    vertexGeometry,
-    vertexMaterial
-  );
-
+  vertexHelper = new THREE.Points(geometry, material);
   vertexHelper.renderOrder = 10;
 
   object.add(vertexHelper);
@@ -126,7 +135,6 @@ function updateEditDisplay() {
   }
 }
 
-// 編集モード変更を受け取る
 window.addEventListener("edit-mode-changed", () => {
   updateEditDisplay();
 });
@@ -134,9 +142,6 @@ window.addEventListener("edit-mode-changed", () => {
 // -------------------------
 // オブジェクト選択
 // -------------------------
-
-const raycaster = new THREE.Raycaster();
-const pointer = new THREE.Vector2();
 
 function selectMesh(mesh) {
   if (!mesh) return;
@@ -155,6 +160,127 @@ function selectMesh(mesh) {
   refreshProperties();
 }
 
+// -------------------------
+// 頂点をドラッグ
+// -------------------------
+
+function startVertexDrag(event) {
+  if (getEditMode() !== "vertex") return false;
+  if (!vertexHelper) return false;
+
+  updatePointer(event);
+
+  const hits = raycaster.intersectObject(vertexHelper, false);
+
+  if (hits.length === 0) return false;
+
+  const index = hits[0].index;
+  const object = getSelectedObject();
+
+  if (!object || index === undefined) return false;
+
+  const positions = object.geometry.attributes.position;
+
+  const localPosition = new THREE.Vector3(
+    positions.getX(index),
+    positions.getY(index),
+    positions.getZ(index)
+  );
+
+  object.updateMatrixWorld(true);
+
+  const worldPosition = object.localToWorld(localPosition.clone());
+
+  const normal = new THREE.Vector3();
+  camera.getWorldDirection(normal);
+
+  const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+    normal,
+    worldPosition
+  );
+
+  vertexDrag = {
+    object,
+    index,
+    plane
+  };
+
+  isDragging = true;
+  controls.enabled = false;
+
+  if (canvas.setPointerCapture) {
+    canvas.setPointerCapture(event.pointerId);
+  }
+
+  return true;
+}
+
+function moveVertex(event) {
+  if (!vertexDrag) return;
+
+  updatePointer(event);
+
+  const worldPosition = new THREE.Vector3();
+
+  const hit = raycaster.ray.intersectPlane(
+    vertexDrag.plane,
+    worldPosition
+  );
+
+  if (!hit) return;
+
+  const object = vertexDrag.object;
+  const index = vertexDrag.index;
+
+  object.updateMatrixWorld(true);
+
+  const localPosition = object.worldToLocal(worldPosition.clone());
+
+  const positions = object.geometry.attributes.position;
+
+  positions.setXYZ(
+    index,
+    localPosition.x,
+    localPosition.y,
+    localPosition.z
+  );
+
+  positions.needsUpdate = true;
+
+  object.geometry.computeVertexNormals();
+  object.geometry.computeBoundingBox();
+  object.geometry.computeBoundingSphere();
+
+  if (vertexHelper) {
+    const helperPositions = vertexHelper.geometry.attributes.position;
+
+    helperPositions.setXYZ(
+      index,
+      localPosition.x,
+      localPosition.y,
+      localPosition.z
+    );
+
+    helperPositions.needsUpdate = true;
+  }
+}
+
+function finishVertexDrag() {
+  if (!vertexDrag) return;
+
+  vertexDrag = null;
+
+  isDragging = false;
+  controls.enabled = true;
+
+  saveHistory();
+  refreshProperties();
+}
+
+// -------------------------
+// 画面操作
+// -------------------------
+
 let pointerDownPosition = null;
 
 canvas.addEventListener("pointerdown", (event) => {
@@ -162,10 +288,27 @@ canvas.addEventListener("pointerdown", (event) => {
     x: event.clientX,
     y: event.clientY
   };
+
+  startVertexDrag(event);
+});
+
+canvas.addEventListener("pointermove", (event) => {
+  if (vertexDrag) {
+    moveVertex(event);
+  }
 });
 
 canvas.addEventListener("pointerup", (event) => {
-  if (isDragging || !pointerDownPosition) return;
+  if (vertexDrag) {
+    finishVertexDrag();
+    pointerDownPosition = null;
+    return;
+  }
+
+  if (isDragging || !pointerDownPosition) {
+    pointerDownPosition = null;
+    return;
+  }
 
   const dx = event.clientX - pointerDownPosition.x;
   const dy = event.clientY - pointerDownPosition.y;
@@ -174,20 +317,22 @@ canvas.addEventListener("pointerup", (event) => {
 
   if (Math.sqrt(dx * dx + dy * dy) > 5) return;
 
-  const rect = canvas.getBoundingClientRect();
-
-  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-  raycaster.setFromCamera(pointer, camera);
+  updatePointer(event);
 
   const meshes = getObjects();
-
   const hits = raycaster.intersectObjects(meshes, false);
 
   if (hits.length > 0) {
     selectMesh(hits[0].object);
   }
+});
+
+canvas.addEventListener("pointercancel", () => {
+  if (vertexDrag) {
+    finishVertexDrag();
+  }
+
+  pointerDownPosition = null;
 });
 
 // -------------------------
@@ -201,7 +346,10 @@ function createSnapshot() {
     position: object.position.toArray(),
     rotation: object.rotation.toArray(),
     scale: object.scale.toArray(),
-    color: object.material.color.getHex()
+    color: object.material.color.getHex(),
+    vertices: Array.from(
+      object.geometry.attributes.position.array
+    )
   }));
 }
 
@@ -216,6 +364,21 @@ function saveHistory() {
   }
 
   historyIndex = history.length - 1;
+}
+
+function applyVertexData(object, vertices) {
+  if (!vertices) return;
+
+  const positions = object.geometry.attributes.position;
+
+  if (positions.array.length !== vertices.length) return;
+
+  positions.array.set(vertices);
+  positions.needsUpdate = true;
+
+  object.geometry.computeVertexNormals();
+  object.geometry.computeBoundingBox();
+  object.geometry.computeBoundingSphere();
 }
 
 function restoreHistory(snapshotText) {
@@ -247,6 +410,8 @@ function restoreHistory(snapshotText) {
     object.rotation.fromArray(data.rotation);
     object.scale.fromArray(data.scale);
     object.material.color.setHex(data.color);
+
+    applyVertexData(object, data.vertices);
   });
 
   const objects = getObjects();
@@ -265,7 +430,6 @@ function undoHistory() {
   if (historyIndex <= 0) return;
 
   historyIndex--;
-
   restoreHistory(history[historyIndex]);
 }
 
@@ -273,7 +437,6 @@ function redoHistory() {
   if (historyIndex >= history.length - 1) return;
 
   historyIndex++;
-
   restoreHistory(history[historyIndex]);
 }
 
@@ -333,6 +496,8 @@ function loadProject(data) {
     if (item.color !== undefined) {
       object.material.color.setHex(item.color);
     }
+
+    applyVertexData(object, item.vertices);
   });
 
   const objects = getObjects();
@@ -346,6 +511,7 @@ function loadProject(data) {
 
   history = [];
   historyIndex = -1;
+
   saveHistory();
 }
 
