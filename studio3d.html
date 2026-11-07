@@ -2,7 +2,6 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  
 <script type="importmap">
 {
   "imports": {
@@ -51,8 +50,8 @@
       <div class="tool-row">
         <button id="undoButton">↶ 元に戻す</button>
         <button id="redoButton">↷ やり直す</button>
-　　　　</div>
-      
+      </div>
+
       <div class="tool-row">
         <button id="addButton">＋ 追加</button>
         <button id="moveButton">移動</button>
@@ -61,22 +60,29 @@
       </div>
 
       <div class="tool-row">
-    <button id="objectModeButton" class="active">
-      オブジェクト
-    </button>
+        <button id="objectModeButton" class="active">
+          オブジェクト
+        </button>
 
-    <button id="vertexModeButton">
-      頂点
-    </button>
+        <button id="vertexModeButton">
+          頂点
+        </button>
 
-    <button id="edgeModeButton">
-　　   辺
-　　 </button>
+        <button id="edgeModeButton">
+          辺
+        </button>
 
-    <button id="faceModeButton">
-      面
-    </button>
-  </div>
+        <button id="faceModeButton">
+          面
+        </button>
+      </div>
+
+      <div class="tool-row">
+        <button id="extrudeButton">
+          面を押し出す
+        </button>
+      </div>
+
       <div class="section-title">
         オブジェクト
       </div>
@@ -102,11 +108,13 @@
 </div>
 
 <script type="module" src="js/main.js"></script>
+
 <input
   type="file"
   id="loadFileInput"
   accept=".json,application/json"
   hidden
 >
+
 </body>
 </html>
