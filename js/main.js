@@ -1,27 +1,18 @@
+
 import * as THREE from "three";
 import { createScene } from "./scene.js";
 
 import {
-  initObjects,
-  addObject,
-  selectObject,
-  getSelectedObject,
-  getObjects,
-  deleteSelectedObject,
-  duplicateSelectedObject
+  initObjects, addObject, selectObject, getSelectedObject,
+  getObjects, deleteSelectedObject, duplicateSelectedObject
 } from "./objects.js";
 
 import {
-  initTools,
-  attachObject,
-  detachObject,
-  setToolMode
+  initTools, attachObject, detachObject, setToolMode
 } from "./tools.js";
 
 import {
-  initUI,
-  refreshObjectList,
-  refreshProperties
+  initUI, refreshObjectList, refreshProperties
 } from "./ui.js";
 
 import { getEditMode } from "./edit-mode.js";
@@ -33,13 +24,10 @@ initObjects(scene);
 initTools(camera, renderer, scene);
 
 let isDragging = false;
-
 let vertexHelper = null;
 let edgeHelper = null;
-
 let vertexDrag = null;
 let edgeDrag = null;
-
 let pendingVertex = null;
 let pendingEdge = null;
 let pointerDownPosition = null;
@@ -56,6 +44,42 @@ const pointer = new THREE.Vector2();
 
 raycaster.params.Points.threshold = 0.5;
 raycaster.params.Line.threshold = 0.5;
+
+// -------------------------
+// 画面上の診断パネル
+// -------------------------
+
+const debugPanel = document.createElement("div");
+
+debugPanel.style.cssText = `
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 99999;
+  background: rgba(15, 15, 30, 0.94);
+  color: white;
+  padding: 12px;
+  border: 1px solid #aaa;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.7;
+  pointer-events: none;
+  white-space: pre-line;
+  max-width: 190px;
+`;
+
+document.body.appendChild(debugPanel);
+
+function updateDebugPanel(message = "待機中") {
+  const selected = getSelectedObject();
+
+  debugPanel.textContent =
+    "🔧 編集診断\n" +
+    "モード：" + getEditMode() + "\n" +
+    "選択：" + (selected ? selected.name : "なし") + "\n" +
+    "辺の本数：" + edgeRecords.length + "\n" +
+    "状態：" + message;
+}
 
 // -------------------------
 // ポインター座標
@@ -190,39 +214,33 @@ function findMatchingVertices(object, point) {
 function updateEdgeColors() {
   if (!edgeHelper) return;
 
-  const colors = [];
-
-  for (let i = 0; i < edgeRecords.length; i++) {
-    const color = selectedEdgeIndices.has(i)
-      ? [1, 0.25, 0]
-      : [1, 0.85, 0];
-
-    colors.push(...color, ...color);
-  }
-
-  edgeHelper.geometry.setAttribute(
-    "color",
-    new THREE.Float32BufferAttribute(colors, 3)
+  edgeHelper.material.color.set(
+    selectedEdgeIndices.size > 0 ? 0xff6600 : 0xffff00
   );
-
-  edgeHelper.geometry.attributes.color.needsUpdate = true;
 }
 
 // -------------------------
 // 辺表示
-// 立方体の角から12本を直接生成
 // -------------------------
 
 function showEdges(object) {
   clearEdgeHelper();
+  updateDebugPanel("辺を生成しています");
 
-  if (!object?.geometry) return;
+  if (!object?.geometry) {
+    updateDebugPanel("形状がありません");
+    return;
+  }
 
   const geometry = object.geometry;
   geometry.computeBoundingBox();
 
   const bounds = geometry.boundingBox;
-  if (!bounds) return;
+
+  if (!bounds) {
+    updateDebugPanel("境界情報がありません");
+    return;
+  }
 
   const min = bounds.min;
   const max = bounds.max;
@@ -241,7 +259,6 @@ function showEdges(object) {
   const records = [];
   const linePositions = [];
 
-  // 8つの角の組み合わせから12本の辺を作る
   for (let i = 0; i < corners.length; i++) {
     for (let j = i + 1; j < corners.length; j++) {
       const a = corners[i];
@@ -273,9 +290,12 @@ function showEdges(object) {
     }
   }
 
-  if (!records.length) return;
-
   edgeRecords = records;
+
+  if (!records.length) {
+    updateDebugPanel("辺を生成できませんでした");
+    return;
+  }
 
   const lineGeometry = new THREE.BufferGeometry();
 
@@ -284,25 +304,10 @@ function showEdges(object) {
     new THREE.Float32BufferAttribute(linePositions, 3)
   );
 
-  // 色属性を最初から用意する
-  const colors = [];
-
-  for (let i = 0; i < records.length; i++) {
-    colors.push(
-      1, 0.85, 0,
-      1, 0.85, 0
-    );
-  }
-
-  lineGeometry.setAttribute(
-    "color",
-    new THREE.Float32BufferAttribute(colors, 3)
-  );
-
   const material = new THREE.LineBasicMaterial({
-    vertexColors: true,
+    color: 0xffff00,
     depthTest: false,
-    linewidth: 2
+    depthWrite: false
   });
 
   edgeHelper = new THREE.LineSegments(
@@ -310,10 +315,11 @@ function showEdges(object) {
     material
   );
 
-  edgeHelper.renderOrder = 100;
+  edgeHelper.renderOrder = 999;
   object.add(edgeHelper);
 
   updateEdgeColors();
+  updateDebugPanel("辺を表示しています");
 }
 
 // -------------------------
@@ -343,11 +349,15 @@ function updateEditDisplay() {
       showEdges(selected);
     }
   }
+
+  updateDebugPanel(
+    mode === "edge"
+      ? "辺の表示を確認中"
+      : "編集モード切り替え済み"
+  );
 }
 
-window.addEventListener("edit-mode-changed", () => {
-  updateEditDisplay();
-});
+window.addEventListener("edit-mode-changed", updateEditDisplay);
 
 // -------------------------
 // オブジェクト選択
@@ -368,7 +378,6 @@ function selectMesh(mesh) {
   }
 
   updateEditDisplay();
-
   refreshObjectList();
   refreshProperties();
 }
@@ -422,12 +431,13 @@ function getEdgeHit(event) {
 
   if (!hits.length) return null;
 
-  // LineSegmentsのindexは辺番号
-  const index = hits[0].index;
+  const vertexIndex = hits[0].index;
 
-  if (index === undefined || index === null) return null;
+  if (vertexIndex === undefined || vertexIndex === null) {
+    return null;
+  }
 
-  return index;
+  return Math.floor(vertexIndex / 2);
 }
 
 // -------------------------
@@ -1081,6 +1091,7 @@ initUI({
 
     refreshObjectList();
     refreshProperties();
+    updateDebugPanel("オブジェクトを削除しました");
 
     saveHistory();
   },
@@ -1149,5 +1160,5 @@ if (firstObject) {
 
 refreshObjectList();
 refreshProperties();
-
 saveHistory();
+updateDebugPanel("準備完了");
