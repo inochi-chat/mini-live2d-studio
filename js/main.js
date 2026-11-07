@@ -328,7 +328,6 @@ function showEdges(object) {
 
 // -------------------------
 // 面表示・色
-// 立方体・球体・円柱に対応
 // -------------------------
 
 function updateFaceColors() {
@@ -368,7 +367,6 @@ function showFaces(object) {
 
   const facePositions = [];
 
-  // 立方体は6面をそれぞれ1つの面として扱う
   if (
     geometry.type === "BoxGeometry" &&
     indexAttribute &&
@@ -398,12 +396,10 @@ function showFaces(object) {
         faceIndex
       });
 
-      // 立方体の1面は三角形2枚
       faceTriangleToRecord.push(faceRecords.length - 1);
       faceTriangleToRecord.push(faceRecords.length - 1);
     });
   } else {
-    // 球体・円柱などは三角形ごとに面を作る
     const count = indexAttribute
       ? indexAttribute.count
       : positions.count;
@@ -950,7 +946,6 @@ function moveFaces(event) {
   object.geometry.computeBoundingBox();
   object.geometry.computeBoundingSphere();
 
-  // 面ヘルパーも更新
   const helperPositions = faceHelper.geometry.attributes.position;
   let offset = 0;
 
@@ -967,6 +962,177 @@ function moveFaces(event) {
 
   helperPositions.needsUpdate = true;
   faceHelper.geometry.computeBoundingSphere();
+}
+
+// -------------------------
+// 面の押し出し
+// -------------------------
+
+function extrudeSelectedFaces() {
+  const object = getSelectedObject();
+
+  if (!object || getEditMode() !== "face") {
+    alert("面モードで面を選択してください。");
+    return;
+  }
+
+  if (selectedFaceIndices.size === 0) {
+    alert("押し出す面を選択してください。");
+    return;
+  }
+
+  const geometry = object.geometry;
+  const positions = geometry.attributes.position;
+  const indexAttribute = geometry.index;
+
+  const count = indexAttribute
+    ? indexAttribute.count
+    : positions.count;
+
+  const newPositions = [];
+
+  function getPoint(index) {
+    return new THREE.Vector3(
+      positions.getX(index),
+      positions.getY(index),
+      positions.getZ(index)
+    );
+  }
+
+  function addTriangle(a, b, c) {
+    newPositions.push(
+      a.x, a.y, a.z,
+      b.x, b.y, b.z,
+      c.x, c.y, c.z
+    );
+  }
+
+  function addSide(a, b, normal) {
+    const a2 = a.clone().add(normal);
+    const b2 = b.clone().add(normal);
+
+    addTriangle(a, b, b2);
+    addTriangle(a, b2, a2);
+  }
+
+  const offsets = new Map();
+
+  selectedFaceIndices.forEach((faceIndex) => {
+    const face = faceRecords[faceIndex];
+    if (!face || face.vertices.length < 3) return;
+
+    const a = getPoint(face.vertices[0]);
+    const b = getPoint(face.vertices[1]);
+    const c = getPoint(face.vertices[2]);
+
+    const normal = new THREE.Vector3()
+      .subVectors(b, a)
+      .cross(new THREE.Vector3().subVectors(c, a))
+      .normalize();
+
+    offsets.set(faceIndex, normal.multiplyScalar(0.5));
+  });
+
+  if (!offsets.size) {
+    alert("押し出せる面がありません。");
+    return;
+  }
+
+  // 元の面を再構築
+  for (let i = 0; i + 2 < count; i += 3) {
+    const triangleIndex = i / 3;
+    const recordIndex = faceTriangleToRecord[triangleIndex];
+
+    const aIndex = indexAttribute ? indexAttribute.getX(i) : i;
+    const bIndex = indexAttribute ? indexAttribute.getX(i + 1) : i + 1;
+    const cIndex = indexAttribute ? indexAttribute.getX(i + 2) : i + 2;
+
+    const a = getPoint(aIndex);
+    const b = getPoint(bIndex);
+    const c = getPoint(cIndex);
+
+    const offset = offsets.get(recordIndex);
+
+    if (offset) {
+      addTriangle(
+        a.clone().add(offset),
+        b.clone().add(offset),
+        c.clone().add(offset)
+      );
+    } else {
+      addTriangle(a, b, c);
+    }
+  }
+
+  // 押し出した面の側面を作成
+  offsets.forEach((normal, faceIndex) => {
+    const face = faceRecords[faceIndex];
+    const edgeCounts = new Map();
+    const edgePoints = new Map();
+
+    for (let i = 0; i + 2 < face.vertices.length; i += 3) {
+      const triangle = [
+        face.vertices[i],
+        face.vertices[i + 1],
+        face.vertices[i + 2]
+      ];
+
+      for (let j = 0; j < 3; j++) {
+        const aIndex = triangle[j];
+        const bIndex = triangle[(j + 1) % 3];
+
+        const key = [aIndex, bIndex]
+          .sort((a, b) => a - b)
+          .join("_");
+
+        edgeCounts.set(key, (edgeCounts.get(key) || 0) + 1);
+        edgePoints.set(key, [aIndex, bIndex]);
+      }
+    }
+
+    edgeCounts.forEach((edgeCount, key) => {
+      if (edgeCount !== 1) return;
+
+      const [aIndex, bIndex] = edgePoints.get(key);
+
+      addSide(
+        getPoint(aIndex),
+        getPoint(bIndex),
+        normal
+      );
+    });
+  });
+
+  const newGeometry = new THREE.BufferGeometry();
+
+  newGeometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(newPositions, 3)
+  );
+
+  newGeometry.computeVertexNormals();
+  newGeometry.computeBoundingBox();
+  newGeometry.computeBoundingSphere();
+
+  geometry.dispose();
+  object.geometry = newGeometry;
+
+  if (Array.isArray(object.material)) {
+    object.material.forEach(material => {
+      material.side = THREE.DoubleSide;
+    });
+  } else {
+    object.material.side = THREE.DoubleSide;
+  }
+
+  selectedFaceIndices.clear();
+
+  updateEditDisplay();
+  refreshObjectList();
+  refreshProperties();
+
+  saveHistory();
+  updateDebugPanel("面を押し出しました");
 }
 
 // -------------------------
@@ -1216,6 +1382,30 @@ function saveHistory() {
   historyIndex = history.length - 1;
 }
 
+// -------------------------
+// カスタム形状の復元
+// -------------------------
+
+function restoreCustomGeometry(object, data) {
+  if (data.type !== "BufferGeometry") return;
+
+  object.geometry.dispose();
+
+  const geometry = new THREE.BufferGeometry();
+
+  geometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(data.vertices, 3)
+  );
+
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+
+  object.geometry = geometry;
+  object.material.side = THREE.DoubleSide;
+}
+
 function applyVertexData(object, vertices) {
   if (!vertices) return;
 
@@ -1230,6 +1420,10 @@ function applyVertexData(object, vertices) {
   object.geometry.computeBoundingBox();
   object.geometry.computeBoundingSphere();
 }
+
+// -------------------------
+// 全オブジェクト削除
+// -------------------------
 
 function clearAllObjects() {
   detachObject();
@@ -1248,6 +1442,10 @@ function clearAllObjects() {
   });
 }
 
+// -------------------------
+// 履歴復元
+// -------------------------
+
 function restoreHistory(snapshotText) {
   const snapshot = JSON.parse(snapshotText);
 
@@ -1261,6 +1459,8 @@ function restoreHistory(snapshotText) {
 
     const object = addObject(type);
     if (!object) return;
+
+    restoreCustomGeometry(object, data);
 
     object.name = data.name;
     object.position.fromArray(data.position);
@@ -1334,6 +1534,8 @@ function loadProject(data) {
 
     const object = addObject(type);
     if (!object) return;
+
+    restoreCustomGeometry(object, item);
 
     object.name = item.name;
     object.position.fromArray(item.position);
@@ -1462,6 +1664,16 @@ initUI({
     redoHistory();
   }
 });
+
+// -------------------------
+// 押し出しボタン
+// -------------------------
+
+const extrudeButton = document.getElementById("extrudeButton");
+
+if (extrudeButton) {
+  extrudeButton.addEventListener("click", extrudeSelectedFaces);
+}
 
 // -------------------------
 // TransformControls
