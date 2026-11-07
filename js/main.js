@@ -24,17 +24,26 @@ initObjects(scene);
 initTools(camera, renderer, scene);
 
 let isDragging = false;
+
 let vertexHelper = null;
 let edgeHelper = null;
+let faceHelper = null;
+
 let vertexDrag = null;
 let edgeDrag = null;
+let faceDrag = null;
+
 let pendingVertex = null;
 let pendingEdge = null;
+let pendingFace = null;
 let pointerDownPosition = null;
 
 let selectedVertexIndices = new Set();
 let selectedEdgeIndices = new Set();
+let selectedFaceIndices = new Set();
+
 let edgeRecords = [];
+let faceRecords = [];
 
 let history = [];
 let historyIndex = -1;
@@ -46,26 +55,26 @@ raycaster.params.Points.threshold = 0.5;
 raycaster.params.Line.threshold = 0.5;
 
 // -------------------------
-// 画面上の診断パネル
+// 診断パネル
 // -------------------------
 
 const debugPanel = document.createElement("div");
 
 debugPanel.style.cssText = `
-  position: fixed;
-  top: 12px;
-  right: 12px;
-  z-index: 99999;
-  background: rgba(15, 15, 30, 0.94);
-  color: white;
-  padding: 12px;
-  border: 1px solid #aaa;
-  border-radius: 10px;
-  font-size: 13px;
-  line-height: 1.7;
-  pointer-events: none;
-  white-space: pre-line;
-  max-width: 190px;
+  position:fixed;
+  top:12px;
+  right:12px;
+  z-index:99999;
+  background:rgba(15,15,30,.94);
+  color:white;
+  padding:12px;
+  border:1px solid #aaa;
+  border-radius:10px;
+  font-size:13px;
+  line-height:1.7;
+  pointer-events:none;
+  white-space:pre-line;
+  max-width:190px;
 `;
 
 document.body.appendChild(debugPanel);
@@ -77,12 +86,13 @@ function updateDebugPanel(message = "待機中") {
     "🔧 編集診断\n" +
     "モード：" + getEditMode() + "\n" +
     "選択：" + (selected ? selected.name : "なし") + "\n" +
-    "辺の本数：" + edgeRecords.length + "\n" +
+    "辺：" + edgeRecords.length + "\n" +
+    "面：" + faceRecords.length + "\n" +
     "状態：" + message;
 }
 
 // -------------------------
-// ポインター座標
+// ポインター
 // -------------------------
 
 function updatePointer(event) {
@@ -100,7 +110,6 @@ function updatePointer(event) {
 
 function clearVertexHelper() {
   if (!vertexHelper) return;
-
   vertexHelper.parent?.remove(vertexHelper);
   vertexHelper.geometry.dispose();
   vertexHelper.material.dispose();
@@ -109,12 +118,20 @@ function clearVertexHelper() {
 
 function clearEdgeHelper() {
   if (!edgeHelper) return;
-
   edgeHelper.parent?.remove(edgeHelper);
   edgeHelper.geometry.dispose();
   edgeHelper.material.dispose();
   edgeHelper = null;
   edgeRecords = [];
+}
+
+function clearFaceHelper() {
+  if (!faceHelper) return;
+  faceHelper.parent?.remove(faceHelper);
+  faceHelper.geometry.dispose();
+  faceHelper.material.dispose();
+  faceHelper = null;
+  faceRecords = [];
 }
 
 // -------------------------
@@ -128,11 +145,11 @@ function updateVertexColors() {
   const colors = [];
 
   for (let i = 0; i < positions.count; i++) {
-    if (selectedVertexIndices.has(i)) {
-      colors.push(1, 0.35, 0);
-    } else {
-      colors.push(1, 1, 0);
-    }
+    const color = selectedVertexIndices.has(i)
+      ? new THREE.Color(0xff6600)
+      : new THREE.Color(0xffff00);
+
+    colors.push(color.r, color.g, color.b);
   }
 
   vertexHelper.geometry.setAttribute(
@@ -144,11 +161,7 @@ function updateVertexColors() {
 function showVertices(object) {
   clearVertexHelper();
 
-  if (!object?.geometry) return;
-
   const positions = object.geometry.attributes.position;
-  if (!positions) return;
-
   const points = [];
 
   for (let i = 0; i < positions.count; i++) {
@@ -182,23 +195,18 @@ function showVertices(object) {
 }
 
 // -------------------------
-// 頂点対応検索
+// 頂点検索
 // -------------------------
 
 function findMatchingVertices(object, point) {
   const positions = object.geometry.attributes.position;
   const matches = [];
-  const tolerance = 0.0001;
 
   for (let i = 0; i < positions.count; i++) {
-    const dx = positions.getX(i) - point.x;
-    const dy = positions.getY(i) - point.y;
-    const dz = positions.getZ(i) - point.z;
-
     if (
-      Math.abs(dx) < tolerance &&
-      Math.abs(dy) < tolerance &&
-      Math.abs(dz) < tolerance
+      Math.abs(positions.getX(i) - point.x) < 0.0001 &&
+      Math.abs(positions.getY(i) - point.y) < 0.0001 &&
+      Math.abs(positions.getZ(i) - point.z) < 0.0001
     ) {
       matches.push(i);
     }
@@ -208,7 +216,7 @@ function findMatchingVertices(object, point) {
 }
 
 // -------------------------
-// 辺の色更新
+// 辺表示・色
 // -------------------------
 
 function updateEdgeColors() {
@@ -217,13 +225,10 @@ function updateEdgeColors() {
   const colors = [];
 
   for (let i = 0; i < edgeRecords.length; i++) {
-    const selected = selectedEdgeIndices.has(i);
+    const color = new THREE.Color(
+      selectedEdgeIndices.has(i) ? 0xff6600 : 0xffff00
+    );
 
-    const color = selected
-      ? new THREE.Color(0xff6600)
-      : new THREE.Color(0xffff00);
-
-    // 1本の辺の両端に同じ色を設定
     colors.push(
       color.r, color.g, color.b,
       color.r, color.g, color.b
@@ -236,28 +241,14 @@ function updateEdgeColors() {
   );
 }
 
-// -------------------------
-// 辺表示
-// -------------------------
-
 function showEdges(object) {
   clearEdgeHelper();
-  updateDebugPanel("辺を生成しています");
-
-  if (!object?.geometry) {
-    updateDebugPanel("形状がありません");
-    return;
-  }
 
   const geometry = object.geometry;
   geometry.computeBoundingBox();
 
   const bounds = geometry.boundingBox;
-
-  if (!bounds) {
-    updateDebugPanel("境界情報がありません");
-    return;
-  }
+  if (!bounds) return;
 
   const min = bounds.min;
   const max = bounds.max;
@@ -273,70 +264,151 @@ function showEdges(object) {
     new THREE.Vector3(max.x, max.y, max.z)
   ];
 
-  const records = [];
-  const linePositions = [];
+  const positions = [];
 
   for (let i = 0; i < corners.length; i++) {
     for (let j = i + 1; j < corners.length; j++) {
       const a = corners[i];
       const b = corners[j];
 
-      const differentAxes =
+      const axes =
         Number(Math.abs(a.x - b.x) > 0.0001) +
         Number(Math.abs(a.y - b.y) > 0.0001) +
         Number(Math.abs(a.z - b.z) > 0.0001);
 
-      if (differentAxes !== 1) continue;
+      if (axes !== 1) continue;
 
       const verticesA = findMatchingVertices(object, a);
       const verticesB = findMatchingVertices(object, b);
 
       if (!verticesA.length || !verticesB.length) continue;
 
-      records.push({
+      edgeRecords.push({
         a: a.clone(),
         b: b.clone(),
         verticesA,
         verticesB
       });
 
-      linePositions.push(
+      positions.push(
         a.x, a.y, a.z,
         b.x, b.y, b.z
       );
     }
   }
 
-  edgeRecords = records;
-
-  if (!records.length) {
-    updateDebugPanel("辺を生成できませんでした");
-    return;
-  }
+  if (!edgeRecords.length) return;
 
   const lineGeometry = new THREE.BufferGeometry();
 
   lineGeometry.setAttribute(
     "position",
-    new THREE.Float32BufferAttribute(linePositions, 3)
+    new THREE.Float32BufferAttribute(positions, 3)
   );
 
   const material = new THREE.LineBasicMaterial({
-  color: 0xffffff,
-  vertexColors: true,
-  depthTest: false,
-  depthWrite: false
-　});
-  edgeHelper = new THREE.LineSegments(
-    lineGeometry,
-    material
-  );
+    color: 0xffffff,
+    vertexColors: true,
+    depthTest: false,
+    depthWrite: false
+  });
 
+  edgeHelper = new THREE.LineSegments(lineGeometry, material);
   edgeHelper.renderOrder = 999;
   object.add(edgeHelper);
 
   updateEdgeColors();
-  updateDebugPanel("辺を表示しています");
+}
+
+// -------------------------
+// 面表示・色
+// 立方体の6面に対応
+// -------------------------
+
+function updateFaceColors() {
+  if (!faceHelper) return;
+
+  const colors = [];
+
+  for (let i = 0; i < faceRecords.length; i++) {
+    const color = new THREE.Color(
+      selectedFaceIndices.has(i)
+        ? 0xff6600
+        : 0xffff00
+    );
+
+    // 1面は三角形2枚、頂点6個
+    for (let j = 0; j < 6; j++) {
+      colors.push(color.r, color.g, color.b);
+    }
+  }
+
+  faceHelper.geometry.setAttribute(
+    "color",
+    new THREE.Float32BufferAttribute(colors, 3)
+  );
+}
+
+function showFaces(object) {
+  clearFaceHelper();
+
+  const geometry = object.geometry;
+  const positions = geometry.attributes.position;
+
+  if (!positions || !geometry.groups.length) {
+    updateDebugPanel("この形状の面表示には未対応です");
+    return;
+  }
+
+  // BoxGeometryは6グループ、各グループ6頂点
+  if (geometry.type !== "BoxGeometry" || geometry.groups.length !== 6) {
+    updateDebugPanel("現在は立方体の面編集に対応");
+    return;
+  }
+
+  const facePositions = [];
+
+  geometry.groups.forEach((group, faceIndex) => {
+    const indices = [];
+
+    for (let i = group.start; i < group.start + group.count; i++) {
+      indices.push(i);
+      facePositions.push(
+        positions.getX(i),
+        positions.getY(i),
+        positions.getZ(i)
+      );
+    }
+
+    faceRecords.push({
+      vertices: indices,
+      faceIndex
+    });
+  });
+
+  const faceGeometry = new THREE.BufferGeometry();
+
+  faceGeometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(facePositions, 3)
+  );
+
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.35,
+    side: THREE.DoubleSide,
+    depthTest: false,
+    depthWrite: false
+  });
+
+  faceHelper = new THREE.Mesh(faceGeometry, material);
+  faceHelper.renderOrder = 998;
+  object.add(faceHelper);
+
+  updateFaceColors();
+  updateDebugPanel("立方体の6面を表示");
 }
 
 // -------------------------
@@ -349,9 +421,11 @@ function updateEditDisplay() {
 
   clearVertexHelper();
   clearEdgeHelper();
+  clearFaceHelper();
 
   selectedVertexIndices.clear();
   selectedEdgeIndices.clear();
+  selectedFaceIndices.clear();
 
   if (mode === "object") {
     if (selected) attachObject(selected);
@@ -365,13 +439,13 @@ function updateEditDisplay() {
     if (mode === "edge" && selected) {
       showEdges(selected);
     }
+
+    if (mode === "face" && selected) {
+      showFaces(selected);
+    }
   }
 
-  updateDebugPanel(
-    mode === "edge"
-      ? "辺の表示を確認中"
-      : "編集モード切り替え済み"
-  );
+  updateDebugPanel("編集モード切り替え済み");
 }
 
 window.addEventListener("edit-mode-changed", updateEditDisplay);
@@ -387,6 +461,7 @@ function selectMesh(mesh) {
 
   selectedVertexIndices.clear();
   selectedEdgeIndices.clear();
+  selectedFaceIndices.clear();
 
   if (getEditMode() === "object") {
     attachObject(mesh);
@@ -400,7 +475,7 @@ function selectMesh(mesh) {
 }
 
 // -------------------------
-// 頂点・辺選択
+// 選択切り替え
 // -------------------------
 
 function toggleVertexSelection(index) {
@@ -423,6 +498,16 @@ function toggleEdgeSelection(index) {
   updateEdgeColors();
 }
 
+function toggleFaceSelection(index) {
+  if (selectedFaceIndices.has(index)) {
+    selectedFaceIndices.delete(index);
+  } else {
+    selectedFaceIndices.add(index);
+  }
+
+  updateFaceColors();
+}
+
 // -------------------------
 // ヒット判定
 // -------------------------
@@ -434,9 +519,7 @@ function getVertexHit(event) {
 
   const hits = raycaster.intersectObject(vertexHelper, false);
 
-  if (!hits.length) return null;
-
-  return hits[0].index;
+  return hits.length ? hits[0].index : null;
 }
 
 function getEdgeHit(event) {
@@ -446,15 +529,50 @@ function getEdgeHit(event) {
 
   const hits = raycaster.intersectObject(edgeHelper, false);
 
-  if (!hits.length) return null;
+  if (!hits.length || hits[0].index == null) return null;
 
-  const vertexIndex = hits[0].index;
+  return Math.floor(hits[0].index / 2);
+}
 
-  if (vertexIndex === undefined || vertexIndex === null) {
-    return null;
-  }
+function getFaceHit(event) {
+  if (!faceHelper) return null;
 
-  return Math.floor(vertexIndex / 2);
+  updatePointer(event);
+
+  const hits = raycaster.intersectObject(faceHelper, false);
+
+  if (!hits.length || hits[0].faceIndex == null) return null;
+
+  return Math.floor(hits[0].faceIndex / 2);
+}
+
+// -------------------------
+// ドラッグ共通
+// -------------------------
+
+function createDragPlane(event, localPosition, object) {
+  object.updateMatrixWorld(true);
+
+  const worldPosition = object.localToWorld(localPosition.clone());
+  const normal = new THREE.Vector3();
+
+  camera.getWorldDirection(normal);
+
+  const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+    normal,
+    worldPosition
+  );
+
+  updatePointer(event);
+
+  const startPoint = new THREE.Vector3();
+
+  if (!raycaster.ray.intersectPlane(plane, startPoint)) return null;
+
+  return {
+    plane,
+    startLocal: object.worldToLocal(startPoint.clone())
+  };
 }
 
 // -------------------------
@@ -470,48 +588,32 @@ function beginVertexDrag(event) {
   const positions = object.geometry.attributes.position;
   const index = pendingVertex.index;
 
-  const localPosition = new THREE.Vector3(
+  const local = new THREE.Vector3(
     positions.getX(index),
     positions.getY(index),
     positions.getZ(index)
   );
 
-  object.updateMatrixWorld(true);
+  const drag = createDragPlane(event, local, object);
+  if (!drag) return;
 
-  const worldPosition = object.localToWorld(localPosition.clone());
-
-  const normal = new THREE.Vector3();
-  camera.getWorldDirection(normal);
-
-  const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-    normal,
-    worldPosition
-  );
-
-  updatePointer(event);
-
-  const startPoint = new THREE.Vector3();
-
-  if (!raycaster.ray.intersectPlane(plane, startPoint)) return;
-
-  const startLocal = object.worldToLocal(startPoint.clone());
   const originalPositions = new Map();
 
-  selectedVertexIndices.forEach((vertexIndex) => {
+  selectedVertexIndices.forEach((i) => {
     originalPositions.set(
-      vertexIndex,
+      i,
       new THREE.Vector3(
-        positions.getX(vertexIndex),
-        positions.getY(vertexIndex),
-        positions.getZ(vertexIndex)
+        positions.getX(i),
+        positions.getY(i),
+        positions.getZ(i)
       )
     );
   });
 
   vertexDrag = {
     object,
-    plane,
-    startLocal,
+    plane: drag.plane,
+    startLocal: drag.startLocal,
     originalPositions
   };
 
@@ -528,18 +630,15 @@ function moveVertices(event) {
 
   updatePointer(event);
 
-  const currentPoint = new THREE.Vector3();
+  const point = new THREE.Vector3();
 
-  if (!raycaster.ray.intersectPlane(
-    vertexDrag.plane,
-    currentPoint
-  )) return;
+  if (!raycaster.ray.intersectPlane(vertexDrag.plane, point)) return;
 
   const object = vertexDrag.object;
   object.updateMatrixWorld(true);
 
-  const currentLocal = object.worldToLocal(currentPoint.clone());
-  const delta = currentLocal.sub(vertexDrag.startLocal);
+  const current = object.worldToLocal(point.clone());
+  const delta = current.sub(vertexDrag.startLocal);
 
   const positions = object.geometry.attributes.position;
 
@@ -553,7 +652,6 @@ function moveVertices(event) {
   });
 
   positions.needsUpdate = true;
-
   object.geometry.computeVertexNormals();
   object.geometry.computeBoundingBox();
   object.geometry.computeBoundingSphere();
@@ -588,26 +686,10 @@ function beginEdgeDrag(event) {
   if (!record) return;
 
   const midpoint = record.a.clone().add(record.b).multiplyScalar(0.5);
+  const drag = createDragPlane(event, midpoint, object);
 
-  object.updateMatrixWorld(true);
+  if (!drag) return;
 
-  const worldPosition = object.localToWorld(midpoint.clone());
-
-  const normal = new THREE.Vector3();
-  camera.getWorldDirection(normal);
-
-  const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-    normal,
-    worldPosition
-  );
-
-  updatePointer(event);
-
-  const startPoint = new THREE.Vector3();
-
-  if (!raycaster.ray.intersectPlane(plane, startPoint)) return;
-
-  const startLocal = object.worldToLocal(startPoint.clone());
   const positions = object.geometry.attributes.position;
   const originalPositions = new Map();
 
@@ -615,15 +697,15 @@ function beginEdgeDrag(event) {
     const edge = edgeRecords[edgeIndex];
     if (!edge) return;
 
-    [...edge.verticesA, ...edge.verticesB].forEach((vertexIndex) => {
-      if (originalPositions.has(vertexIndex)) return;
+    [...edge.verticesA, ...edge.verticesB].forEach((index) => {
+      if (originalPositions.has(index)) return;
 
       originalPositions.set(
-        vertexIndex,
+        index,
         new THREE.Vector3(
-          positions.getX(vertexIndex),
-          positions.getY(vertexIndex),
-          positions.getZ(vertexIndex)
+          positions.getX(index),
+          positions.getY(index),
+          positions.getZ(index)
         )
       );
     });
@@ -633,8 +715,8 @@ function beginEdgeDrag(event) {
 
   edgeDrag = {
     object,
-    plane,
-    startLocal,
+    plane: drag.plane,
+    startLocal: drag.startLocal,
     originalPositions
   };
 
@@ -649,15 +731,15 @@ function beginEdgeDrag(event) {
 function averageVertexPosition(positions, indices) {
   const result = new THREE.Vector3();
 
-  if (!indices.length) return result;
-
   for (const index of indices) {
     result.x += positions.getX(index);
     result.y += positions.getY(index);
     result.z += positions.getZ(index);
   }
 
-  return result.multiplyScalar(1 / indices.length);
+  return indices.length
+    ? result.multiplyScalar(1 / indices.length)
+    : result;
 }
 
 function moveEdges(event) {
@@ -665,18 +747,15 @@ function moveEdges(event) {
 
   updatePointer(event);
 
-  const currentPoint = new THREE.Vector3();
+  const point = new THREE.Vector3();
 
-  if (!raycaster.ray.intersectPlane(
-    edgeDrag.plane,
-    currentPoint
-  )) return;
+  if (!raycaster.ray.intersectPlane(edgeDrag.plane, point)) return;
 
   const object = edgeDrag.object;
   object.updateMatrixWorld(true);
 
-  const currentLocal = object.worldToLocal(currentPoint.clone());
-  const delta = currentLocal.sub(edgeDrag.startLocal);
+  const current = object.worldToLocal(point.clone());
+  const delta = current.sub(edgeDrag.startLocal);
 
   const positions = object.geometry.attributes.position;
 
@@ -690,7 +769,6 @@ function moveEdges(event) {
   });
 
   positions.needsUpdate = true;
-
   object.geometry.computeVertexNormals();
   object.geometry.computeBoundingBox();
   object.geometry.computeBoundingSphere();
@@ -713,13 +791,129 @@ function moveEdges(event) {
 }
 
 // -------------------------
+// 面ドラッグ開始
+// -------------------------
+
+function beginFaceDrag(event) {
+  if (!pendingFace) return;
+
+  const object = getSelectedObject();
+  if (!object) return;
+
+  const record = faceRecords[pendingFace.index];
+  if (!record) return;
+
+  const positions = object.geometry.attributes.position;
+  const center = new THREE.Vector3();
+
+  record.vertices.forEach((index) => {
+    center.x += positions.getX(index);
+    center.y += positions.getY(index);
+    center.z += positions.getZ(index);
+  });
+
+  center.multiplyScalar(1 / record.vertices.length);
+
+  const drag = createDragPlane(event, center, object);
+  if (!drag) return;
+
+  const originalPositions = new Map();
+
+  selectedFaceIndices.forEach((faceIndex) => {
+    const face = faceRecords[faceIndex];
+    if (!face) return;
+
+    face.vertices.forEach((index) => {
+      if (originalPositions.has(index)) return;
+
+      originalPositions.set(
+        index,
+        new THREE.Vector3(
+          positions.getX(index),
+          positions.getY(index),
+          positions.getZ(index)
+        )
+      );
+    });
+  });
+
+  if (!originalPositions.size) return;
+
+  faceDrag = {
+    object,
+    plane: drag.plane,
+    startLocal: drag.startLocal,
+    originalPositions
+  };
+
+  isDragging = true;
+  controls.enabled = false;
+}
+
+// -------------------------
+// 面移動
+// -------------------------
+
+function moveFaces(event) {
+  if (!faceDrag || !faceHelper) return;
+
+  updatePointer(event);
+
+  const point = new THREE.Vector3();
+
+  if (!raycaster.ray.intersectPlane(faceDrag.plane, point)) return;
+
+  const object = faceDrag.object;
+  object.updateMatrixWorld(true);
+
+  const current = object.worldToLocal(point.clone());
+  const delta = current.sub(faceDrag.startLocal);
+
+  const positions = object.geometry.attributes.position;
+
+  faceDrag.originalPositions.forEach((original, index) => {
+    positions.setXYZ(
+      index,
+      original.x + delta.x,
+      original.y + delta.y,
+      original.z + delta.z
+    );
+  });
+
+  positions.needsUpdate = true;
+
+  object.geometry.computeVertexNormals();
+  object.geometry.computeBoundingBox();
+  object.geometry.computeBoundingSphere();
+
+  // 面ヘルパーも更新
+  const helperPositions = faceHelper.geometry.attributes.position;
+  let offset = 0;
+
+  faceRecords.forEach((face) => {
+    face.vertices.forEach((index) => {
+      helperPositions.setXYZ(
+        offset++,
+        positions.getX(index),
+        positions.getY(index),
+        positions.getZ(index)
+      );
+    });
+  });
+
+  helperPositions.needsUpdate = true;
+  faceHelper.geometry.computeBoundingSphere();
+}
+
+// -------------------------
 // ドラッグ終了
 // -------------------------
 
-function finishVertexDrag() {
-  if (!vertexDrag) return;
+function finishDrag(type) {
+  if (type === "vertex") vertexDrag = null;
+  if (type === "edge") edgeDrag = null;
+  if (type === "face") faceDrag = null;
 
-  vertexDrag = null;
   isDragging = false;
   controls.enabled = true;
 
@@ -727,15 +921,16 @@ function finishVertexDrag() {
   refreshProperties();
 }
 
+function finishVertexDrag() {
+  if (vertexDrag) finishDrag("vertex");
+}
+
 function finishEdgeDrag() {
-  if (!edgeDrag) return;
+  if (edgeDrag) finishDrag("edge");
+}
 
-  edgeDrag = null;
-  isDragging = false;
-  controls.enabled = true;
-
-  saveHistory();
-  refreshProperties();
+function finishFaceDrag() {
+  if (faceDrag) finishDrag("face");
 }
 
 // -------------------------
@@ -748,28 +943,30 @@ canvas.addEventListener("pointerdown", (event) => {
     y: event.clientY
   };
 
-  if (getEditMode() === "vertex") {
+  const mode = getEditMode();
+
+  if (mode === "vertex") {
     const index = getVertexHit(event);
 
     pendingVertex = index === null
       ? null
-      : {
-          index,
-          x: event.clientX,
-          y: event.clientY
-        };
+      : { index, x: event.clientX, y: event.clientY };
   }
 
-  if (getEditMode() === "edge") {
+  if (mode === "edge") {
     const index = getEdgeHit(event);
 
     pendingEdge = index === null
       ? null
-      : {
-          index,
-          x: event.clientX,
-          y: event.clientY
-        };
+      : { index, x: event.clientX, y: event.clientY };
+  }
+
+  if (mode === "face") {
+    const index = getFaceHit(event);
+
+    pendingFace = index === null
+      ? null
+      : { index, x: event.clientX, y: event.clientY };
   }
 });
 
@@ -784,15 +981,21 @@ canvas.addEventListener("pointermove", (event) => {
     return;
   }
 
+  if (faceDrag) {
+    moveFaces(event);
+    return;
+  }
+
   if (pendingVertex) {
     const dx = event.clientX - pendingVertex.x;
     const dy = event.clientY - pendingVertex.y;
 
-    if (Math.hypot(dx, dy) >= 6) {
-      if (selectedVertexIndices.has(pendingVertex.index)) {
-        beginVertexDrag(event);
-        if (vertexDrag) moveVertices(event);
-      }
+    if (
+      Math.hypot(dx, dy) >= 6 &&
+      selectedVertexIndices.has(pendingVertex.index)
+    ) {
+      beginVertexDrag(event);
+      if (vertexDrag) moveVertices(event);
     }
   }
 
@@ -800,11 +1003,25 @@ canvas.addEventListener("pointermove", (event) => {
     const dx = event.clientX - pendingEdge.x;
     const dy = event.clientY - pendingEdge.y;
 
-    if (Math.hypot(dx, dy) >= 6) {
-      if (selectedEdgeIndices.has(pendingEdge.index)) {
-        beginEdgeDrag(event);
-        if (edgeDrag) moveEdges(event);
-      }
+    if (
+      Math.hypot(dx, dy) >= 6 &&
+      selectedEdgeIndices.has(pendingEdge.index)
+    ) {
+      beginEdgeDrag(event);
+      if (edgeDrag) moveEdges(event);
+    }
+  }
+
+  if (pendingFace) {
+    const dx = event.clientX - pendingFace.x;
+    const dy = event.clientY - pendingFace.y;
+
+    if (
+      Math.hypot(dx, dy) >= 6 &&
+      selectedFaceIndices.has(pendingFace.index)
+    ) {
+      beginFaceDrag(event);
+      if (faceDrag) moveFaces(event);
     }
   }
 });
@@ -814,6 +1031,7 @@ canvas.addEventListener("pointerup", (event) => {
     finishVertexDrag();
     pendingVertex = null;
     pendingEdge = null;
+    pendingFace = null;
     pointerDownPosition = null;
     return;
   }
@@ -822,6 +1040,16 @@ canvas.addEventListener("pointerup", (event) => {
     finishEdgeDrag();
     pendingVertex = null;
     pendingEdge = null;
+    pendingFace = null;
+    pointerDownPosition = null;
+    return;
+  }
+
+  if (faceDrag) {
+    finishFaceDrag();
+    pendingVertex = null;
+    pendingEdge = null;
+    pendingFace = null;
     pointerDownPosition = null;
     return;
   }
@@ -852,6 +1080,19 @@ canvas.addEventListener("pointerup", (event) => {
     return;
   }
 
+  if (pendingFace) {
+    const dx = event.clientX - pendingFace.x;
+    const dy = event.clientY - pendingFace.y;
+
+    if (Math.hypot(dx, dy) < 6) {
+      toggleFaceSelection(pendingFace.index);
+    }
+
+    pendingFace = null;
+    pointerDownPosition = null;
+    return;
+  }
+
   if (isDragging || !pointerDownPosition) {
     pointerDownPosition = null;
     return;
@@ -876,9 +1117,11 @@ canvas.addEventListener("pointerup", (event) => {
 canvas.addEventListener("pointercancel", () => {
   if (vertexDrag) finishVertexDrag();
   if (edgeDrag) finishEdgeDrag();
+  if (faceDrag) finishFaceDrag();
 
   pendingVertex = null;
   pendingEdge = null;
+  pendingFace = null;
   pointerDownPosition = null;
 });
 
@@ -926,11 +1169,14 @@ function applyVertexData(object, vertices) {
 
 function clearAllObjects() {
   detachObject();
+
   clearVertexHelper();
   clearEdgeHelper();
+  clearFaceHelper();
 
   selectedVertexIndices.clear();
   selectedEdgeIndices.clear();
+  selectedFaceIndices.clear();
 
   getObjects().forEach((object) => {
     selectObject(object);
@@ -1099,9 +1345,11 @@ initUI({
   onDelete() {
     clearVertexHelper();
     clearEdgeHelper();
+    clearFaceHelper();
 
     selectedVertexIndices.clear();
     selectedEdgeIndices.clear();
+    selectedFaceIndices.clear();
 
     detachObject();
     deleteSelectedObject();
