@@ -1,6 +1,5 @@
 
 import * as THREE from "three";
-
 import { createScene } from "./scene.js";
 
 import {
@@ -36,11 +35,19 @@ initObjects(scene);
 initTools(camera, renderer, scene);
 
 let isDragging = false;
+
 let vertexHelper = null;
+let edgeHelper = null;
+
 let vertexDrag = null;
+let edgeDrag = null;
 let pendingVertex = null;
+let pendingEdge = null;
 
 let selectedVertexIndices = new Set();
+let selectedEdgeIndices = new Set();
+
+let edgeRecords = [];
 
 let history = [];
 let historyIndex = -1;
@@ -49,6 +56,7 @@ const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
 raycaster.params.Points.threshold = 0.5;
+raycaster.params.Line.threshold = 0.18;
 
 // -------------------------
 // ポインター座標
@@ -64,32 +72,39 @@ function updatePointer(event) {
 }
 
 // -------------------------
-// 頂点表示の削除
+// ヘルパー削除
 // -------------------------
 
 function clearVertexHelper() {
   if (!vertexHelper) return;
 
-  if (vertexHelper.parent) {
-    vertexHelper.parent.remove(vertexHelper);
-  }
-
+  vertexHelper.parent?.remove(vertexHelper);
   vertexHelper.geometry.dispose();
   vertexHelper.material.dispose();
 
   vertexHelper = null;
 }
 
+function clearEdgeHelper() {
+  if (!edgeHelper) return;
+
+  edgeHelper.parent?.remove(edgeHelper);
+  edgeHelper.geometry.dispose();
+  edgeHelper.material.dispose();
+
+  edgeHelper = null;
+  edgeRecords = [];
+}
+
 // -------------------------
-// 頂点の色を更新
+// 頂点の色
 // -------------------------
 
 function updateVertexColors() {
   if (!vertexHelper) return;
 
-  const colors = [];
-
   const positions = vertexHelper.geometry.attributes.position;
+  const colors = [];
 
   for (let i = 0; i < positions.count; i++) {
     if (selectedVertexIndices.has(i)) {
@@ -103,8 +118,6 @@ function updateVertexColors() {
     "color",
     new THREE.Float32BufferAttribute(colors, 3)
   );
-
-  vertexHelper.geometry.attributes.color.needsUpdate = true;
 }
 
 // -------------------------
@@ -114,10 +127,9 @@ function updateVertexColors() {
 function showVertices(object) {
   clearVertexHelper();
 
-  if (!object || !object.geometry) return;
+  if (!object?.geometry) return;
 
   const positions = object.geometry.attributes.position;
-
   if (!positions) return;
 
   const points = [];
@@ -154,7 +166,138 @@ function showVertices(object) {
 }
 
 // -------------------------
-// 編集表示の更新
+// 辺の頂点対応を調べる
+// -------------------------
+
+function findMatchingVertices(object, point) {
+  const positions = object.geometry.attributes.position;
+  const matches = [];
+
+  const tolerance = 0.0001;
+
+  for (let i = 0; i < positions.count; i++) {
+    const dx = positions.getX(i) - point.x;
+    const dy = positions.getY(i) - point.y;
+    const dz = positions.getZ(i) - point.z;
+
+    if (
+      Math.abs(dx) < tolerance &&
+      Math.abs(dy) < tolerance &&
+      Math.abs(dz) < tolerance
+    ) {
+      matches.push(i);
+    }
+  }
+
+  return matches;
+}
+
+// -------------------------
+// 辺の色を更新
+// -------------------------
+
+function updateEdgeColors() {
+  if (!edgeHelper) return;
+
+  const colors = [];
+
+  for (let i = 0; i < edgeRecords.length; i++) {
+    const selected = selectedEdgeIndices.has(i);
+
+    const color = selected
+      ? [1, 0.25, 0]
+      : [1, 0.85, 0];
+
+    colors.push(...color, ...color);
+  }
+
+  edgeHelper.geometry.setAttribute(
+    "color",
+    new THREE.Float32BufferAttribute(colors, 3)
+  );
+}
+
+// -------------------------
+// 辺表示
+// -------------------------
+
+function showEdges(object) {
+  clearEdgeHelper();
+
+  if (!object?.geometry) return;
+
+  const edgesGeometry = new THREE.EdgesGeometry(
+    object.geometry,
+    1
+  );
+
+  const positions = edgesGeometry.attributes.position;
+
+  if (!positions || positions.count < 2) {
+    edgesGeometry.dispose();
+    return;
+  }
+
+  const records = [];
+  const linePositions = [];
+
+  for (let i = 0; i < positions.count; i += 2) {
+    const a = new THREE.Vector3(
+      positions.getX(i),
+      positions.getY(i),
+      positions.getZ(i)
+    );
+
+    const b = new THREE.Vector3(
+      positions.getX(i + 1),
+      positions.getY(i + 1),
+      positions.getZ(i + 1)
+    );
+
+    records.push({
+      a,
+      b,
+      verticesA: findMatchingVertices(object, a),
+      verticesB: findMatchingVertices(object, b)
+    });
+
+    linePositions.push(
+      a.x, a.y, a.z,
+      b.x, b.y, b.z
+    );
+  }
+
+  edgesGeometry.dispose();
+
+  edgeRecords = records;
+
+  const geometry = new THREE.BufferGeometry();
+
+  geometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(linePositions, 3)
+  );
+
+  const material = new THREE.LineBasicMaterial({
+    color: 0xffffff,
+    vertexColors: true,
+    depthTest: false
+  });
+
+  edgeHelper = new THREE.LineSegments(
+    geometry,
+    material
+  );
+
+  edgeHelper.renderOrder = 11;
+
+  object.add(edgeHelper);
+
+  updateEdgeColors();
+}
+
+// -------------------------
+// 編集表示更新
 // -------------------------
 
 function updateEditDisplay() {
@@ -162,18 +305,22 @@ function updateEditDisplay() {
   const selected = getSelectedObject();
 
   clearVertexHelper();
+  clearEdgeHelper();
 
   selectedVertexIndices.clear();
+  selectedEdgeIndices.clear();
 
   if (mode === "object") {
-    if (selected) {
-      attachObject(selected);
-    }
+    if (selected) attachObject(selected);
   } else {
     detachObject();
 
     if (mode === "vertex" && selected) {
       showVertices(selected);
+    }
+
+    if (mode === "edge" && selected) {
+      showEdges(selected);
     }
   }
 }
@@ -192,6 +339,7 @@ function selectMesh(mesh) {
   selectObject(mesh);
 
   selectedVertexIndices.clear();
+  selectedEdgeIndices.clear();
 
   if (getEditMode() === "object") {
     attachObject(mesh);
@@ -206,7 +354,7 @@ function selectMesh(mesh) {
 }
 
 // -------------------------
-// 頂点を選択・解除
+// 頂点選択
 // -------------------------
 
 function toggleVertexSelection(index) {
@@ -220,7 +368,21 @@ function toggleVertexSelection(index) {
 }
 
 // -------------------------
-// 頂点の当たり判定
+// 辺選択
+// -------------------------
+
+function toggleEdgeSelection(index) {
+  if (selectedEdgeIndices.has(index)) {
+    selectedEdgeIndices.delete(index);
+  } else {
+    selectedEdgeIndices.add(index);
+  }
+
+  updateEdgeColors();
+}
+
+// -------------------------
+// 頂点ヒット判定
 // -------------------------
 
 function getVertexHit(event) {
@@ -228,7 +390,10 @@ function getVertexHit(event) {
 
   updatePointer(event);
 
-  const hits = raycaster.intersectObject(vertexHelper, false);
+  const hits = raycaster.intersectObject(
+    vertexHelper,
+    false
+  );
 
   if (hits.length === 0) return null;
 
@@ -236,18 +401,39 @@ function getVertexHit(event) {
 }
 
 // -------------------------
-// 頂点移動の開始
+// 辺ヒット判定
+// -------------------------
+
+function getEdgeHit(event) {
+  if (!edgeHelper) return null;
+
+  updatePointer(event);
+
+  const hits = raycaster.intersectObject(
+    edgeHelper,
+    false
+  );
+
+  if (hits.length === 0) return null;
+
+  const vertexIndex = hits[0].index;
+
+  if (vertexIndex === undefined) return null;
+
+  return Math.floor(vertexIndex / 2);
+}
+
+// -------------------------
+// 頂点ドラッグ開始
 // -------------------------
 
 function beginVertexDrag(event) {
   if (!pendingVertex) return;
 
   const object = getSelectedObject();
-
   if (!object) return;
 
   const positions = object.geometry.attributes.position;
-
   const index = pendingVertex.index;
 
   const localPosition = new THREE.Vector3(
@@ -263,7 +449,6 @@ function beginVertexDrag(event) {
   );
 
   const normal = new THREE.Vector3();
-
   camera.getWorldDirection(normal);
 
   const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
@@ -279,7 +464,9 @@ function beginVertexDrag(event) {
     return;
   }
 
-  const startLocal = object.worldToLocal(startPoint.clone());
+  const startLocal = object.worldToLocal(
+    startPoint.clone()
+  );
 
   const originalPositions = new Map();
 
@@ -297,7 +484,6 @@ function beginVertexDrag(event) {
   vertexDrag = {
     object,
     plane,
-    startPoint,
     startLocal,
     originalPositions
   };
@@ -307,7 +493,7 @@ function beginVertexDrag(event) {
 }
 
 // -------------------------
-// 複数頂点の移動
+// 頂点移動
 // -------------------------
 
 function moveVertices(event) {
@@ -317,12 +503,10 @@ function moveVertices(event) {
 
   const currentPoint = new THREE.Vector3();
 
-  const hit = raycaster.ray.intersectPlane(
+  if (!raycaster.ray.intersectPlane(
     vertexDrag.plane,
     currentPoint
-  );
-
-  if (!hit) return;
+  )) return;
 
   const object = vertexDrag.object;
 
@@ -352,7 +536,8 @@ function moveVertices(event) {
   object.geometry.computeBoundingSphere();
 
   if (vertexHelper) {
-    const helperPositions = vertexHelper.geometry.attributes.position;
+    const helperPositions =
+      vertexHelper.geometry.attributes.position;
 
     vertexDrag.originalPositions.forEach((original, index) => {
       helperPositions.setXYZ(
@@ -368,14 +553,201 @@ function moveVertices(event) {
 }
 
 // -------------------------
-// 頂点移動終了
+// 辺ドラッグ開始
+// -------------------------
+
+function beginEdgeDrag(event) {
+  if (!pendingEdge) return;
+
+  const object = getSelectedObject();
+  if (!object) return;
+
+  const record = edgeRecords[pendingEdge.index];
+  if (!record) return;
+
+  const midpoint = record.a.clone().add(record.b).multiplyScalar(0.5);
+
+  object.updateMatrixWorld(true);
+
+  const worldPosition = object.localToWorld(midpoint.clone());
+
+  const normal = new THREE.Vector3();
+  camera.getWorldDirection(normal);
+
+  const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+    normal,
+    worldPosition
+  );
+
+  updatePointer(event);
+
+  const startPoint = new THREE.Vector3();
+
+  if (!raycaster.ray.intersectPlane(plane, startPoint)) {
+    return;
+  }
+
+  const startLocal = object.worldToLocal(
+    startPoint.clone()
+  );
+
+  const positions = object.geometry.attributes.position;
+  const originalPositions = new Map();
+
+  // 選択されたすべての辺の両端を集める
+  selectedEdgeIndices.forEach((edgeIndex) => {
+    const edge = edgeRecords[edgeIndex];
+
+    if (!edge) return;
+
+    const indices = [
+      ...edge.verticesA,
+      ...edge.verticesB
+    ];
+
+    indices.forEach((vertexIndex) => {
+      if (originalPositions.has(vertexIndex)) return;
+
+      originalPositions.set(
+        vertexIndex,
+        new THREE.Vector3(
+          positions.getX(vertexIndex),
+          positions.getY(vertexIndex),
+          positions.getZ(vertexIndex)
+        )
+      );
+    });
+  });
+
+  if (originalPositions.size === 0) return;
+
+  edgeDrag = {
+    object,
+    plane,
+    startLocal,
+    originalPositions
+  };
+
+  isDragging = true;
+  controls.enabled = false;
+}
+
+// -------------------------
+// 辺移動
+// -------------------------
+
+function moveEdges(event) {
+  if (!edgeDrag) return;
+
+  updatePointer(event);
+
+  const currentPoint = new THREE.Vector3();
+
+  if (!raycaster.ray.intersectPlane(
+    edgeDrag.plane,
+    currentPoint
+  )) return;
+
+  const object = edgeDrag.object;
+
+  object.updateMatrixWorld(true);
+
+  const currentLocal = object.worldToLocal(
+    currentPoint.clone()
+  );
+
+  const delta = currentLocal.sub(edgeDrag.startLocal);
+
+  const positions = object.geometry.attributes.position;
+
+  edgeDrag.originalPositions.forEach((original, index) => {
+    positions.setXYZ(
+      index,
+      original.x + delta.x,
+      original.y + delta.y,
+      original.z + delta.z
+    );
+  });
+
+  positions.needsUpdate = true;
+
+  object.geometry.computeVertexNormals();
+  object.geometry.computeBoundingBox();
+  object.geometry.computeBoundingSphere();
+
+  // 辺の表示を更新
+  const records = edgeRecords.map((edge) => ({
+    ...edge,
+    a: edge.a.clone(),
+    b: edge.b.clone()
+  }));
+
+  records.forEach((edge) => {
+    const aIndex = edge.verticesA[0];
+    const bIndex = edge.verticesB[0];
+
+    if (aIndex !== undefined) {
+      edge.a.set(
+        positions.getX(aIndex),
+        positions.getY(aIndex),
+        positions.getZ(aIndex)
+      );
+    }
+
+    if (bIndex !== undefined) {
+      edge.b.set(
+        positions.getX(bIndex),
+        positions.getY(bIndex),
+        positions.getZ(bIndex)
+      );
+    }
+  });
+
+  const helperPositions =
+    edgeHelper.geometry.attributes.position;
+
+  records.forEach((edge, index) => {
+    helperPositions.setXYZ(
+      index * 2,
+      edge.a.x,
+      edge.a.y,
+      edge.a.z
+    );
+
+    helperPositions.setXYZ(
+      index * 2 + 1,
+      edge.b.x,
+      edge.b.y,
+      edge.b.z
+    );
+
+    edgeRecords[index].a.copy(edge.a);
+    edgeRecords[index].b.copy(edge.b);
+  });
+
+  helperPositions.needsUpdate = true;
+  edgeHelper.geometry.computeBoundingSphere();
+}
+
+// -------------------------
+// ドラッグ終了
 // -------------------------
 
 function finishVertexDrag() {
   if (!vertexDrag) return;
 
   vertexDrag = null;
+  isDragging = false;
+  controls.enabled = true;
 
+  saveHistory();
+  refreshProperties();
+}
+
+function finishEdgeDrag() {
+  if (!edgeDrag) return;
+
+  edgeDrag = null;
   isDragging = false;
   controls.enabled = true;
 
@@ -395,20 +767,29 @@ canvas.addEventListener("pointerdown", (event) => {
     y: event.clientY
   };
 
-  if (getEditMode() !== "vertex") return;
+  if (getEditMode() === "vertex") {
+    const index = getVertexHit(event);
 
-  const index = getVertexHit(event);
-
-  if (index === null || index === undefined) {
-    pendingVertex = null;
-    return;
+    pendingVertex = index === null
+      ? null
+      : {
+          index,
+          x: event.clientX,
+          y: event.clientY
+        };
   }
 
-  pendingVertex = {
-    index,
-    x: event.clientX,
-    y: event.clientY
-  };
+  if (getEditMode() === "edge") {
+    const index = getEdgeHit(event);
+
+    pendingEdge = index === null
+      ? null
+      : {
+          index,
+          x: event.clientX,
+          y: event.clientY
+        };
+  }
 });
 
 canvas.addEventListener("pointermove", (event) => {
@@ -417,24 +798,33 @@ canvas.addEventListener("pointermove", (event) => {
     return;
   }
 
-  if (!pendingVertex) return;
-
-  const dx = event.clientX - pendingVertex.x;
-  const dy = event.clientY - pendingVertex.y;
-
-  const distance = Math.sqrt(dx * dx + dy * dy);
-
-  if (distance < 6) return;
-
-  // 選択済み頂点だけドラッグできる
-  if (!selectedVertexIndices.has(pendingVertex.index)) {
+  if (edgeDrag) {
+    moveEdges(event);
     return;
   }
 
-  beginVertexDrag(event);
+  if (pendingVertex) {
+    const dx = event.clientX - pendingVertex.x;
+    const dy = event.clientY - pendingVertex.y;
 
-  if (vertexDrag) {
-    moveVertices(event);
+    if (Math.sqrt(dx * dx + dy * dy) >= 6) {
+      if (selectedVertexIndices.has(pendingVertex.index)) {
+        beginVertexDrag(event);
+        if (vertexDrag) moveVertices(event);
+      }
+    }
+  }
+
+  if (pendingEdge) {
+    const dx = event.clientX - pendingEdge.x;
+    const dy = event.clientY - pendingEdge.y;
+
+    if (Math.sqrt(dx * dx + dy * dy) >= 6) {
+      if (selectedEdgeIndices.has(pendingEdge.index)) {
+        beginEdgeDrag(event);
+        if (edgeDrag) moveEdges(event);
+      }
+    }
   }
 });
 
@@ -442,24 +832,41 @@ canvas.addEventListener("pointerup", (event) => {
   if (vertexDrag) {
     finishVertexDrag();
     pendingVertex = null;
+    pendingEdge = null;
     pointerDownPosition = null;
     return;
   }
 
-  if (
-    getEditMode() === "vertex" &&
-    pendingVertex
-  ) {
+  if (edgeDrag) {
+    finishEdgeDrag();
+    pendingVertex = null;
+    pendingEdge = null;
+    pointerDownPosition = null;
+    return;
+  }
+
+  if (pendingVertex) {
     const dx = event.clientX - pendingVertex.x;
     const dy = event.clientY - pendingVertex.y;
 
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance < 6) {
+    if (Math.sqrt(dx * dx + dy * dy) < 6) {
       toggleVertexSelection(pendingVertex.index);
     }
 
     pendingVertex = null;
+    pointerDownPosition = null;
+    return;
+  }
+
+  if (pendingEdge) {
+    const dx = event.clientX - pendingEdge.x;
+    const dy = event.clientY - pendingEdge.y;
+
+    if (Math.sqrt(dx * dx + dy * dy) < 6) {
+      toggleEdgeSelection(pendingEdge.index);
+    }
+
+    pendingEdge = null;
     pointerDownPosition = null;
     return;
   }
@@ -478,8 +885,10 @@ canvas.addEventListener("pointerup", (event) => {
 
   updatePointer(event);
 
-  const meshes = getObjects();
-  const hits = raycaster.intersectObjects(meshes, false);
+  const hits = raycaster.intersectObjects(
+    getObjects(),
+    false
+  );
 
   if (hits.length > 0) {
     selectMesh(hits[0].object);
@@ -487,11 +896,11 @@ canvas.addEventListener("pointerup", (event) => {
 });
 
 canvas.addEventListener("pointercancel", () => {
-  if (vertexDrag) {
-    finishVertexDrag();
-  }
+  if (vertexDrag) finishVertexDrag();
+  if (edgeDrag) finishEdgeDrag();
 
   pendingVertex = null;
+  pendingEdge = null;
   pointerDownPosition = null;
 });
 
@@ -546,7 +955,10 @@ function restoreHistory(snapshotText) {
 
   detachObject();
   clearVertexHelper();
+  clearEdgeHelper();
+
   selectedVertexIndices.clear();
+  selectedEdgeIndices.clear();
 
   getObjects().forEach((object) => {
     selectObject(object);
@@ -556,11 +968,8 @@ function restoreHistory(snapshotText) {
   snapshot.forEach((data) => {
     let type = "cube";
 
-    if (data.type === "SphereGeometry") {
-      type = "sphere";
-    } else if (data.type === "CylinderGeometry") {
-      type = "cylinder";
-    }
+    if (data.type === "SphereGeometry") type = "sphere";
+    if (data.type === "CylinderGeometry") type = "cylinder";
 
     const object = addObject(type);
 
@@ -630,7 +1039,10 @@ function loadProject(data) {
 
   detachObject();
   clearVertexHelper();
+  clearEdgeHelper();
+
   selectedVertexIndices.clear();
+  selectedEdgeIndices.clear();
 
   getObjects().forEach((object) => {
     selectObject(object);
@@ -640,11 +1052,8 @@ function loadProject(data) {
   data.objects.forEach((item) => {
     let type = "cube";
 
-    if (item.type === "SphereGeometry") {
-      type = "sphere";
-    } else if (item.type === "CylinderGeometry") {
-      type = "cylinder";
-    }
+    if (item.type === "SphereGeometry") type = "sphere";
+    if (item.type === "CylinderGeometry") type = "cylinder";
 
     const object = addObject(type);
 
@@ -725,9 +1134,12 @@ initUI({
 
   onDelete() {
     clearVertexHelper();
-    selectedVertexIndices.clear();
-    detachObject();
+    clearEdgeHelper();
 
+    selectedVertexIndices.clear();
+    selectedEdgeIndices.clear();
+
+    detachObject();
     deleteSelectedObject();
 
     refreshObjectList();
@@ -780,7 +1192,6 @@ initUI({
 
 window.addEventListener("transform-dragging", (event) => {
   isDragging = event.detail;
-
   controls.enabled = !isDragging;
 
   if (!isDragging) {
