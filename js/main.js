@@ -44,6 +44,7 @@ let selectedFaceIndices = new Set();
 
 let edgeRecords = [];
 let faceRecords = [];
+let faceTriangleToRecord = [];
 
 let history = [];
 let historyIndex = -1;
@@ -110,6 +111,7 @@ function updatePointer(event) {
 
 function clearVertexHelper() {
   if (!vertexHelper) return;
+
   vertexHelper.parent?.remove(vertexHelper);
   vertexHelper.geometry.dispose();
   vertexHelper.material.dispose();
@@ -118,6 +120,7 @@ function clearVertexHelper() {
 
 function clearEdgeHelper() {
   if (!edgeHelper) return;
+
   edgeHelper.parent?.remove(edgeHelper);
   edgeHelper.geometry.dispose();
   edgeHelper.material.dispose();
@@ -127,11 +130,14 @@ function clearEdgeHelper() {
 
 function clearFaceHelper() {
   if (!faceHelper) return;
+
   faceHelper.parent?.remove(faceHelper);
   faceHelper.geometry.dispose();
   faceHelper.material.dispose();
   faceHelper = null;
+
   faceRecords = [];
+  faceTriangleToRecord = [];
 }
 
 // -------------------------
@@ -322,7 +328,7 @@ function showEdges(object) {
 
 // -------------------------
 // 面表示・色
-// 立方体の6面に対応
+// 立方体・球体・円柱に対応
 // -------------------------
 
 function updateFaceColors() {
@@ -330,25 +336,23 @@ function updateFaceColors() {
 
   const colors = [];
 
-  for (let i = 0; i < faceRecords.length; i++) {
+  faceRecords.forEach((face, index) => {
     const color = new THREE.Color(
-      selectedFaceIndices.has(i)
+      selectedFaceIndices.has(index)
         ? 0xff6600
         : 0xffff00
     );
 
-    // 1面は三角形2枚、頂点6個
-    for (let j = 0; j < 6; j++) {
+    for (let i = 0; i < face.vertices.length; i++) {
       colors.push(color.r, color.g, color.b);
     }
-  }
+  });
 
   faceHelper.geometry.setAttribute(
     "color",
     new THREE.Float32BufferAttribute(colors, 3)
   );
 }
-
 
 function showFaces(object) {
   clearFaceHelper();
@@ -357,43 +361,83 @@ function showFaces(object) {
   const positions = geometry.attributes.position;
   const indexAttribute = geometry.index;
 
-  if (
-    !positions ||
-    !indexAttribute ||
-    geometry.type !== "BoxGeometry" ||
-    geometry.groups.length !== 6
-  ) {
-    updateDebugPanel("立方体の面編集に対応しています");
+  if (!positions) {
+    updateDebugPanel("面データがありません");
     return;
   }
 
   const facePositions = [];
 
-  geometry.groups.forEach((group, faceIndex) => {
-    const vertices = [];
+  // 立方体は6面をそれぞれ1つの面として扱う
+  if (
+    geometry.type === "BoxGeometry" &&
+    indexAttribute &&
+    geometry.groups.length === 6
+  ) {
+    geometry.groups.forEach((group, faceIndex) => {
+      const vertices = [];
 
-    for (
-      let i = group.start;
-      i < group.start + group.count;
-      i++
-    ) {
-      // インデックス番号から実際の頂点番号を取得
-      const vertexIndex = indexAttribute.getX(i);
+      for (
+        let i = group.start;
+        i < group.start + group.count;
+        i++
+      ) {
+        const vertexIndex = indexAttribute.getX(i);
 
-      vertices.push(vertexIndex);
+        vertices.push(vertexIndex);
 
-      facePositions.push(
-        positions.getX(vertexIndex),
-        positions.getY(vertexIndex),
-        positions.getZ(vertexIndex)
-      );
-    }
+        facePositions.push(
+          positions.getX(vertexIndex),
+          positions.getY(vertexIndex),
+          positions.getZ(vertexIndex)
+        );
+      }
 
-    faceRecords.push({
-      vertices,
-      faceIndex
+      faceRecords.push({
+        vertices,
+        faceIndex
+      });
+
+      // 立方体の1面は三角形2枚
+      faceTriangleToRecord.push(faceRecords.length - 1);
+      faceTriangleToRecord.push(faceRecords.length - 1);
     });
-  });
+  } else {
+    // 球体・円柱などは三角形ごとに面を作る
+    const count = indexAttribute
+      ? indexAttribute.count
+      : positions.count;
+
+    for (let i = 0; i + 2 < count; i += 3) {
+      const vertices = [];
+
+      for (let j = 0; j < 3; j++) {
+        const vertexIndex = indexAttribute
+          ? indexAttribute.getX(i + j)
+          : i + j;
+
+        vertices.push(vertexIndex);
+
+        facePositions.push(
+          positions.getX(vertexIndex),
+          positions.getY(vertexIndex),
+          positions.getZ(vertexIndex)
+        );
+      }
+
+      faceRecords.push({
+        vertices,
+        faceIndex: faceRecords.length
+      });
+
+      faceTriangleToRecord.push(faceRecords.length - 1);
+    }
+  }
+
+  if (!faceRecords.length) {
+    updateDebugPanel("面を作成できませんでした");
+    return;
+  }
 
   const faceGeometry = new THREE.BufferGeometry();
 
@@ -418,9 +462,8 @@ function showFaces(object) {
   object.add(faceHelper);
 
   updateFaceColors();
-  updateDebugPanel("立方体の6面を表示");
+  updateDebugPanel("面を表示しました");
 }
-
 
 // -------------------------
 // 編集表示更新
@@ -552,9 +595,11 @@ function getFaceHit(event) {
 
   const hits = raycaster.intersectObject(faceHelper, false);
 
-  if (!hits.length || hits[0].faceIndex == null) return null;
+  if (!hits.length || hits[0].faceIndex == null) {
+    return null;
+  }
 
-  return Math.floor(hits[0].faceIndex / 2);
+  return faceTriangleToRecord[hits[0].faceIndex] ?? null;
 }
 
 // -------------------------
@@ -578,7 +623,9 @@ function createDragPlane(event, localPosition, object) {
 
   const startPoint = new THREE.Vector3();
 
-  if (!raycaster.ray.intersectPlane(plane, startPoint)) return null;
+  if (!raycaster.ray.intersectPlane(plane, startPoint)) {
+    return null;
+  }
 
   return {
     plane,
@@ -643,7 +690,9 @@ function moveVertices(event) {
 
   const point = new THREE.Vector3();
 
-  if (!raycaster.ray.intersectPlane(vertexDrag.plane, point)) return;
+  if (!raycaster.ray.intersectPlane(vertexDrag.plane, point)) {
+    return;
+  }
 
   const object = vertexDrag.object;
   object.updateMatrixWorld(true);
@@ -760,7 +809,9 @@ function moveEdges(event) {
 
   const point = new THREE.Vector3();
 
-  if (!raycaster.ray.intersectPlane(edgeDrag.plane, point)) return;
+  if (!raycaster.ray.intersectPlane(edgeDrag.plane, point)) {
+    return;
+  }
 
   const object = edgeDrag.object;
   object.updateMatrixWorld(true);
@@ -872,7 +923,9 @@ function moveFaces(event) {
 
   const point = new THREE.Vector3();
 
-  if (!raycaster.ray.intersectPlane(faceDrag.plane, point)) return;
+  if (!raycaster.ray.intersectPlane(faceDrag.plane, point)) {
+    return;
+  }
 
   const object = faceDrag.object;
   object.updateMatrixWorld(true);
