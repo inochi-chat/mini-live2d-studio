@@ -968,6 +968,7 @@ function moveFaces(event) {
 // -------------------------
 
 
+
 function extrudeSelectedFaces() {
   const object = getSelectedObject();
 
@@ -982,9 +983,7 @@ function extrudeSelectedFaces() {
   }
 
   const distanceInput = document.getElementById("extrudeDistance");
-  const distance = distanceInput
-    ? Number(distanceInput.value)
-    : 0.5;
+  const distance = distanceInput ? Number(distanceInput.value) : 0.5;
 
   if (!Number.isFinite(distance) || distance === 0) {
     alert("押し出す距離に0以外の数値を入力してください。");
@@ -995,14 +994,9 @@ function extrudeSelectedFaces() {
   const positions = geometry.attributes.position;
   const indexAttribute = geometry.index;
 
-  const count = indexAttribute
-    ? indexAttribute.count
-    : positions.count;
-
+  const count = indexAttribute ? indexAttribute.count : positions.count;
   const newPositions = [];
-
-  // 押し出した先端の三角形番号
-  const extrudedTriangleIndices = [];
+  const topTriangleIndices = [];
 
   function getPoint(index) {
     return new THREE.Vector3(
@@ -1012,7 +1006,7 @@ function extrudeSelectedFaces() {
     );
   }
 
-  function addTriangle(a, b, c, isExtrudedTop = false) {
+  function addTriangle(a, b, c, isTop = false) {
     const triangleIndex = newPositions.length / 9;
 
     newPositions.push(
@@ -1021,8 +1015,8 @@ function extrudeSelectedFaces() {
       c.x, c.y, c.z
     );
 
-    if (isExtrudedTop) {
-      extrudedTriangleIndices.push(triangleIndex);
+    if (isTop) {
+      topTriangleIndices.push(triangleIndex);
     }
   }
 
@@ -1057,7 +1051,7 @@ function extrudeSelectedFaces() {
     return;
   }
 
-  // 元の面を再構築
+  // 元の面と押し出した先端を作成
   for (let i = 0; i + 2 < count; i += 3) {
     const triangleIndex = i / 3;
     const recordIndex = faceTriangleToRecord[triangleIndex];
@@ -1084,7 +1078,7 @@ function extrudeSelectedFaces() {
     }
   }
 
-  // 押し出した面の側面を作成
+  // 側面を作成
   offsets.forEach((normal, faceIndex) => {
     const face = faceRecords[faceIndex];
     const edgeCounts = new Map();
@@ -1123,7 +1117,7 @@ function extrudeSelectedFaces() {
     });
   });
 
-  // 新しい形状を作成
+  // 新しいジオメトリ
   const newGeometry = new THREE.BufferGeometry();
 
   newGeometry.setAttribute(
@@ -1146,51 +1140,32 @@ function extrudeSelectedFaces() {
     object.material.side = THREE.DoubleSide;
   }
 
-  // 編集表示を更新
+  // 面表示を作り直す
   updateEditDisplay();
 
-  // 押し出した先端の面を自動選択
-  extrudedTriangleIndices.forEach((index) => {
-    selectedFaceIndices.add(index);
+  // 新しい面番号を直接選択
+  selectedFaceIndices.clear();
+
+  topTriangleIndices.forEach((triangleIndex) => {
+    const faceIndex = faceTriangleToRecord[triangleIndex];
+
+    if (faceIndex !== undefined) {
+      selectedFaceIndices.add(faceIndex);
+    }
   });
 
-  // オレンジ色で選択状態を表示
   updateFaceColors();
 
   refreshObjectList();
   refreshProperties();
 
   saveHistory();
-  updateDebugPanel("先端の面を自動選択しました：" + distance);
+
+  updateDebugPanel(
+    "先端面：" + selectedFaceIndices.size + "個を選択"
+  );
 }
 
-
-// -------------------------
-// ドラッグ終了
-// -------------------------
-
-function finishDrag(type) {
-  if (type === "vertex") vertexDrag = null;
-  if (type === "edge") edgeDrag = null;
-  if (type === "face") faceDrag = null;
-
-  isDragging = false;
-  controls.enabled = true;
-
-  saveHistory();
-  refreshProperties();
-}
-
-function finishVertexDrag() {
-  if (vertexDrag) finishDrag("vertex");
-}
-
-function finishEdgeDrag() {
-  if (edgeDrag) finishDrag("edge");
-}
-
-function finishFaceDrag() {
-  if (faceDrag) finishDrag("face");
 }
 
 // -------------------------
