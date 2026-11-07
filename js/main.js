@@ -214,8 +214,25 @@ function findMatchingVertices(object, point) {
 function updateEdgeColors() {
   if (!edgeHelper) return;
 
-  edgeHelper.material.color.set(
-    selectedEdgeIndices.size > 0 ? 0xff6600 : 0xffff00
+  const colors = [];
+
+  for (let i = 0; i < edgeRecords.length; i++) {
+    const selected = selectedEdgeIndices.has(i);
+
+    const color = selected
+      ? new THREE.Color(0xff6600)
+      : new THREE.Color(0xffff00);
+
+    // 1本の辺の両端に同じ色を設定
+    colors.push(
+      color.r, color.g, color.b,
+      color.r, color.g, color.b
+    );
+  }
+
+  edgeHelper.geometry.setAttribute(
+    "color",
+    new THREE.Float32BufferAttribute(colors, 3)
   );
 }
 
@@ -305,11 +322,11 @@ function showEdges(object) {
   );
 
   const material = new THREE.LineBasicMaterial({
-    color: 0xffff00,
-    depthTest: false,
-    depthWrite: false
-  });
-
+  color: 0xffffff,
+  vertexColors: true,
+  depthTest: false,
+  depthWrite: false
+　});
   edgeHelper = new THREE.LineSegments(
     lineGeometry,
     material
