@@ -1,4 +1,3 @@
-
 import * as THREE from "three";
 import { createScene } from "./scene.js";
 
@@ -981,6 +980,16 @@ function extrudeSelectedFaces() {
     return;
   }
 
+  const distanceInput = document.getElementById("extrudeDistance");
+  const distance = distanceInput
+    ? Number(distanceInput.value)
+    : 0.5;
+
+  if (!Number.isFinite(distance) || distance === 0) {
+    alert("押し出す距離に0以外の数値を入力してください。");
+    return;
+  }
+
   const geometry = object.geometry;
   const positions = geometry.attributes.position;
   const indexAttribute = geometry.index;
@@ -1030,7 +1039,7 @@ function extrudeSelectedFaces() {
       .cross(new THREE.Vector3().subVectors(c, a))
       .normalize();
 
-    offsets.set(faceIndex, normal.multiplyScalar(0.5));
+    offsets.set(faceIndex, normal.multiplyScalar(distance));
   });
 
   if (!offsets.size) {
@@ -1132,7 +1141,7 @@ function extrudeSelectedFaces() {
   refreshProperties();
 
   saveHistory();
-  updateDebugPanel("面を押し出しました");
+  updateDebugPanel("面を押し出しました：" + distance);
 }
 
 // -------------------------
