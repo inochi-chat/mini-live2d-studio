@@ -349,39 +349,48 @@ function updateFaceColors() {
   );
 }
 
+
 function showFaces(object) {
   clearFaceHelper();
 
   const geometry = object.geometry;
   const positions = geometry.attributes.position;
+  const indexAttribute = geometry.index;
 
-  if (!positions || !geometry.groups.length) {
-    updateDebugPanel("この形状の面表示には未対応です");
-    return;
-  }
-
-  // BoxGeometryは6グループ、各グループ6頂点
-  if (geometry.type !== "BoxGeometry" || geometry.groups.length !== 6) {
-    updateDebugPanel("現在は立方体の面編集に対応");
+  if (
+    !positions ||
+    !indexAttribute ||
+    geometry.type !== "BoxGeometry" ||
+    geometry.groups.length !== 6
+  ) {
+    updateDebugPanel("立方体の面編集に対応しています");
     return;
   }
 
   const facePositions = [];
 
   geometry.groups.forEach((group, faceIndex) => {
-    const indices = [];
+    const vertices = [];
 
-    for (let i = group.start; i < group.start + group.count; i++) {
-      indices.push(i);
+    for (
+      let i = group.start;
+      i < group.start + group.count;
+      i++
+    ) {
+      // インデックス番号から実際の頂点番号を取得
+      const vertexIndex = indexAttribute.getX(i);
+
+      vertices.push(vertexIndex);
+
       facePositions.push(
-        positions.getX(i),
-        positions.getY(i),
-        positions.getZ(i)
+        positions.getX(vertexIndex),
+        positions.getY(vertexIndex),
+        positions.getZ(vertexIndex)
       );
     }
 
     faceRecords.push({
-      vertices: indices,
+      vertices,
       faceIndex
     });
   });
@@ -397,7 +406,7 @@ function showFaces(object) {
     color: 0xffffff,
     vertexColors: true,
     transparent: true,
-    opacity: 0.35,
+    opacity: 0.45,
     side: THREE.DoubleSide,
     depthTest: false,
     depthWrite: false
@@ -405,11 +414,13 @@ function showFaces(object) {
 
   faceHelper = new THREE.Mesh(faceGeometry, material);
   faceHelper.renderOrder = 998;
+
   object.add(faceHelper);
 
   updateFaceColors();
   updateDebugPanel("立方体の6面を表示");
 }
+
 
 // -------------------------
 // 編集表示更新
