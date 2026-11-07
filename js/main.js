@@ -967,6 +967,7 @@ function moveFaces(event) {
 // 面の押し出し
 // -------------------------
 
+
 function extrudeSelectedFaces() {
   const object = getSelectedObject();
 
@@ -1000,6 +1001,9 @@ function extrudeSelectedFaces() {
 
   const newPositions = [];
 
+  // 押し出した先端の三角形番号
+  const extrudedTriangleIndices = [];
+
   function getPoint(index) {
     return new THREE.Vector3(
       positions.getX(index),
@@ -1008,12 +1012,18 @@ function extrudeSelectedFaces() {
     );
   }
 
-  function addTriangle(a, b, c) {
+  function addTriangle(a, b, c, isExtrudedTop = false) {
+    const triangleIndex = newPositions.length / 9;
+
     newPositions.push(
       a.x, a.y, a.z,
       b.x, b.y, b.z,
       c.x, c.y, c.z
     );
+
+    if (isExtrudedTop) {
+      extrudedTriangleIndices.push(triangleIndex);
+    }
   }
 
   function addSide(a, b, normal) {
@@ -1066,7 +1076,8 @@ function extrudeSelectedFaces() {
       addTriangle(
         a.clone().add(offset),
         b.clone().add(offset),
-        c.clone().add(offset)
+        c.clone().add(offset),
+        true
       );
     } else {
       addTriangle(a, b, c);
@@ -1112,6 +1123,7 @@ function extrudeSelectedFaces() {
     });
   });
 
+  // 新しい形状を作成
   const newGeometry = new THREE.BufferGeometry();
 
   newGeometry.setAttribute(
@@ -1134,15 +1146,24 @@ function extrudeSelectedFaces() {
     object.material.side = THREE.DoubleSide;
   }
 
-  selectedFaceIndices.clear();
-
+  // 編集表示を更新
   updateEditDisplay();
+
+  // 押し出した先端の面を自動選択
+  extrudedTriangleIndices.forEach((index) => {
+    selectedFaceIndices.add(index);
+  });
+
+  // オレンジ色で選択状態を表示
+  updateFaceColors();
+
   refreshObjectList();
   refreshProperties();
 
   saveHistory();
-  updateDebugPanel("面を押し出しました：" + distance);
+  updateDebugPanel("先端の面を自動選択しました：" + distance);
 }
+
 
 // -------------------------
 // ドラッグ終了
