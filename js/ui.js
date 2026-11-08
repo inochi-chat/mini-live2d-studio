@@ -1,6 +1,9 @@
+
 import { setEditMode as setEditorEditMode } from "./edit-mode.js";
+
 let callbacks = {};
 let selectedMode = "translate";
+let currentEditMode = "object";
 
 export function initUI(options = {}) {
   callbacks = options;
@@ -14,56 +17,37 @@ export function initUI(options = {}) {
   const saveButton = document.getElementById("saveButton");
   const undoButton = document.getElementById("undoButton");
   const redoButton = document.getElementById("redoButton");
-  // 編集モードボタン
-const objectModeButton = document.getElementById("objectModeButton");
-const vertexModeButton = document.getElementById("vertexModeButton");
-const edgeModeButton = document.getElementById("edgeModeButton");
-const faceModeButton = document.getElementById("faceModeButton");
 
-objectModeButton?.addEventListener("click", () => {
-  setEditMode("object");
-});
+  const objectModeButton = document.getElementById("objectModeButton");
+  const vertexModeButton = document.getElementById("vertexModeButton");
+  const edgeModeButton = document.getElementById("edgeModeButton");
+  const faceModeButton = document.getElementById("faceModeButton");
 
-vertexModeButton?.addEventListener("click", () => {
-  setEditMode("vertex");
-});
+  objectModeButton?.addEventListener("click", () => setEditMode("object"));
+  vertexModeButton?.addEventListener("click", () => setEditMode("vertex"));
+  edgeModeButton?.addEventListener("click", () => setEditMode("edge"));
+  faceModeButton?.addEventListener("click", () => setEditMode("face"));
 
-edgeModeButton?.addEventListener("click", () => {
-  setEditMode("edge");
-});
+  addButton?.addEventListener("click", showAddMenu);
+  moveButton?.addEventListener("click", () => setMode("translate"));
+  rotateButton?.addEventListener("click", () => setMode("rotate"));
+  scaleButton?.addEventListener("click", () => setMode("scale"));
 
-faceModeButton?.addEventListener("click", () => {
-  setEditMode("face");
-});
-
-  addButton.addEventListener("click", showAddMenu);
-  moveButton.addEventListener("click", () => setMode("translate"));
-  rotateButton.addEventListener("click", () => setMode("rotate"));
-  scaleButton.addEventListener("click", () => setMode("scale"));
-
-  duplicateButton.addEventListener("click", () => {
+  duplicateButton?.addEventListener("click", () => {
     callbacks.onDuplicate?.();
     refreshObjectList();
     refreshProperties();
   });
 
-  deleteButton.addEventListener("click", () => {
+  deleteButton?.addEventListener("click", () => {
     callbacks.onDelete?.();
     refreshObjectList();
     refreshProperties();
   });
 
-  saveButton.addEventListener("click", () => {
-    callbacks.onSave?.();
-  });
-
-  undoButton.addEventListener("click", () => {
-    callbacks.onUndo?.();
-  });
-
-  redoButton.addEventListener("click", () => {
-    callbacks.onRedo?.();
-  });
+  saveButton?.addEventListener("click", () => callbacks.onSave?.());
+  undoButton?.addEventListener("click", () => callbacks.onUndo?.());
+  redoButton?.addEventListener("click", () => callbacks.onRedo?.());
 
   updateModeButtons();
   refreshObjectList();
@@ -148,8 +132,8 @@ export function refreshObjectList() {
   const objects = callbacks.getObjects?.() || [];
   const selected = callbacks.getSelected?.();
 
-  document.getElementById("objectCount").textContent =
-    "Objects: " + objects.length;
+  const count = document.getElementById("objectCount");
+  if (count) count.textContent = "Objects: " + objects.length;
 
   if (objects.length === 0) {
     list.innerHTML =
@@ -161,9 +145,7 @@ export function refreshObjectList() {
     const item = document.createElement("div");
     item.className = "object-item";
 
-    if (object === selected) {
-      item.classList.add("selected");
-    }
+    if (object === selected) item.classList.add("selected");
 
     const name = document.createElement("span");
     name.textContent = object.name || "Object " + (index + 1);
@@ -181,6 +163,91 @@ export function refreshObjectList() {
 
     list.appendChild(item);
   });
+}
+
+function createMaterialControls(panel) {
+  const material = callbacks.getMaterial?.();
+
+  const heading = document.createElement("div");
+  heading.textContent = "材質・カラー";
+  heading.style.cssText =
+    "margin-top:20px;padding-top:12px;border-top:1px solid #555;font-size:14px;color:#c5a5ff;";
+  panel.appendChild(heading);
+
+  if (!material) {
+    const message = document.createElement("p");
+    message.textContent = "材質情報を取得できません";
+    panel.appendChild(message);
+    return;
+  }
+
+  // 色
+  const colorLabel = document.createElement("div");
+  colorLabel.textContent = "オブジェクトの色";
+  colorLabel.style.cssText = "margin-top:12px;font-size:12px;";
+  panel.appendChild(colorLabel);
+
+  const colorInput = document.createElement("input");
+  colorInput.type = "color";
+  colorInput.value = material.color || "#9b8cff";
+  colorInput.style.cssText =
+    "width:100%;height:42px;margin-top:6px;background:#171824;border:1px solid #555;border-radius:8px;";
+
+  colorInput.addEventListener("input", () => {
+    callbacks.onMaterialChange?.({ color: colorInput.value });
+  });
+
+  panel.appendChild(colorInput);
+
+  // 光沢
+  createMaterialSlider(
+    panel,
+    "光沢（低いほどツヤが強い）",
+    "roughness",
+    material.roughness ?? 0.55
+  );
+
+  // 金属感
+  createMaterialSlider(
+    panel,
+    "金属感",
+    "metalness",
+    material.metalness ?? 0.05
+  );
+}
+
+function createMaterialSlider(panel, labelText, key, initialValue) {
+  const row = document.createElement("div");
+  row.style.cssText = "margin-top:14px;";
+
+  const label = document.createElement("div");
+  label.style.cssText =
+    "display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;";
+
+  const name = document.createElement("span");
+  name.textContent = labelText;
+
+  const valueText = document.createElement("span");
+  valueText.textContent = Number(initialValue).toFixed(2);
+
+  label.append(name, valueText);
+
+  const slider = document.createElement("input");
+  slider.type = "range";
+  slider.min = "0";
+  slider.max = "1";
+  slider.step = "0.01";
+  slider.value = initialValue;
+  slider.style.width = "100%";
+
+  slider.addEventListener("input", () => {
+    const value = Number(slider.value);
+    valueText.textContent = value.toFixed(2);
+    callbacks.onMaterialChange?.({ [key]: value });
+  });
+
+  row.append(label, slider);
+  panel.appendChild(row);
 }
 
 export function refreshProperties() {
@@ -241,13 +308,15 @@ export function refreshProperties() {
       panel.appendChild(row);
     });
   });
-}
-// 編集モード切り替え
-let currentEditMode = "object";
 
+  createMaterialControls(panel);
+}
+
+// 編集モード切り替え
 function setEditMode(mode) {
   currentEditMode = mode;
   setEditorEditMode(mode);
+
   const buttons = {
     object: "objectModeButton",
     vertex: "vertexModeButton",
