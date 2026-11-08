@@ -1,5 +1,8 @@
 import { state } from './state.js';
-import { createPart } from './parts.js';
+import {
+  createPart,
+  getSelectedPart
+} from './parts.js';
 
 (() => {
 'use strict';
