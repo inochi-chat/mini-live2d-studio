@@ -529,23 +529,7 @@ function render(){
 }
 
 function addPart(name,canvas,x,y){
- const p = {
-  id:nextId++,
-  name,
-  data:canvasURL(canvas),
-  x,
-  y,
-  w:canvas.width,
-  h:canvas.height,
-  scale:100,
-  rotation:0,
-  sway:8,
-  speed:10,
-  motion:'none',
-  visible:true,
-  phase:Math.random()*6.28,
-  parentId:null
- };
+ const p = createPart(nextId++,name,canvas,x,y);
 
  parts.push(p);
  selectedId = p.id;
