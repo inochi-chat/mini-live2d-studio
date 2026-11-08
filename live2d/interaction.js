@@ -13,3 +13,18 @@ export function sourcePoint(p, fit) {
     y: (p.y - fit.oy) / fit.scale
   };
 }
+
+export function clampZoom(value) {
+  return Math.max(0.25, Math.min(5, value));
+}
+
+export function getPanDelta(current, previous) {
+  return {
+    x: current.x - previous.x,
+    y: current.y - previous.y
+  };
+}
+
+export function getPinchRatio(distance, startDistance) {
+  return distance / Math.max(1, startDistance);
+}
