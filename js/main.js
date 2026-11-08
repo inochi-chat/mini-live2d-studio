@@ -2005,7 +2005,11 @@ initUI({
 const insetButton = document.getElementById("insetButton");
 const bevelButton = document.getElementById("bevelButton");
 const loopCutButton = document.getElementById("loopCutButton");
+const mirrorButton = document.getElementById("mirrorButton");
 
+if (mirrorButton) {
+  mirrorButton.addEventListener("click", mirrorSelectedObject);
+}
 if (loopCutButton) {
   loopCutButton.addEventListener("click", loopCutSelectedObject);
 }
