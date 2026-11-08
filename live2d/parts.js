@@ -1,8 +1,6 @@
-import { state } from './state.js';
-
-export function addPart(name, canvas, x, y, helpers) {
-  const p = {
-    id: state.nextId++,
+export function createPart(id, name, canvas, x, y) {
+  return {
+    id,
     name,
     data: canvas.toDataURL('image/png'),
     x,
@@ -18,11 +16,4 @@ export function addPart(name, canvas, x, y, helpers) {
     phase: Math.random() * 6.28,
     parentId: null
   };
-
-  state.parts.push(p);
-  state.selectedId = p.id;
-
-  helpers.updatePartList();
-  helpers.syncEditor();
-  helpers.render();
 }
