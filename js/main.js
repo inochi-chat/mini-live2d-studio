@@ -4,8 +4,15 @@ import * as THREE from "three";
 import { createScene } from "./scene.js";
 
 import {
-  initObjects, addObject, selectObject, getSelectedObject,
-  getObjects, deleteSelectedObject, duplicateSelectedObject
+  initObjects,
+  addObject,
+  selectObject,
+  getSelectedObject,
+  getObjects,
+  deleteSelectedObject,
+  duplicateSelectedObject,
+  setSelectedMaterial,
+  getSelectedMaterial
 } from "./objects.js";
 
 import {
@@ -1887,6 +1894,8 @@ function createSnapshot() {
       rotation: object.rotation.toArray(),
       scale: object.scale.toArray(),
       color: object.material.color.getHex(),
+      roughness: object.material.roughness,
+      metalness: object.material.metalness,
       vertices: Array.from(geometry.attributes.position.array),
 
       // 頂点結合などで必要になるインデックス情報
@@ -2022,8 +2031,20 @@ function restoreHistory(snapshotText) {
     object.position.fromArray(data.position);
     object.rotation.fromArray(data.rotation);
     object.scale.fromArray(data.scale);
-    object.material.color.setHex(data.color);
 
+if (data.color !== undefined) {
+  object.material.color.setHex(data.color);
+}
+
+if (data.roughness !== undefined) {
+  object.material.roughness = data.roughness;
+}
+
+if (data.metalness !== undefined) {
+  object.material.metalness = data.metalness;
+}
+
+    
     applyVertexData(object, data.vertices);
   });
 
@@ -2101,9 +2122,17 @@ function loadProject(data) {
     object.rotation.fromArray(item.rotation);
     object.scale.fromArray(item.scale);
 
-    if (item.color !== undefined) {
-      object.material.color.setHex(item.color);
-    }
+if (item.color !== undefined) {
+  object.material.color.setHex(item.color);
+}
+
+if (item.roughness !== undefined) {
+  object.material.roughness = item.roughness;
+}
+
+if (item.metalness !== undefined) {
+  object.material.metalness = item.metalness;
+}
 
     applyVertexData(object, item.vertices);
   });
@@ -2205,8 +2234,21 @@ initUI({
     updateEditDisplay();
   },
 
-  getObjects() {
-    return getObjects();
+  getMaterial() {
+    return getSelectedMaterial();
+  },
+
+  onMaterialChange(options) {
+    const changed = setSelectedMaterial(options);
+
+    if (changed) {
+      saveHistory();
+      updateDebugPanel("材質を変更しました");
+    }
+  },
+
+  getSelected() {
+    return getSelectedObject();
   },
 
   getSelected() {
