@@ -28,3 +28,7 @@ export function getPanDelta(current, previous) {
 export function getPinchRatio(distance, startDistance) {
   return distance / Math.max(1, startDistance);
 }
+
+export function clampPan(value) {
+  return Math.max(-3000, Math.min(3000, value));
+}
