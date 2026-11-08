@@ -700,7 +700,7 @@ function updatePartList(){
 }
 
 function selected(){
- return parts.find(p=>p.id===selectedId);
+ return getSelectedPart(parts,selectedId);
 }
 
 /* 選択中パーツを複製 */
