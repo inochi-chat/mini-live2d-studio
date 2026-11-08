@@ -62,7 +62,7 @@ raycaster.params.Line.threshold = 0.5;
 
 
 // =========================
-// 診断パネル（ドラッグ移動対応）
+// 診断パネル（移動・折りたたみ・位置保存対応）
 // =========================
 
 const debugPanel = document.createElement("div");
@@ -86,10 +86,11 @@ debugPanel.style.cssText = `
 `;
 
 const debugHeader = document.createElement("div");
-
-debugHeader.textContent = "☰ 編集診断（ここをつかんで移動）";
-
 debugHeader.style.cssText = `
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px;
   padding:10px;
   background:rgba(104,120,255,.35);
   border-bottom:1px solid #777;
@@ -100,16 +101,77 @@ debugHeader.style.cssText = `
   -webkit-user-select:none;
 `;
 
-const debugContent = document.createElement("div");
+const debugTitle = document.createElement("span");
+debugTitle.textContent = "☰ 編集診断";
+debugTitle.style.flex = "1";
+debugTitle.style.pointerEvents = "none";
 
-debugContent.style.cssText = `
-  padding:10px;
+const debugToggle = document.createElement("button");
+debugToggle.type = "button";
+debugToggle.textContent = "－";
+debugToggle.setAttribute("aria-label", "診断パネルを折りたたむ");
+debugToggle.style.cssText = `
+  flex:0 0 auto;
+  background:transparent;
+  border:1px solid #aaa;
+  border-radius:5px;
+  color:white;
+  padding:2px 9px;
+  font-size:16px;
+  line-height:1.2;
+  touch-action:manipulation;
 `;
+
+debugHeader.appendChild(debugTitle);
+debugHeader.appendChild(debugToggle);
+
+const debugContent = document.createElement("div");
+debugContent.style.cssText = `padding:10px;`;
 
 debugPanel.appendChild(debugHeader);
 debugPanel.appendChild(debugContent);
-
 document.body.appendChild(debugPanel);
+
+let debugPanelCollapsed = false;
+debugToggle.addEventListener("pointerdown", (event) => {
+  event.stopPropagation();
+});
+
+debugToggle.addEventListener("click", (event) => {
+  event.stopPropagation();
+  debugPanelCollapsed = !debugPanelCollapsed;
+  debugContent.style.display = debugPanelCollapsed ? "none" : "block";
+  debugToggle.textContent = debugPanelCollapsed ? "＋" : "－";
+  debugToggle.setAttribute(
+    "aria-label",
+    debugPanelCollapsed ? "診断パネルを展開" : "診断パネルを折りたたむ"
+  );
+});
+
+// 保存した位置を復元
+const debugPositionKey = "inochi3d-debug-panel-position";
+try {
+  const savedPosition = JSON.parse(
+    localStorage.getItem(debugPositionKey) || "null"
+  );
+
+  if (
+    savedPosition &&
+    Number.isFinite(savedPosition.left) &&
+    Number.isFinite(savedPosition.top)
+  ) {
+    const maxLeft = Math.max(0, window.innerWidth - debugPanel.offsetWidth);
+    const maxTop = Math.max(0, window.innerHeight - debugPanel.offsetHeight);
+
+    debugPanel.style.left =
+      Math.max(0, Math.min(maxLeft, savedPosition.left)) + "px";
+    debugPanel.style.top =
+      Math.max(0, Math.min(maxTop, savedPosition.top)) + "px";
+    debugPanel.style.right = "auto";
+  }
+} catch (error) {
+  console.warn("診断パネルの位置を復元できませんでした", error);
+}
 
 // 診断内容の更新
 function updateDebugPanel(message = "待機中") {
@@ -124,18 +186,30 @@ function updateDebugPanel(message = "待機中") {
 }
 
 // =========================
-// 診断パネルの移動
+// 診断パネルのドラッグ移動
 // =========================
 
 let debugDragging = false;
 let debugOffsetX = 0;
 let debugOffsetY = 0;
 
-debugHeader.addEventListener("pointerdown", (event) => {
-  debugDragging = true;
-
+function saveDebugPanelPosition() {
   const rect = debugPanel.getBoundingClientRect();
+  try {
+    localStorage.setItem(
+      debugPositionKey,
+      JSON.stringify({ left: rect.left, top: rect.top })
+    );
+  } catch (error) {
+    console.warn("診断パネルの位置を保存できませんでした", error);
+  }
+}
 
+debugHeader.addEventListener("pointerdown", (event) => {
+  if (event.target === debugToggle) return;
+
+  debugDragging = true;
+  const rect = debugPanel.getBoundingClientRect();
   debugOffsetX = event.clientX - rect.left;
   debugOffsetY = event.clientY - rect.top;
 
@@ -144,39 +218,48 @@ debugHeader.addEventListener("pointerdown", (event) => {
   debugPanel.style.right = "auto";
 
   debugHeader.style.cursor = "grabbing";
-
   debugHeader.setPointerCapture(event.pointerId);
-
   event.preventDefault();
 });
 
 debugHeader.addEventListener("pointermove", (event) => {
   if (!debugDragging) return;
 
-  const maxX = window.innerWidth - debugPanel.offsetWidth;
-  const maxY = window.innerHeight - debugPanel.offsetHeight;
-
-  const left = Math.max(
-    0,
-    Math.min(maxX, event.clientX - debugOffsetX)
-  );
-
-  const top = Math.max(
-    0,
-    Math.min(maxY, event.clientY - debugOffsetY)
-  );
+  const maxLeft = Math.max(0, window.innerWidth - debugPanel.offsetWidth);
+  const maxTop = Math.max(0, window.innerHeight - debugPanel.offsetHeight);
+  const left = Math.max(0, Math.min(maxLeft, event.clientX - debugOffsetX));
+  const top = Math.max(0, Math.min(maxTop, event.clientY - debugOffsetY));
 
   debugPanel.style.left = left + "px";
   debugPanel.style.top = top + "px";
 });
 
 function stopDebugDragging() {
+  if (!debugDragging) return;
   debugDragging = false;
   debugHeader.style.cursor = "grab";
+  saveDebugPanelPosition();
 }
 
 debugHeader.addEventListener("pointerup", stopDebugDragging);
 debugHeader.addEventListener("pointercancel", stopDebugDragging);
+
+// 画面サイズが変わってもパネルが画面外に出ないようにする
+window.addEventListener("resize", () => {
+  const rect = debugPanel.getBoundingClientRect();
+  const left = Math.max(0, Math.min(
+    window.innerWidth - debugPanel.offsetWidth,
+    rect.left
+  ));
+  const top = Math.max(0, Math.min(
+    window.innerHeight - debugPanel.offsetHeight,
+    rect.top
+  ));
+  debugPanel.style.left = left + "px";
+  debugPanel.style.top = top + "px";
+  debugPanel.style.right = "auto";
+  saveDebugPanelPosition();
+});
 
 
 // =========================
@@ -1115,7 +1198,7 @@ function loopCutSelectedObject() {
   const axisInput = document.getElementById("loopCutAxis");
   const axis = axisInput ? axisInput.value : "x";
 
-  const geometry = object.geometry;
+    const geometry = object.geometry;
   geometry.computeBoundingBox();
 
   const size = new THREE.Vector3();
@@ -1815,7 +1898,7 @@ function createSnapshot() {
 }
 
 function saveHistory() {
-  const snapshot = createSnapshot();
+    const snapshot = createSnapshot();
 
   history = history.slice(0, historyIndex + 1);
   history.push(JSON.stringify(snapshot));
