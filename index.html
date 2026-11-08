@@ -312,9 +312,12 @@ function updatePartList(){
 
  const visited = new Set();
 
- function createNode(p, depth){
-  if(visited.has(p.id)) return;
+ function createNode(p){
+  if(visited.has(p.id)) return null;
   visited.add(p.id);
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'tree-node';
 
   const children = childrenOf(p.id);
   const hasChildren = children.length > 0;
@@ -323,23 +326,22 @@ function updatePartList(){
   row.className = 'tree-row' +
    (p.id === selectedId ? ' selected' : '');
 
-  row.style.marginLeft = (depth * 12) + 'px';
-
   const toggle = document.createElement('button');
   toggle.className = 'tree-toggle';
   toggle.textContent = hasChildren
    ? (collapsedParts.has(p.id) ? '▶' : '▼')
    : '・';
-
   toggle.disabled = !hasChildren;
 
   toggle.onclick = e => {
    e.stopPropagation();
+
    if(collapsedParts.has(p.id)){
     collapsedParts.delete(p.id);
    }else{
     collapsedParts.add(p.id);
    }
+
    updatePartList();
   };
 
@@ -348,15 +350,18 @@ function updatePartList(){
   name.textContent = (hasChildren ? '📁 ' : '🧩 ') +
    (p.name || '名前なし');
 
-  name.onclick = () => {
+  const selectPart = () => {
    selectedId = p.id;
    updatePartList();
    syncEditor();
    render();
   };
 
+  name.onclick = selectPart;
+
   const visibility = document.createElement('button');
   visibility.textContent = p.visible ? '表示' : '非表示';
+
   visibility.onclick = e => {
    e.stopPropagation();
    p.visible = !p.visible;
@@ -367,6 +372,7 @@ function updatePartList(){
   const front = document.createElement('button');
   front.textContent = '▲';
   front.title = '前面へ';
+
   front.onclick = e => {
    e.stopPropagation();
    movePart(p.id, 1);
@@ -375,46 +381,45 @@ function updatePartList(){
   const back = document.createElement('button');
   back.textContent = '▼';
   back.title = '背面へ';
+
   back.onclick = e => {
    e.stopPropagation();
    movePart(p.id, -1);
   };
 
   row.append(toggle, name, visibility, front, back);
+  row.onclick = selectPart;
 
-  row.onclick = () => {
-   selectedId = p.id;
-   updatePartList();
-   syncEditor();
-   render();
-  };
-
-  box.append(row);
+  wrapper.append(row);
 
   if(hasChildren && !collapsedParts.has(p.id)){
    const group = document.createElement('div');
    group.className = 'tree-children';
 
    children.forEach(child => {
-    const before = box.children.length;
-    createNode(child, depth + 1);
-
-    if(box.children.length > before){
-     const node = box.lastElementChild;
-     box.removeChild(node);
-     group.append(node);
+    const childNode = createNode(child);
+    if(childNode){
+     group.append(childNode);
     }
    });
 
-   box.append(group);
+   wrapper.append(group);
   }
+
+  return wrapper;
  }
 
- roots.forEach(p => createNode(p, 0));
+ roots.forEach(p => {
+  const node = createNode(p);
+  if(node) box.append(node);
+ });
 
  // 親子関係が壊れたデータも一覧から消さない
  parts.forEach(p => {
-  if(!visited.has(p.id)) createNode(p, 0);
+  if(!visited.has(p.id)){
+   const node = createNode(p);
+   if(node) box.append(node);
+  }
  });
 }
 function selected(){return parts.find(p=>p.id===selectedId)}
