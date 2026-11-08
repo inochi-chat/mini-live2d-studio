@@ -1,4 +1,3 @@
-
 export const state = {
   stage: null,
   ctx: null,
@@ -31,7 +30,12 @@ export const state = {
   motionTime: 0,
   lastTick: 0,
 
-  fit: { scale: 1, ox: 0, oy: 0 },
+  fit: {
+    scale: 1,
+    ox: 0,
+    oy: 0
+  },
+
   viewZoom: 1,
   viewPanX: 0,
   viewPanY: 0,
