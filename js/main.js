@@ -1970,6 +1970,11 @@ initUI({
 
 const insetButton = document.getElementById("insetButton");
 const bevelButton = document.getElementById("bevelButton");
+const loopCutButton = document.getElementById("loopCutButton");
+
+if (loopCutButton) {
+  loopCutButton.addEventListener("click", loopCutSelectedObject);
+}
 
 if (bevelButton) {
   bevelButton.addEventListener("click", bevelSelectedObject);
