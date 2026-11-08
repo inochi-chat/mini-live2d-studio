@@ -18,7 +18,7 @@ const H = state.H;
 const sourceCanvas = state.sourceCanvas;
 let sourceCtx = sourceCanvas.getContext('2d');
 
-const originalCanvas = state.originalCanvas;
+let originalCanvas = state.originalCanvas;
 let originalCtx = originalCanvas.getContext('2d');
 
 state.sourceCtx = sourceCtx;
