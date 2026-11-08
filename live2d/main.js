@@ -3,6 +3,7 @@ import {
   createPart,
   getSelectedPart
 } from './parts.js';
+import { drawPart } from './render.js';
 
 (() => {
 'use strict';
