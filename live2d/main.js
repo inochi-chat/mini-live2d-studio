@@ -12,7 +12,8 @@ import {
   sourcePoint as sourcePointFromModule,
   clampZoom,
   getPinchRatio,
-  getPanDelta
+  getPanDelta,
+  clampPan
 } from './interaction.js';
 
 (() => {
