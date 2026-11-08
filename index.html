@@ -33,7 +33,7 @@ hr{border:0;border-top:1px solid #403956;margin:13px 0}
 </style>
 </head>
 <body>
-<header><h1>Mini Live2D Studio</h1><p>2D Character Animation Editor · Prototype 1.8</p></header>
+<header><h1>Mini Live2D Studio</h1><p>2D Character Animation Editor · Prototype 1.9</p></header>
 <main>
 <section class="panel">
 <h2>ステージ</h2>
@@ -50,7 +50,7 @@ hr{border:0;border-top:1px solid #403956;margin:13px 0}
 <div class="row"><label class="control" style="flex:1;margin:0">ブラシサイズ <span id="brushValue">24</span><input id="brushSize" type="range" min="2" max="100" value="24"></label></div>
 <div class="toolbar"><button id="zoomOut">－ 縮小</button><button id="zoomIn">＋ 拡大</button><button id="fitView">画面に合わせる</button><button id="resetView">表示位置をリセット</button><span id="zoomLabel" class="small">表示 100%</span></div>
 <div class="row"><label class="control" style="flex:1;margin:0">イラスト全体の大きさ <span id="artScaleValue">100</span>%<input id="artScale" type="range" min="25" max="200" value="100"></label></div>
-<p class="small">通常モード：指1本で表示位置を移動、2本指で拡大・縮小。右側の「大きさ」は選択中のパーツだけに反映されるよ。</p>
+<p class="small">通常モード：パーツをタップして選択、中央をドラッグして移動。四隅で大きさ、上の丸で回転。空白部分をドラッグすると画面移動、2本指で表示倍率を変更できるよ。</p>
 <div class="toolbar"><button id="undoEdit">↶ 戻す</button><button id="redoEdit">↷ やり直す</button></div>
 <div class="toolbar"><label><input id="hideBase" type="checkbox"> 元画像を隠す</label><label><input id="animation" type="checkbox"> アニメーション</label></div>
 <div id="status"><strong>📂 読み込み状況</strong><div>画像またはPSDを読み込んでね。</div></div>
@@ -62,7 +62,7 @@ hr{border:0;border-top:1px solid #403956;margin:13px 0}
 <label class="control">パーツ名</label><input id="partName" type="text" placeholder="パーツ名">
 <label class="control">位置 X <span id="posXValue">0</span></label><input id="posX" type="range" min="-300" max="900" value="300">
 <label class="control">位置 Y <span id="posYValue">0</span></label><input id="posY" type="range" min="-300" max="900" value="300">
-<label class="control">大きさ <span id="scaleValue">100</span>%</label><input id="scale" type="range" min="10" max="300" value="100">
+<label class="control">大きさ <span id="scaleValue">100</span>%</label><input id="scale" type="range" min="5" max="800" value="100">
 <label class="control">回転 <span id="rotationValue">0</span>°</label><input id="rotation" type="range" min="-180" max="180" value="0">
 <label class="control">揺れ <span id="swayValue">8</span></label><input id="sway" type="range" min="0" max="40" value="8">
 <label class="control">速さ <span id="speedValue">10</span></label><input id="speed" type="range" min="1" max="30" value="10">
@@ -87,7 +87,7 @@ let sourceCanvas=document.createElement('canvas'),sourceCtx=sourceCanvas.getCont
 let originalCanvas=document.createElement('canvas'),originalCtx=originalCanvas.getContext('2d');
 let baseImageData=null,parts=[],selectedId=null,nextId=1;
 let mode='normal',brushSize=24,drawing=false,startPoint=null,freePoints=[],lastPointer=null;
-let undoStack=[],redoStack=[],animFrame=0,raf=null,motionTime=0,lastTick=0,fit={scale:1,ox:0,oy:0},viewZoom=1,viewPanX=0,viewPanY=0,artScale=1,viewPointers=new Map(),gesture=null;
+let undoStack=[],redoStack=[],animFrame=0,raf=null,motionTime=0,lastTick=0,fit={scale:1,ox:0,oy:0},viewZoom=1,viewPanX=0,viewPanY=0,artScale=1,viewPointers=new Map(),gesture=null,dragAction=null;
 
 function status(message,type='info'){
  const box=$('status');box.replaceChildren();
@@ -147,6 +147,54 @@ function setParent(p,parentId){
  p.scale=old.scale/pt.scale*100;p.rotation=old.rotation-pt.rotation;p.parentId=parent.id;
 }
 
+
+function worldToLocalPosition(p,wx,wy){
+ const parent=parts.find(q=>q.id===p.parentId);
+ if(!parent){p.x=wx;p.y=wy;return}
+ const pt=getWorldTransform(parent),dx=wx-pt.x,dy=wy-pt.y,rad=-pt.rotation*Math.PI/180,s=pt.scale/100;
+ p.x=(dx*Math.cos(rad)-dy*Math.sin(rad))/s;
+ p.y=(dx*Math.sin(rad)+dy*Math.cos(rad))/s;
+}
+function partScreenInfo(p){
+ const wt=getWorldTransform(p),cx=fit.ox+wt.x*fit.scale,cy=fit.oy+wt.y*fit.scale;
+ return {wt,cx,cy,w:p.w*fit.scale*wt.scale/100,h:p.h*fit.scale*wt.scale/100,angle:wt.rotation*Math.PI/180};
+}
+function selectionHandles(p){
+ const a=partScreenInfo(p),c=Math.cos(a.angle),s=Math.sin(a.angle),hw=a.w/2,hh=a.h/2;
+ const point=(x,y)=>({x:a.cx+x*c-y*s,y:a.cy+x*s+y*c});
+ const corners=[point(-hw,-hh),point(hw,-hh),point(hw,hh),point(-hw,hh)];
+ const top=point(0,-hh);
+ const rotate={x:top.x-Math.sin(a.angle)*28,y:top.y+Math.cos(a.angle)*28};
+ return {...a,corners,rotate,point};
+}
+function hitSelectedHandle(p,pos){
+ if(!p)return null;
+ const h=selectionHandles(p);
+ if(Math.hypot(pos.x-h.rotate.x,pos.y-h.rotate.y)<15)return 'rotate';
+ for(let i=0;i<h.corners.length;i++)if(Math.hypot(pos.x-h.corners[i].x,pos.y-h.corners[i].y)<15)return 'scale';
+ return null;
+}
+function hitPart(pos){
+ for(let i=parts.length-1;i>=0;i--){
+  const p=parts[i];if(!p.visible)continue;
+  const a=partScreenInfo(p),dx=pos.x-a.cx,dy=pos.y-a.cy,c=Math.cos(-a.angle),s=Math.sin(-a.angle);
+  const lx=dx*c-dy*s,ly=dx*s+dy*c;
+  if(Math.abs(lx)<=a.w/2+5&&Math.abs(ly)<=a.h/2+5)return p;
+ }
+ return null;
+}
+function drawSelection(){
+ const p=selected();if(!p||!p.visible)return;
+ const h=selectionHandles(p);
+ ctx.save();ctx.strokeStyle='#e8d7ff';ctx.fillStyle='#8f6bc7';ctx.lineWidth=2;ctx.setLineDash([5,3]);
+ ctx.beginPath();h.corners.forEach((q,i)=>i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));ctx.closePath();ctx.stroke();ctx.setLineDash([]);
+ const top=h.corners[0],rightTop=h.corners[1],bottom=h.corners[2],leftBottom=h.corners[3];
+ ctx.beginPath();ctx.moveTo((top.x+rightTop.x)/2,(top.y+rightTop.y)/2);ctx.lineTo(h.rotate.x,h.rotate.y);ctx.stroke();
+ h.corners.forEach(q=>{ctx.beginPath();ctx.arc(q.x,q.y,6,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.stroke();ctx.strokeStyle='#e8d7ff'});
+ ctx.beginPath();ctx.arc(h.rotate.x,h.rotate.y,7,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.stroke();
+ ctx.restore();
+}
+
 function render(){
  ctx.clearRect(0,0,W,H);calculateFit();
  if(sourceCanvas.width&&!$('hideBase').checked)ctx.drawImage(sourceCanvas,fit.ox,fit.oy,sourceCanvas.width*fit.scale,sourceCanvas.height*fit.scale);
@@ -179,6 +227,7 @@ function render(){
   ctx.save();ctx.translate(cx,cy);ctx.rotate((wt.rotation+extraRotation)*Math.PI/180);
   ctx.drawImage(p.img,-dw/2,-dh/2,dw,dh);ctx.restore();
  }
+ if(mode==='normal')drawSelection();
  if(mode==='rect'&&startPoint&&lastPointer){const p=stagePoint(lastPointer);ctx.save();ctx.strokeStyle='#c5a5ff';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.strokeRect(startPoint.x,startPoint.y,p.x-startPoint.x,p.y-startPoint.y);ctx.restore()}
  if(mode==='free'&&freePoints.length){ctx.save();ctx.strokeStyle='#c5a5ff';ctx.lineWidth=2;ctx.beginPath();freePoints.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke();ctx.restore()}
 }
@@ -210,7 +259,7 @@ function syncEditor(){
  if(!p){$('partName').value='';parentSelect.value='';return}
  $('partName').value=p.name;$('motionType').value=p.motion||'none';parentSelect.value=p.parentId==null?'':String(p.parentId);
  $('posX').value=Math.max(-300,Math.min(900,Math.round(p.x+300)));$('posY').value=Math.max(-300,Math.min(900,Math.round(p.y+300)));
- $('scale').value=Math.max(10,Math.min(300,p.scale));$('rotation').value=Math.max(-180,Math.min(180,p.rotation));$('sway').value=p.sway;$('speed').value=p.speed;updateValues();
+ $('scale').value=Math.max(5,Math.min(800,p.scale));$('rotation').value=Math.max(-180,Math.min(180,p.rotation));$('sway').value=p.sway;$('speed').value=p.speed;updateValues();
 }
 function updateValues(){['posX','posY','scale','rotation','sway','speed'].forEach(id=>{const el=$(id),out=$(id+'Value');if(out)out.textContent=id==='posX'||id==='posY'?Number(el.value)-300:el.value})}
 function loadImageFile(file){
@@ -266,9 +315,26 @@ function brushAt(p){
 stage.addEventListener('pointerdown',e=>{
  const p=stagePoint(e);lastPointer=e;viewPointers.set(e.pointerId,p);stage.setPointerCapture(e.pointerId);
  if(mode==='normal'){
-  if(viewPointers.size>=2){const pts=[...viewPointers.values()];gesture={distance:Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y),zoom:viewZoom,mid:{x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2},panX:viewPanX,panY:viewPanY};}
-  else gesture={last:p};
-  return;
+  if(viewPointers.size>=2){
+   dragAction=null;
+   const pts=[...viewPointers.values()];
+   gesture={distance:Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y),zoom:viewZoom,mid:{x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2},panX:viewPanX,panY:viewPanY};
+   return;
+  }
+  const current=selected(),handle=hitSelectedHandle(current,p);
+  if(current&&handle){
+   const info=partScreenInfo(current);
+   dragAction={type:handle,id:current.id,start:p,center:{x:info.cx,y:info.cy},startDistance:Math.max(1,Math.hypot(p.x-info.cx,p.y-info.cy)),startAngle:Math.atan2(p.y-info.cy,p.x-info.cx),startScale:current.scale,startRotation:current.rotation};
+   return;
+  }
+  const hit=hitPart(p);
+  if(hit){
+   selectedId=hit.id;updatePartList();syncEditor();
+   const info=partScreenInfo(hit);
+   dragAction={type:'move',id:hit.id,start:p,startWorld:{x:info.wt.x,y:info.wt.y},startLocal:{x:hit.x,y:hit.y}};
+   render();return;
+  }
+  dragAction={type:'pan',last:p};gesture={last:p};return;
  }
  if(viewPointers.size>=2)return;
  if(!sourceCanvas.width&&['rect','free','erase','restore'].includes(mode))return;
@@ -281,12 +347,32 @@ stage.addEventListener('pointermove',e=>{
  if(mode==='normal'&&viewPointers.size){
   const pts=[...viewPointers.values()];
   if(pts.length>=2){
+   dragAction=null;
    const mid={x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2};
    if(!gesture||!gesture.distance){gesture={distance:Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y),zoom:viewZoom,mid,panX:viewPanX,panY:viewPanY};}
    const dist=Math.max(1,Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y));
    const ratio=dist/Math.max(1,gesture.distance);viewZoom=Math.max(.25,Math.min(5,gesture.zoom*ratio));
    viewPanX=gesture.panX+(mid.x-gesture.mid.x);viewPanY=gesture.panY+(mid.y-gesture.mid.y);updateZoomLabel();render();
-  }else if(gesture?.last){const p=pts[0];viewPanX+=p.x-gesture.last.x;viewPanY+=p.y-gesture.last.y;gesture.last=p;render();}
+  }else if(dragAction){
+   const p=pts[0],part=parts.find(q=>q.id===dragAction.id);
+   if(dragAction.type==='pan'){
+    viewPanX+=p.x-dragAction.last.x;viewPanY+=p.y-dragAction.last.y;dragAction.last=p;render();
+   }else if(part&&dragAction.type==='move'){
+    const dx=(p.x-dragAction.start.x)/fit.scale,dy=(p.y-dragAction.start.y)/fit.scale;
+    worldToLocalPosition(part,dragAction.startWorld.x+dx,dragAction.startWorld.y+dy);
+    syncEditor();render();
+   }else if(part&&dragAction.type==='scale'){
+    const distance=Math.max(1,Math.hypot(p.x-dragAction.center.x,p.y-dragAction.center.y));
+    part.scale=Math.max(5,Math.min(800,dragAction.startScale*distance/dragAction.startDistance));
+    syncEditor();render();
+   }else if(part&&dragAction.type==='rotate'){
+    const angle=Math.atan2(p.y-dragAction.center.y,p.x-dragAction.center.x);
+    let delta=(angle-dragAction.startAngle)*180/Math.PI;
+    if(delta>180)delta-=360;if(delta<-180)delta+=360;
+    part.rotation=Math.max(-360,Math.min(360,dragAction.startRotation+delta));
+    syncEditor();render();
+   }
+  }
   return;
  }
  if(!drawing&&mode!=='rect')return;lastPointer=e;const p=stagePoint(e);
@@ -294,7 +380,7 @@ stage.addEventListener('pointermove',e=>{
 });
 function finishPointer(e){
  viewPointers.delete(e.pointerId);
- if(mode==='normal'){gesture=null;return;}
+ if(mode==='normal'){dragAction=null;gesture=null;return;}
  const p=stagePoint(e);if(mode==='rect'&&startPoint){cropRect(startPoint,p);startPoint=null}
  if(mode==='free'&&drawing){cropFree(freePoints);freePoints=[]}
  drawing=false;lastPointer=null;render();
@@ -337,7 +423,7 @@ $('deletePart').onclick=()=>{
  parts=parts.filter(q=>q.id!==removedId);selectedId=parts.length?parts[parts.length-1].id:null;
  updatePartList();syncEditor();render();status('パーツを削除したよ。子パーツはその場に残したよ。');
 };
-$('saveProject').onclick=()=>{try{const data={version:6,base:baseImageData,parts:parts.map(({img,...p})=>p),nextId,artScale};downloadBlob(new Blob([JSON.stringify(data)],{type:'application/json'}),'mini-live2d-project.json');status('プロジェクトを保存したよ。')}catch(e){status('保存できなかったよ：'+e.message,'error')}};
+$('saveProject').onclick=()=>{try{const data={version:7,base:baseImageData,parts:parts.map(({img,...p})=>p),nextId,artScale};downloadBlob(new Blob([JSON.stringify(data)],{type:'application/json'}),'mini-live2d-project.json');status('プロジェクトを保存したよ。')}catch(e){status('保存できなかったよ：'+e.message,'error')}};
 $('loadProject').onchange=async e=>{
  const f=e.target.files[0];if(!f)return;
  try{
