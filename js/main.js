@@ -1,5 +1,6 @@
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import * as THREE from "three";
+
 import { createScene } from "./scene.js";
 
 import {
@@ -16,6 +17,10 @@ import {
 } from "./ui.js";
 
 import { getEditMode } from "./edit-mode.js";
+
+// =========================
+// 初期設定
+// =========================
 
 const canvas = document.getElementById("threeCanvas");
 const { scene, camera, renderer, controls } = createScene(canvas);
@@ -55,9 +60,9 @@ const pointer = new THREE.Vector2();
 raycaster.params.Points.threshold = 0.5;
 raycaster.params.Line.threshold = 0.5;
 
-// -------------------------
+// =========================
 // 診断パネル
-// -------------------------
+// =========================
 
 const debugPanel = document.createElement("div");
 
@@ -92,9 +97,9 @@ function updateDebugPanel(message = "待機中") {
     "状態：" + message;
 }
 
-// -------------------------
+// =========================
 // ポインター
-// -------------------------
+// =========================
 
 function updatePointer(event) {
   const rect = canvas.getBoundingClientRect();
@@ -105,9 +110,9 @@ function updatePointer(event) {
   raycaster.setFromCamera(pointer, camera);
 }
 
-// -------------------------
+// =========================
 // ヘルパー削除
-// -------------------------
+// =========================
 
 function clearVertexHelper() {
   if (!vertexHelper) return;
@@ -140,9 +145,9 @@ function clearFaceHelper() {
   faceTriangleToRecord = [];
 }
 
-// -------------------------
+// =========================
 // 頂点表示
-// -------------------------
+// =========================
 
 function updateVertexColors() {
   if (!vertexHelper) return;
@@ -200,9 +205,9 @@ function showVertices(object) {
   updateVertexColors();
 }
 
-// -------------------------
+// =========================
 // 頂点検索
-// -------------------------
+// =========================
 
 function findMatchingVertices(object, point) {
   const positions = object.geometry.attributes.position;
@@ -221,9 +226,9 @@ function findMatchingVertices(object, point) {
   return matches;
 }
 
-// -------------------------
-// 辺表示・色
-// -------------------------
+// =========================
+// 辺表示
+// =========================
 
 function updateEdgeColors() {
   if (!edgeHelper) return;
@@ -326,9 +331,9 @@ function showEdges(object) {
   updateEdgeColors();
 }
 
-// -------------------------
-// 面表示・色
-// -------------------------
+// =========================
+// 面表示
+// =========================
 
 function updateFaceColors() {
   if (!faceHelper) return;
@@ -337,9 +342,7 @@ function updateFaceColors() {
 
   faceRecords.forEach((face, index) => {
     const color = new THREE.Color(
-      selectedFaceIndices.has(index)
-        ? 0xff6600
-        : 0xffff00
+      selectedFaceIndices.has(index) ? 0xff6600 : 0xffff00
     );
 
     for (let i = 0; i < face.vertices.length; i++) {
@@ -391,10 +394,7 @@ function showFaces(object) {
         );
       }
 
-      faceRecords.push({
-        vertices,
-        faceIndex
-      });
+      faceRecords.push({ vertices, faceIndex });
 
       faceTriangleToRecord.push(faceRecords.length - 1);
       faceTriangleToRecord.push(faceRecords.length - 1);
@@ -461,9 +461,9 @@ function showFaces(object) {
   updateDebugPanel("面を表示しました");
 }
 
-// -------------------------
+// =========================
 // 編集表示更新
-// -------------------------
+// =========================
 
 function updateEditDisplay() {
   const mode = getEditMode();
@@ -482,17 +482,9 @@ function updateEditDisplay() {
   } else {
     detachObject();
 
-    if (mode === "vertex" && selected) {
-      showVertices(selected);
-    }
-
-    if (mode === "edge" && selected) {
-      showEdges(selected);
-    }
-
-    if (mode === "face" && selected) {
-      showFaces(selected);
-    }
+    if (mode === "vertex" && selected) showVertices(selected);
+    if (mode === "edge" && selected) showEdges(selected);
+    if (mode === "face" && selected) showFaces(selected);
   }
 
   updateDebugPanel("編集モード切り替え済み");
@@ -500,9 +492,9 @@ function updateEditDisplay() {
 
 window.addEventListener("edit-mode-changed", updateEditDisplay);
 
-// -------------------------
+// =========================
 // オブジェクト選択
-// -------------------------
+// =========================
 
 function selectMesh(mesh) {
   if (!mesh) return;
@@ -524,9 +516,9 @@ function selectMesh(mesh) {
   refreshProperties();
 }
 
-// -------------------------
+// =========================
 // 選択切り替え
-// -------------------------
+// =========================
 
 function toggleVertexSelection(index) {
   if (selectedVertexIndices.has(index)) {
@@ -558,9 +550,9 @@ function toggleFaceSelection(index) {
   updateFaceColors();
 }
 
-// -------------------------
+// =========================
 // ヒット判定
-// -------------------------
+// =========================
 
 function getVertexHit(event) {
   if (!vertexHelper) return null;
@@ -591,16 +583,14 @@ function getFaceHit(event) {
 
   const hits = raycaster.intersectObject(faceHelper, false);
 
-  if (!hits.length || hits[0].faceIndex == null) {
-    return null;
-  }
+  if (!hits.length || hits[0].faceIndex == null) return null;
 
   return faceTriangleToRecord[hits[0].faceIndex] ?? null;
 }
 
-// -------------------------
+// =========================
 // ドラッグ共通
-// -------------------------
+// =========================
 
 function createDragPlane(event, localPosition, object) {
   object.updateMatrixWorld(true);
@@ -629,9 +619,9 @@ function createDragPlane(event, localPosition, object) {
   };
 }
 
-// -------------------------
-// 頂点ドラッグ開始
-// -------------------------
+// =========================
+// 頂点ドラッグ
+// =========================
 
 function beginVertexDrag(event) {
   if (!pendingVertex) return;
@@ -675,10 +665,6 @@ function beginVertexDrag(event) {
   controls.enabled = false;
 }
 
-// -------------------------
-// 頂点移動
-// -------------------------
-
 function moveVertices(event) {
   if (!vertexDrag) return;
 
@@ -686,9 +672,7 @@ function moveVertices(event) {
 
   const point = new THREE.Vector3();
 
-  if (!raycaster.ray.intersectPlane(vertexDrag.plane, point)) {
-    return;
-  }
+  if (!raycaster.ray.intersectPlane(vertexDrag.plane, point)) return;
 
   const object = vertexDrag.object;
   object.updateMatrixWorld(true);
@@ -708,6 +692,7 @@ function moveVertices(event) {
   });
 
   positions.needsUpdate = true;
+
   object.geometry.computeVertexNormals();
   object.geometry.computeBoundingBox();
   object.geometry.computeBoundingSphere();
@@ -728,9 +713,9 @@ function moveVertices(event) {
   }
 }
 
-// -------------------------
-// 辺ドラッグ開始
-// -------------------------
+// =========================
+// 辺ドラッグ
+// =========================
 
 function beginEdgeDrag(event) {
   if (!pendingEdge) return;
@@ -780,10 +765,6 @@ function beginEdgeDrag(event) {
   controls.enabled = false;
 }
 
-// -------------------------
-// 辺移動
-// -------------------------
-
 function averageVertexPosition(positions, indices) {
   const result = new THREE.Vector3();
 
@@ -805,9 +786,7 @@ function moveEdges(event) {
 
   const point = new THREE.Vector3();
 
-  if (!raycaster.ray.intersectPlane(edgeDrag.plane, point)) {
-    return;
-  }
+  if (!raycaster.ray.intersectPlane(edgeDrag.plane, point)) return;
 
   const object = edgeDrag.object;
   object.updateMatrixWorld(true);
@@ -827,6 +806,7 @@ function moveEdges(event) {
   });
 
   positions.needsUpdate = true;
+
   object.geometry.computeVertexNormals();
   object.geometry.computeBoundingBox();
   object.geometry.computeBoundingSphere();
@@ -848,9 +828,9 @@ function moveEdges(event) {
   edgeHelper.geometry.computeBoundingSphere();
 }
 
-// -------------------------
-// 面ドラッグ開始
-// -------------------------
+// =========================
+// 面ドラッグ
+// =========================
 
 function beginFaceDrag(event) {
   if (!pendingFace) return;
@@ -908,10 +888,6 @@ function beginFaceDrag(event) {
   controls.enabled = false;
 }
 
-// -------------------------
-// 面移動
-// -------------------------
-
 function moveFaces(event) {
   if (!faceDrag || !faceHelper) return;
 
@@ -919,9 +895,7 @@ function moveFaces(event) {
 
   const point = new THREE.Vector3();
 
-  if (!raycaster.ray.intersectPlane(faceDrag.plane, point)) {
-    return;
-  }
+  if (!raycaster.ray.intersectPlane(faceDrag.plane, point)) return;
 
   const object = faceDrag.object;
   object.updateMatrixWorld(true);
@@ -964,6 +938,50 @@ function moveFaces(event) {
   faceHelper.geometry.computeBoundingSphere();
 }
 
+// =========================
+// ドラッグ終了
+// =========================
+
+function finishVertexDrag() {
+  if (!vertexDrag) return;
+
+  vertexDrag = null;
+  isDragging = false;
+  controls.enabled = true;
+
+  saveHistory();
+  refreshProperties();
+  updateDebugPanel("頂点を移動しました");
+}
+
+function finishEdgeDrag() {
+  if (!edgeDrag) return;
+
+  edgeDrag = null;
+  isDragging = false;
+  controls.enabled = true;
+
+  saveHistory();
+  refreshProperties();
+  updateDebugPanel("辺を移動しました");
+}
+
+function finishFaceDrag() {
+  if (!faceDrag) return;
+
+  faceDrag = null;
+  isDragging = false;
+  controls.enabled = true;
+
+  saveHistory();
+  refreshProperties();
+  updateDebugPanel("面を移動しました");
+}
+
+// =========================
+// ミラー複製
+// =========================
+
 function mirrorSelectedObject() {
   const original = getSelectedObject();
 
@@ -975,16 +993,13 @@ function mirrorSelectedObject() {
   const axisInput = document.getElementById("mirrorAxis");
   const axis = axisInput ? axisInput.value : "x";
 
-  // 元のオブジェクトの位置と大きさを保存
   const originalPosition = original.position.clone();
   const originalScale = original.scale.clone();
 
-  // 複製
   const mirrored = duplicateSelectedObject();
 
   if (!mirrored) return;
 
-  // 指定軸の反対側へ移動して反転
   mirrored.position[axis] = -originalPosition[axis];
   mirrored.scale.copy(originalScale);
   mirrored.scale[axis] *= -1;
@@ -998,6 +1013,10 @@ function mirrorSelectedObject() {
   updateDebugPanel("ミラー複製しました");
 }
 
+// =========================
+// ループカット
+// =========================
+
 function loopCutSelectedObject() {
   const object = getSelectedObject();
 
@@ -1007,7 +1026,7 @@ function loopCutSelectedObject() {
   }
 
   if (object.geometry.type !== "BoxGeometry") {
-    alert("今のループカットは、追加したばかりの立方体に対応しています。");
+    alert("今のループカットは、立方体に対応しています。");
     return;
   }
 
@@ -1048,6 +1067,10 @@ function loopCutSelectedObject() {
   updateDebugPanel("ループカットを追加しました");
 }
 
+// =========================
+// ベベル
+// =========================
+
 function bevelSelectedObject() {
   const object = getSelectedObject();
 
@@ -1057,7 +1080,7 @@ function bevelSelectedObject() {
   }
 
   if (object.geometry.type !== "BoxGeometry") {
-    alert("今のベベル機能は、追加したばかりの立方体に対応しています。");
+    alert("今のベベル機能は、立方体に対応しています。");
     return;
   }
 
@@ -1099,7 +1122,6 @@ function bevelSelectedObject() {
   roundedGeometry.computeBoundingBox();
   roundedGeometry.computeBoundingSphere();
 
-  // 履歴・保存機能で扱える形式にする
   roundedGeometry.type = "BufferGeometry";
 
   geometry.dispose();
@@ -1112,6 +1134,10 @@ function bevelSelectedObject() {
 
   updateDebugPanel("角を丸めました");
 }
+
+// =========================
+// 面の差し込み
+// =========================
 
 function insetSelectedFaces() {
   const object = getSelectedObject();
@@ -1136,7 +1162,6 @@ function insetSelectedFaces() {
 
   const geometry = object.geometry;
   const positions = geometry.attributes.position;
-  const indexAttribute = geometry.index;
   const output = [];
   const innerTriangleIndices = [];
 
@@ -1274,7 +1299,6 @@ function insetSelectedFaces() {
 
   geometry.dispose();
   object.geometry = newGeometry;
-
   object.material.side = THREE.DoubleSide;
 
   updateEditDisplay();
@@ -1295,9 +1319,9 @@ function insetSelectedFaces() {
   updateDebugPanel("面を差し込みました");
 }
 
-// -------------------------
+// =========================
 // 面の押し出し
-// -------------------------
+// =========================
 
 function extrudeSelectedFaces() {
   const object = getSelectedObject();
@@ -1345,9 +1369,7 @@ function extrudeSelectedFaces() {
       c.x, c.y, c.z
     );
 
-    if (isTop) {
-      topTriangleIndices.push(triangleIndex);
-    }
+    if (isTop) topTriangleIndices.push(triangleIndex);
   }
 
   function addSide(a, b, normal) {
@@ -1381,7 +1403,6 @@ function extrudeSelectedFaces() {
     return;
   }
 
-  // 元の面と押し出した先端を作成
   for (let i = 0; i + 2 < count; i += 3) {
     const triangleIndex = i / 3;
     const recordIndex = faceTriangleToRecord[triangleIndex];
@@ -1408,7 +1429,6 @@ function extrudeSelectedFaces() {
     }
   }
 
-  // 側面を作成
   offsets.forEach((normal, faceIndex) => {
     const face = faceRecords[faceIndex];
     const edgeCounts = new Map();
@@ -1447,7 +1467,6 @@ function extrudeSelectedFaces() {
     });
   });
 
-  // 新しいジオメトリ
   const newGeometry = new THREE.BufferGeometry();
 
   newGeometry.setAttribute(
@@ -1470,10 +1489,8 @@ function extrudeSelectedFaces() {
     object.material.side = THREE.DoubleSide;
   }
 
-  // 面表示を作り直す
   updateEditDisplay();
 
-  // 新しい面番号を直接選択
   selectedFaceIndices.clear();
 
   topTriangleIndices.forEach((triangleIndex) => {
@@ -1485,10 +1502,8 @@ function extrudeSelectedFaces() {
   });
 
   updateFaceColors();
-
   refreshObjectList();
   refreshProperties();
-
   saveHistory();
 
   updateDebugPanel(
@@ -1496,9 +1511,9 @@ function extrudeSelectedFaces() {
   );
 }
 
-// -------------------------
+// =========================
 // ポインター操作
-// -------------------------
+// =========================
 
 canvas.addEventListener("pointerdown", (event) => {
   pointerDownPosition = {
@@ -1688,20 +1703,33 @@ canvas.addEventListener("pointercancel", () => {
   pointerDownPosition = null;
 });
 
-// -------------------------
-// 履歴
-// -------------------------
+// =========================
+// 履歴・スナップショット
+// =========================
 
 function createSnapshot() {
-  return getObjects().map((object) => ({
-    name: object.name,
-    type: object.geometry.type,
-    position: object.position.toArray(),
-    rotation: object.rotation.toArray(),
-    scale: object.scale.toArray(),
-    color: object.material.color.getHex(),
-    vertices: Array.from(object.geometry.attributes.position.array)
-  }));
+  return getObjects().map((object) => {
+    const geometry = object.geometry;
+    const parameters = geometry.parameters
+      ? { ...geometry.parameters }
+      : null;
+
+    return {
+      name: object.name,
+      type: geometry.type,
+      parameters,
+      position: object.position.toArray(),
+      rotation: object.rotation.toArray(),
+      scale: object.scale.toArray(),
+      color: object.material.color.getHex(),
+      vertices: Array.from(geometry.attributes.position.array),
+
+      // 頂点結合などで必要になるインデックス情報
+      indices: geometry.index
+        ? Array.from(geometry.index.array)
+        : null
+    };
+  });
 }
 
 function saveHistory() {
@@ -1715,11 +1743,30 @@ function saveHistory() {
   historyIndex = history.length - 1;
 }
 
-// -------------------------
+// =========================
 // カスタム形状の復元
-// -------------------------
+// =========================
 
 function restoreCustomGeometry(object, data) {
+  // 通常のBoxGeometryは分割数も含めて再構築
+  if (data.type === "BoxGeometry") {
+    const p = data.parameters || {};
+
+    const geometry = new THREE.BoxGeometry(
+      p.width || 1,
+      p.height || 1,
+      p.depth || 1,
+      p.widthSegments || 1,
+      p.heightSegments || 1,
+      p.depthSegments || 1
+    );
+
+    object.geometry.dispose();
+    object.geometry = geometry;
+    return;
+  }
+
+  // BufferGeometryは頂点とインデックスから再構築
   if (data.type !== "BufferGeometry") return;
 
   object.geometry.dispose();
@@ -1731,12 +1778,23 @@ function restoreCustomGeometry(object, data) {
     new THREE.Float32BufferAttribute(data.vertices, 3)
   );
 
+  if (Array.isArray(data.indices)) {
+    geometry.setIndex(data.indices);
+  }
+
   geometry.computeVertexNormals();
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
 
   object.geometry = geometry;
-  object.material.side = THREE.DoubleSide;
+
+  if (Array.isArray(object.material)) {
+    object.material.forEach(material => {
+      material.side = THREE.DoubleSide;
+    });
+  } else {
+    object.material.side = THREE.DoubleSide;
+  }
 }
 
 function applyVertexData(object, vertices) {
@@ -1744,7 +1802,7 @@ function applyVertexData(object, vertices) {
 
   const positions = object.geometry.attributes.position;
 
-  if (positions.array.length !== vertices.length) return;
+  if (!positions || positions.array.length !== vertices.length) return;
 
   positions.array.set(vertices);
   positions.needsUpdate = true;
@@ -1754,9 +1812,9 @@ function applyVertexData(object, vertices) {
   object.geometry.computeBoundingSphere();
 }
 
-// -------------------------
+// =========================
 // 全オブジェクト削除
-// -------------------------
+// =========================
 
 function clearAllObjects() {
   detachObject();
@@ -1775,9 +1833,9 @@ function clearAllObjects() {
   });
 }
 
-// -------------------------
+// =========================
 // 履歴復元
-// -------------------------
+// =========================
 
 function restoreHistory(snapshotText) {
   const snapshot = JSON.parse(snapshotText);
@@ -1830,9 +1888,9 @@ function redoHistory() {
   restoreHistory(history[historyIndex]);
 }
 
-// -------------------------
+// =========================
 // 保存・読み込み
-// -------------------------
+// =========================
 
 function saveProject() {
   const data = {
@@ -1851,11 +1909,14 @@ function saveProject() {
   link.download = "inochi-3d-project.json";
   link.click();
 
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function loadProject(data) {
-  if (!data || !Array.isArray(data.objects)) return;
+  if (!data || !Array.isArray(data.objects)) {
+    alert("プロジェクトデータが正しくありません。");
+    return;
+  }
 
   clearAllObjects();
 
@@ -1886,14 +1947,16 @@ function loadProject(data) {
 
   if (objects.length > 0) {
     selectMesh(objects[objects.length - 1]);
+  } else {
+    refreshObjectList();
+    refreshProperties();
   }
-
-  refreshObjectList();
-  refreshProperties();
 
   history = [];
   historyIndex = -1;
   saveHistory();
+
+  updateDebugPanel("プロジェクトを読み込みました");
 }
 
 const loadFileInput = document.getElementById("loadFileInput");
@@ -1919,9 +1982,9 @@ if (loadFileInput) {
   });
 }
 
-// -------------------------
+// =========================
 // UI接続
-// -------------------------
+// =========================
 
 initUI({
   onAdd(type) {
@@ -1998,18 +2061,20 @@ initUI({
   }
 });
 
-// -------------------------
-// Inset・押し出しボタン
-// -------------------------
+// =========================
+// 編集ツールボタン
+// =========================
 
 const insetButton = document.getElementById("insetButton");
 const bevelButton = document.getElementById("bevelButton");
 const loopCutButton = document.getElementById("loopCutButton");
 const mirrorButton = document.getElementById("mirrorButton");
+const extrudeButton = document.getElementById("extrudeButton");
 
 if (mirrorButton) {
   mirrorButton.addEventListener("click", mirrorSelectedObject);
 }
+
 if (loopCutButton) {
   loopCutButton.addEventListener("click", loopCutSelectedObject);
 }
@@ -2017,19 +2082,18 @@ if (loopCutButton) {
 if (bevelButton) {
   bevelButton.addEventListener("click", bevelSelectedObject);
 }
+
 if (insetButton) {
   insetButton.addEventListener("click", insetSelectedFaces);
 }
-
-const extrudeButton = document.getElementById("extrudeButton");
 
 if (extrudeButton) {
   extrudeButton.addEventListener("click", extrudeSelectedFaces);
 }
 
-// -------------------------
+// =========================
 // TransformControls
-// -------------------------
+// =========================
 
 window.addEventListener("transform-dragging", (event) => {
   isDragging = event.detail;
@@ -2041,9 +2105,9 @@ window.addEventListener("transform-dragging", (event) => {
   }
 });
 
-// -------------------------
+// =========================
 // 初期オブジェクト
-// -------------------------
+// =========================
 
 const firstObject = addObject("cube");
 
@@ -2056,9 +2120,9 @@ refreshProperties();
 saveHistory();
 updateDebugPanel("準備完了");
 
-// -------------------------
+// =========================
 // 頂点結合
-// -------------------------
+// =========================
 
 function mergeSelectedVertices() {
   const object = getSelectedObject();
@@ -2078,6 +2142,8 @@ function mergeSelectedVertices() {
 
   const oldGeometry = object.geometry;
   const positions = oldGeometry.attributes.position;
+  const oldVertexCount = positions.count;
+
   const oldIndex = oldGeometry.index;
 
   const sourceIndices = oldIndex
@@ -2168,20 +2234,20 @@ function mergeSelectedVertices() {
 
   updateDebugPanel(
     "頂点を結合しました：" +
-    positions.count + " → " +
+    oldVertexCount + " → " +
     uniquePositions.length
   );
 
   alert(
     "頂点を結合しました！\n" +
-    "結合前：" + positions.count + "\n" +
+    "結合前：" + oldVertexCount + "\n" +
     "結合後：" + uniquePositions.length
   );
 }
 
-// -------------------------
+// =========================
 // 頂点結合ボタン
-// -------------------------
+// =========================
 
 const mergeVerticesButton =
   document.getElementById("mergeVerticesButton");
