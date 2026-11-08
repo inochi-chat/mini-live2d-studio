@@ -4,10 +4,16 @@ import { state } from './state.js';
 'use strict';
 
 const $ = id => document.getElementById(id);
-const stage = $('stage');
-const ctx = stage.getContext('2d');
-const W = stage.width;
-const H = stage.height;
+
+state.stage = $('stage');
+state.ctx = state.stage.getContext('2d');
+state.W = state.stage.width;
+state.H = state.stage.height;
+
+const stage = state.stage;
+const ctx = state.ctx;
+const W = state.W;
+const H = state.H;
 
 let sourceCanvas = document.createElement('canvas');
 let sourceCtx = sourceCanvas.getContext('2d');
