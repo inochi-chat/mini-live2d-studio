@@ -1,9 +1,16 @@
 import { state } from './state.js';
+
 import {
   createPart,
   getSelectedPart
 } from './parts.js';
+
 import { drawPart } from './render.js';
+
+import {
+  stagePoint,
+  sourcePoint
+} from './interaction.js';
 
 (() => {
 'use strict';
