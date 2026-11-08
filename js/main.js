@@ -2251,10 +2251,6 @@ initUI({
     return getSelectedObject();
   },
 
-  getSelected() {
-    return getSelectedObject();
-  },
-
   onSave() {
     saveProject();
   },
