@@ -1,21 +1,26 @@
 
-export function drawPart(ctx, part, image, transform) {
+export function drawPart(ctx, part, image, options) {
   if (!part.visible || !image) return;
+
+  const {
+    x,
+    y,
+    width,
+    height,
+    rotation = 0
+  } = options;
 
   ctx.save();
 
-  ctx.translate(transform.x, transform.y);
-  ctx.rotate((part.rotation || 0) * Math.PI / 180);
-
-  const scale = (part.scale || 100) / 100;
-  ctx.scale(scale, scale);
+  ctx.translate(x, y);
+  ctx.rotate(rotation * Math.PI / 180);
 
   ctx.drawImage(
     image,
-    -part.w / 2,
-    -part.h / 2,
-    part.w,
-    part.h
+    -width / 2,
+    -height / 2,
+    width,
+    height
   );
 
   ctx.restore();
