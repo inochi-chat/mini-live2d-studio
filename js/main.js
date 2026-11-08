@@ -964,6 +964,40 @@ function moveFaces(event) {
   faceHelper.geometry.computeBoundingSphere();
 }
 
+function mirrorSelectedObject() {
+  const original = getSelectedObject();
+
+  if (!original) {
+    alert("ミラー複製するオブジェクトを選択してください。");
+    return;
+  }
+
+  const axisInput = document.getElementById("mirrorAxis");
+  const axis = axisInput ? axisInput.value : "x";
+
+  // 元のオブジェクトの位置と大きさを保存
+  const originalPosition = original.position.clone();
+  const originalScale = original.scale.clone();
+
+  // 複製
+  const mirrored = duplicateSelectedObject();
+
+  if (!mirrored) return;
+
+  // 指定軸の反対側へ移動して反転
+  mirrored.position[axis] = -originalPosition[axis];
+  mirrored.scale.copy(originalScale);
+  mirrored.scale[axis] *= -1;
+
+  mirrored.name = original.name + "_mirror";
+
+  refreshObjectList();
+  refreshProperties();
+  saveHistory();
+
+  updateDebugPanel("ミラー複製しました");
+}
+
 function loopCutSelectedObject() {
   const object = getSelectedObject();
 
