@@ -499,8 +499,9 @@ function render(){
   ctx.rotate((wt.rotation+extraRotation)*Math.PI/180);
   ctx.drawImage(p.img,-dw/2,-dh/2,dw,dh);
   ctx.restore();
+  }
 
- if(mode==='normal'){
+  if(mode==='normal'){
   drawSelection();
  }
 
