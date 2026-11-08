@@ -1848,7 +1848,6 @@ initUI({
   }
 });
 
-
 // -------------------------
 // Inset・押し出しボタン
 // -------------------------
@@ -1864,7 +1863,6 @@ const extrudeButton = document.getElementById("extrudeButton");
 if (extrudeButton) {
   extrudeButton.addEventListener("click", extrudeSelectedFaces);
 }
-
 
 // -------------------------
 // TransformControls
