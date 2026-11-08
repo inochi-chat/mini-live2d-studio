@@ -1,4 +1,5 @@
 import { state } from './state.js';
+import { addPart as addPartModule } from './parts.js';
 
 (() => {
 'use strict';
