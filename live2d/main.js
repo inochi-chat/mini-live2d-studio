@@ -493,14 +493,12 @@ function render(){
 
   const cx = fit.ox+wt.x*fit.scale+motionX*fit.scale;
   const cy = fit.oy+wt.y*fit.scale+(sway+motionY)*fit.scale;
-
-  drawPart(ctx, p, p.img, {
-   x: cx,
-   y: cy,
-   width: dw,
-   height: dh,
-   rotation: wt.rotation + extraRotation
-  });
+   
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.rotate((wt.rotation+extraRotation)*Math.PI/180);
+  ctx.drawImage(p.img,-dw/2,-dh/2,dw,dh);
+  ctx.restore();
 
  if(mode==='normal'){
   drawSelection();
