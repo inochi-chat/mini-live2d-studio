@@ -277,15 +277,144 @@ function addPart(name,canvas,x,y){
  const p={id:nextId++,name,data:canvasURL(canvas),x,y,w:canvas.width,h:canvas.height,scale:100,rotation:0,sway:8,speed:10,motion:'none',visible:true,phase:Math.random()*6.28,parentId:null};
  parts.push(p);selectedId=p.id;updatePartList();syncEditor();render();
 }
+const collapsedParts = new Set();
+
+function movePart(id, direction){
+ const index = parts.findIndex(p => p.id === id);
+ if(index < 0) return;
+
+ const next = index + direction;
+ if(next < 0 || next >= parts.length) return;
+
+ [parts[index], parts[next]] = [parts[next], parts[index]];
+ updatePartList();
+ render();
+}
+
 function updatePartList(){
- const box=$('parts');box.replaceChildren();
- if(!parts.length){const empty=document.createElement('div');empty.className='small';empty.textContent='まだパーツがありません。';box.append(empty);return}
- parts.slice().reverse().forEach(p=>{
-  const row=document.createElement('div');row.className='part'+(p.id===selectedId?' selected':'');
-  const name=document.createElement('div');name.className='part-name';name.textContent=(p.parentId!=null?'↳ ':'')+p.name;
-  const vis=document.createElement('button');vis.textContent=p.visible?'表示':'非表示';vis.onclick=()=>{p.visible=!p.visible;updatePartList();render()};
-  const sel=document.createElement('button');sel.textContent='選択';sel.onclick=()=>{selectedId=p.id;updatePartList();syncEditor()};
-  row.append(name,vis,sel);row.onclick=e=>{if(e.target===row||e.target===name){selectedId=p.id;updatePartList();syncEditor()}};box.append(row);
+ const box = $('parts');
+ box.replaceChildren();
+
+ if(!parts.length){
+  const empty = document.createElement('div');
+  empty.className = 'tree-empty';
+  empty.textContent = 'まだパーツがありません。';
+  box.append(empty);
+  return;
+ }
+
+ const childrenOf = id => parts.filter(p => p.parentId === id);
+
+ const roots = parts.filter(p =>
+  p.parentId == null ||
+  !parts.some(q => q.id === p.parentId)
+ );
+
+ const visited = new Set();
+
+ function createNode(p, depth){
+  if(visited.has(p.id)) return;
+  visited.add(p.id);
+
+  const children = childrenOf(p.id);
+  const hasChildren = children.length > 0;
+
+  const row = document.createElement('div');
+  row.className = 'tree-row' +
+   (p.id === selectedId ? ' selected' : '');
+
+  row.style.marginLeft = (depth * 12) + 'px';
+
+  const toggle = document.createElement('button');
+  toggle.className = 'tree-toggle';
+  toggle.textContent = hasChildren
+   ? (collapsedParts.has(p.id) ? '▶' : '▼')
+   : '・';
+
+  toggle.disabled = !hasChildren;
+
+  toggle.onclick = e => {
+   e.stopPropagation();
+   if(collapsedParts.has(p.id)){
+    collapsedParts.delete(p.id);
+   }else{
+    collapsedParts.add(p.id);
+   }
+   updatePartList();
+  };
+
+  const name = document.createElement('div');
+  name.className = 'tree-indent';
+  name.textContent = (hasChildren ? '📁 ' : '🧩 ') +
+   (p.name || '名前なし');
+
+  name.onclick = () => {
+   selectedId = p.id;
+   updatePartList();
+   syncEditor();
+   render();
+  };
+
+  const visibility = document.createElement('button');
+  visibility.textContent = p.visible ? '表示' : '非表示';
+  visibility.onclick = e => {
+   e.stopPropagation();
+   p.visible = !p.visible;
+   updatePartList();
+   render();
+  };
+
+  const front = document.createElement('button');
+  front.textContent = '▲';
+  front.title = '前面へ';
+  front.onclick = e => {
+   e.stopPropagation();
+   movePart(p.id, 1);
+  };
+
+  const back = document.createElement('button');
+  back.textContent = '▼';
+  back.title = '背面へ';
+  back.onclick = e => {
+   e.stopPropagation();
+   movePart(p.id, -1);
+  };
+
+  row.append(toggle, name, visibility, front, back);
+
+  row.onclick = () => {
+   selectedId = p.id;
+   updatePartList();
+   syncEditor();
+   render();
+  };
+
+  box.append(row);
+
+  if(hasChildren && !collapsedParts.has(p.id)){
+   const group = document.createElement('div');
+   group.className = 'tree-children';
+
+   children.forEach(child => {
+    const before = box.children.length;
+    createNode(child, depth + 1);
+
+    if(box.children.length > before){
+     const node = box.lastElementChild;
+     box.removeChild(node);
+     group.append(node);
+    }
+   });
+
+   box.append(group);
+  }
+ }
+
+ roots.forEach(p => createNode(p, 0));
+
+ // 親子関係が壊れたデータも一覧から消さない
+ parts.forEach(p => {
+  if(!visited.has(p.id)) createNode(p, 0);
  });
 }
 function selected(){return parts.find(p=>p.id===selectedId)}
