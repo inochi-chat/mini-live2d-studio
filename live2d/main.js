@@ -11,7 +11,8 @@ import {
   stagePoint as stagePointFromModule,
   sourcePoint as sourcePointFromModule,
   clampZoom,
-  getPinchRatio
+  getPinchRatio,
+  getPanDelta
 } from './interaction.js';
 
 (() => {
@@ -1232,7 +1233,7 @@ stage.addEventListener('pointermove',e=>{
     Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y)
    );
 
-   const ratio = dist/Math.max(1,gesture.distance);
+   const ratio = getPinchRatio(dist,gesture.distance);
 
    viewZoom = Math.max(.25,Math.min(5,gesture.zoom*ratio));
 
