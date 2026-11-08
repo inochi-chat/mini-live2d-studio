@@ -15,11 +15,14 @@ const ctx = state.ctx;
 const W = state.W;
 const H = state.H;
 
-let sourceCanvas = document.createElement('canvas');
+const sourceCanvas = state.sourceCanvas;
 let sourceCtx = sourceCanvas.getContext('2d');
 
-let originalCanvas = document.createElement('canvas');
+const originalCanvas = state.originalCanvas;
 let originalCtx = originalCanvas.getContext('2d');
+
+state.sourceCtx = sourceCtx;
+state.originalCtx = originalCtx;
 
 let baseImageData = null;
 let parts = [];
