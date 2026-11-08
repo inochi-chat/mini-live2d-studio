@@ -62,7 +62,6 @@ export function addObject(type) {
 
 export function selectObject(mesh) {
   selectedObject = mesh;
-
   return selectedObject;
 }
 
@@ -72,6 +71,54 @@ export function getSelectedObject() {
 
 export function getObjects() {
   return [...objects];
+}
+
+// 材質設定を変更
+export function setSelectedMaterial(options = {}) {
+  if (!selectedObject) return false;
+
+  const materials = Array.isArray(selectedObject.material)
+    ? selectedObject.material
+    : [selectedObject.material];
+
+  materials.forEach(material => {
+    if (options.color !== undefined) {
+      material.color.set(options.color);
+    }
+
+    if (options.roughness !== undefined) {
+      material.roughness = THREE.MathUtils.clamp(
+        Number(options.roughness), 0, 1
+      );
+    }
+
+    if (options.metalness !== undefined) {
+      material.metalness = THREE.MathUtils.clamp(
+        Number(options.metalness), 0, 1
+      );
+    }
+
+    material.needsUpdate = true;
+  });
+
+  return true;
+}
+
+// 現在の材質設定を取得
+export function getSelectedMaterial() {
+  if (!selectedObject) return null;
+
+  const material = Array.isArray(selectedObject.material)
+    ? selectedObject.material[0]
+    : selectedObject.material;
+
+  if (!material) return null;
+
+  return {
+    color: "#" + material.color.getHexString(),
+    roughness: material.roughness ?? 0.5,
+    metalness: material.metalness ?? 0
+  };
 }
 
 export function deleteSelectedObject() {
@@ -100,7 +147,12 @@ export function duplicateSelectedObject() {
   const clone = selectedObject.clone();
 
   clone.geometry = selectedObject.geometry.clone();
-  clone.material = selectedObject.material.clone();
+
+  if (Array.isArray(selectedObject.material)) {
+    clone.material = selectedObject.material.map(m => m.clone());
+  } else {
+    clone.material = selectedObject.material.clone();
+  }
 
   clone.name = selectedObject.name + "_copy";
   clone.userData.id = nextId++;
