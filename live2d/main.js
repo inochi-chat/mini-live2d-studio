@@ -1249,8 +1249,8 @@ stage.addEventListener('pointermove',e=>{
    const part = parts.find(q=>q.id===dragAction.id);
 
    if(dragAction.type==='pan'){
-    viewPanX += p.x-dragAction.last.x;
-    viewPanY += p.y-dragAction.last.y;
+    viewPanX = clampPan(viewPanX + p.x-dragAction.last.x);
+    viewPanY = clampPan(viewPanY + p.y-dragAction.last.y);
     dragAction.last = p;
     render();
 
