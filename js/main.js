@@ -1919,7 +1919,11 @@ initUI({
 // -------------------------
 
 const insetButton = document.getElementById("insetButton");
+const bevelButton = document.getElementById("bevelButton");
 
+if (bevelButton) {
+  bevelButton.addEventListener("click", bevelSelectedObject);
+}
 if (insetButton) {
   insetButton.addEventListener("click", insetSelectedFaces);
 }
