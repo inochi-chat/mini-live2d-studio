@@ -9,7 +9,9 @@ import { drawPart } from './render.js';
 
 import {
   stagePoint as stagePointFromModule,
-  sourcePoint as sourcePointFromModule
+  sourcePoint as sourcePointFromModule,
+  clampZoom,
+  getPinchRatio
 } from './interaction.js';
 
 (() => {
@@ -168,7 +170,7 @@ function updateZoomLabel(){
 }
 
 function setViewZoom(value){
- viewZoom = Math.max(.25,Math.min(5,value));
+ viewZoom = clampZoom(value);
  updateZoomLabel();
  render();
 }
