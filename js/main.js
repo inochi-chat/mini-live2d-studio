@@ -60,8 +60,9 @@ const pointer = new THREE.Vector2();
 raycaster.params.Points.threshold = 0.5;
 raycaster.params.Line.threshold = 0.5;
 
+
 // =========================
-// 診断パネル
+// 診断パネル（ドラッグ移動対応）
 // =========================
 
 const debugPanel = document.createElement("div");
@@ -71,31 +72,112 @@ debugPanel.style.cssText = `
   top:12px;
   right:12px;
   z-index:99999;
+  width:190px;
   background:rgba(15,15,30,.94);
   color:white;
-  padding:12px;
   border:1px solid #aaa;
   border-radius:10px;
   font-size:13px;
   line-height:1.7;
-  pointer-events:none;
+  pointer-events:auto;
   white-space:pre-line;
-  max-width:190px;
+  overflow:hidden;
+  box-shadow:0 4px 15px rgba(0,0,0,.3);
 `;
+
+const debugHeader = document.createElement("div");
+
+debugHeader.textContent = "☰ 編集診断（ここをつかんで移動）";
+
+debugHeader.style.cssText = `
+  padding:10px;
+  background:rgba(104,120,255,.35);
+  border-bottom:1px solid #777;
+  font-weight:bold;
+  cursor:grab;
+  touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
+`;
+
+const debugContent = document.createElement("div");
+
+debugContent.style.cssText = `
+  padding:10px;
+`;
+
+debugPanel.appendChild(debugHeader);
+debugPanel.appendChild(debugContent);
 
 document.body.appendChild(debugPanel);
 
+// 診断内容の更新
 function updateDebugPanel(message = "待機中") {
   const selected = getSelectedObject();
 
-  debugPanel.textContent =
-    "🔧 編集診断\n" +
+  debugContent.textContent =
     "モード：" + getEditMode() + "\n" +
     "選択：" + (selected ? selected.name : "なし") + "\n" +
     "辺：" + edgeRecords.length + "\n" +
     "面：" + faceRecords.length + "\n" +
     "状態：" + message;
 }
+
+// =========================
+// 診断パネルの移動
+// =========================
+
+let debugDragging = false;
+let debugOffsetX = 0;
+let debugOffsetY = 0;
+
+debugHeader.addEventListener("pointerdown", (event) => {
+  debugDragging = true;
+
+  const rect = debugPanel.getBoundingClientRect();
+
+  debugOffsetX = event.clientX - rect.left;
+  debugOffsetY = event.clientY - rect.top;
+
+  debugPanel.style.left = rect.left + "px";
+  debugPanel.style.top = rect.top + "px";
+  debugPanel.style.right = "auto";
+
+  debugHeader.style.cursor = "grabbing";
+
+  debugHeader.setPointerCapture(event.pointerId);
+
+  event.preventDefault();
+});
+
+debugHeader.addEventListener("pointermove", (event) => {
+  if (!debugDragging) return;
+
+  const maxX = window.innerWidth - debugPanel.offsetWidth;
+  const maxY = window.innerHeight - debugPanel.offsetHeight;
+
+  const left = Math.max(
+    0,
+    Math.min(maxX, event.clientX - debugOffsetX)
+  );
+
+  const top = Math.max(
+    0,
+    Math.min(maxY, event.clientY - debugOffsetY)
+  );
+
+  debugPanel.style.left = left + "px";
+  debugPanel.style.top = top + "px";
+});
+
+function stopDebugDragging() {
+  debugDragging = false;
+  debugHeader.style.cursor = "grab";
+}
+
+debugHeader.addEventListener("pointerup", stopDebugDragging);
+debugHeader.addEventListener("pointercancel", stopDebugDragging);
+
 
 // =========================
 // ポインター
