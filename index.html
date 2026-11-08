@@ -33,7 +33,7 @@ hr{border:0;border-top:1px solid #403956;margin:13px 0}
 </style>
 </head>
 <body>
-<header><h1>Mini Live2D Studio</h1><p>2D Character Animation Editor · Prototype 1.7</p></header>
+<header><h1>Mini Live2D Studio</h1><p>2D Character Animation Editor · Prototype 1.8</p></header>
 <main>
 <section class="panel">
 <h2>ステージ</h2>
@@ -48,7 +48,10 @@ hr{border:0;border-top:1px solid #403956;margin:13px 0}
 <button id="brushErase">消しゴム</button><button id="brushRestore">復元</button><button id="brushOff" class="active">通常</button>
 </div>
 <div class="row"><label class="control" style="flex:1;margin:0">ブラシサイズ <span id="brushValue">24</span><input id="brushSize" type="range" min="2" max="100" value="24"></label></div>
-<div class="toolbar"><button id="undoEdit">↶ 戻す</button><button id="redoEdit">↷ やり直し</button><button id="resetView">表示をリセット</button></div>
+<div class="toolbar"><button id="zoomOut">－ 縮小</button><button id="zoomIn">＋ 拡大</button><button id="fitView">画面に合わせる</button><button id="resetView">表示位置をリセット</button><span id="zoomLabel" class="small">表示 100%</span></div>
+<div class="row"><label class="control" style="flex:1;margin:0">イラスト全体の大きさ <span id="artScaleValue">100</span>%<input id="artScale" type="range" min="25" max="200" value="100"></label></div>
+<p class="small">通常モード：指1本で表示位置を移動、2本指で拡大・縮小。右側の「大きさ」は選択中のパーツだけに反映されるよ。</p>
+<div class="toolbar"><button id="undoEdit">↶ 戻す</button><button id="redoEdit">↷ やり直す</button></div>
 <div class="toolbar"><label><input id="hideBase" type="checkbox"> 元画像を隠す</label><label><input id="animation" type="checkbox"> アニメーション</label></div>
 <div id="status"><strong>📂 読み込み状況</strong><div>画像またはPSDを読み込んでね。</div></div>
 <p class="small">PSDは端末内で解析し、画像レイヤーをパーツとして追加するよ。大きなPSDはiPhoneのメモリを多く使う場合があるよ。</p>
@@ -84,7 +87,7 @@ let sourceCanvas=document.createElement('canvas'),sourceCtx=sourceCanvas.getCont
 let originalCanvas=document.createElement('canvas'),originalCtx=originalCanvas.getContext('2d');
 let baseImageData=null,parts=[],selectedId=null,nextId=1;
 let mode='normal',brushSize=24,drawing=false,startPoint=null,freePoints=[],lastPointer=null;
-let undoStack=[],redoStack=[],animFrame=0,raf=null,motionTime=0,lastTick=0,fit={scale:1,ox:0,oy:0};
+let undoStack=[],redoStack=[],animFrame=0,raf=null,motionTime=0,lastTick=0,fit={scale:1,ox:0,oy:0},viewZoom=1,viewPanX=0,viewPanY=0,artScale=1,viewPointers=new Map(),gesture=null;
 
 function status(message,type='info'){
  const box=$('status');box.replaceChildren();
@@ -99,7 +102,11 @@ const imageFromURL=url=>new Promise((resolve,reject)=>{const im=new Image();im.o
 function downloadBlob(blob,name){if(!blob){status('書き出しに失敗したよ。','error');return}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000)}
 function saveUndo(){if(!sourceCanvas.width)return;undoStack.push(canvasURL(sourceCanvas));if(undoStack.length>12)undoStack.shift();redoStack=[]}
 async function restoreCanvas(url){const im=await imageFromURL(url);sourceCanvas.width=im.width;sourceCanvas.height=im.height;sourceCtx=sourceCanvas.getContext('2d');sourceCtx.drawImage(im,0,0);render()}
-function calculateFit(){if(!sourceCanvas.width){fit={scale:1,ox:0,oy:0};return}const s=Math.min(W/sourceCanvas.width,H/sourceCanvas.height);fit={scale:s,ox:(W-sourceCanvas.width*s)/2,oy:(H-sourceCanvas.height*s)/2}}
+function calculateFit(){if(!sourceCanvas.width){fit={scale:1,ox:0,oy:0};return}const base=Math.min(W/sourceCanvas.width,H/sourceCanvas.height)*viewZoom;const s=base*artScale;fit={scale:s,ox:(W-sourceCanvas.width*s)/2+viewPanX,oy:(H-sourceCanvas.height*s)/2+viewPanY};}
+function updateZoomLabel(){$('zoomLabel').textContent='表示 '+Math.round(viewZoom*100)+'%';$('artScaleValue').textContent=Math.round(artScale*100);}
+function setViewZoom(value){viewZoom=Math.max(.25,Math.min(5,value));updateZoomLabel();render();}
+function resetViewOnly(){viewZoom=1;viewPanX=0;viewPanY=0;updateZoomLabel();render();}
+function fitView(){viewZoom=1;viewPanX=0;viewPanY=0;updateZoomLabel();render();}
 function stagePoint(e){const r=stage.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
 function sourcePoint(p){return{x:(p.x-fit.ox)/fit.scale,y:(p.y-fit.oy)/fit.scale}}
 
@@ -208,7 +215,7 @@ function syncEditor(){
 function updateValues(){['posX','posY','scale','rotation','sway','speed'].forEach(id=>{const el=$(id),out=$(id+'Value');if(out)out.textContent=id==='posX'||id==='posY'?Number(el.value)-300:el.value})}
 function loadImageFile(file){
  if(!file)return;status('画像を読み込み中…');const url=URL.createObjectURL(file),im=new Image();
- im.onload=()=>{sourceCanvas.width=im.width;sourceCanvas.height=im.height;sourceCtx=sourceCanvas.getContext('2d');sourceCtx.drawImage(im,0,0);originalCanvas=cloneCanvas(sourceCanvas);originalCtx=originalCanvas.getContext('2d');baseImageData=canvasURL(sourceCanvas);parts=[];selectedId=null;nextId=1;undoStack=[];redoStack=[];$('hideBase').checked=false;calculateFit();updatePartList();syncEditor();render();status('画像を読み込んだよ。切り出したい部分を選んでね。');URL.revokeObjectURL(url)};
+ im.onload=()=>{sourceCanvas.width=im.width;sourceCanvas.height=im.height;sourceCtx=sourceCanvas.getContext('2d');sourceCtx.drawImage(im,0,0);originalCanvas=cloneCanvas(sourceCanvas);originalCtx=originalCanvas.getContext('2d');baseImageData=canvasURL(sourceCanvas);parts=[];selectedId=null;nextId=1;undoStack=[];redoStack=[];$('hideBase').checked=false;viewZoom=1;viewPanX=0;viewPanY=0;artScale=1;$('artScale').value=100;calculateFit();updateZoomLabel();updatePartList();syncEditor();render();status('画像を読み込んだよ。切り出したい部分を選んでね。');URL.revokeObjectURL(url)};
  im.onerror=()=>{status('画像を読み込めなかったよ。','error');URL.revokeObjectURL(url)};im.src=url;
 }
 function cropRect(a,b){
@@ -245,7 +252,7 @@ async function importPSD(file){
   }
   parts=[];selectedId=null;nextId=1;walk(psd.children||[]);
   if(!added.length)throw new Error('画像レイヤーが見つからなかったよ。PSDが統合画像だけの可能性もあるよ。');
-  $('hideBase').checked=true;selectedId=added[added.length-1].id;undoStack=[];redoStack=[];calculateFit();updatePartList();syncEditor();render();
+  $('hideBase').checked=true;selectedId=added[added.length-1].id;undoStack=[];redoStack=[];viewZoom=1;viewPanX=0;viewPanY=0;artScale=1;$('artScale').value=100;calculateFit();updateZoomLabel();updatePartList();syncEditor();render();
   status(added.length+'個のレイヤーをパーツとして読み込んだよ！');
  }catch(err){console.error(err);status('PSDの読み込みに失敗：'+(err?.message||String(err)),'error')}
 }
@@ -257,17 +264,37 @@ function brushAt(p){
  sourceCtx.restore();render();
 }
 stage.addEventListener('pointerdown',e=>{
+ const p=stagePoint(e);lastPointer=e;viewPointers.set(e.pointerId,p);stage.setPointerCapture(e.pointerId);
+ if(mode==='normal'){
+  if(viewPointers.size>=2){const pts=[...viewPointers.values()];gesture={distance:Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y),zoom:viewZoom,mid:{x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2},panX:viewPanX,panY:viewPanY};}
+  else gesture={last:p};
+  return;
+ }
+ if(viewPointers.size>=2)return;
  if(!sourceCanvas.width&&['rect','free','erase','restore'].includes(mode))return;
- const p=stagePoint(e);lastPointer=e;
- if(mode==='rect'){startPoint=p;stage.setPointerCapture(e.pointerId);render();return}
- if(mode==='free'){freePoints=[p];drawing=true;stage.setPointerCapture(e.pointerId);render();return}
- if(mode==='erase'||mode==='restore'){saveUndo();drawing=true;stage.setPointerCapture(e.pointerId);brushAt(p)}
+ if(mode==='rect'){startPoint=p;render();return}
+ if(mode==='free'){freePoints=[p];drawing=true;render();return}
+ if(mode==='erase'||mode==='restore'){saveUndo();drawing=true;brushAt(p)}
 });
 stage.addEventListener('pointermove',e=>{
+ if(viewPointers.has(e.pointerId))viewPointers.set(e.pointerId,stagePoint(e));
+ if(mode==='normal'&&viewPointers.size){
+  const pts=[...viewPointers.values()];
+  if(pts.length>=2){
+   const mid={x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2};
+   if(!gesture||!gesture.distance){gesture={distance:Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y),zoom:viewZoom,mid,panX:viewPanX,panY:viewPanY};}
+   const dist=Math.max(1,Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y));
+   const ratio=dist/Math.max(1,gesture.distance);viewZoom=Math.max(.25,Math.min(5,gesture.zoom*ratio));
+   viewPanX=gesture.panX+(mid.x-gesture.mid.x);viewPanY=gesture.panY+(mid.y-gesture.mid.y);updateZoomLabel();render();
+  }else if(gesture?.last){const p=pts[0];viewPanX+=p.x-gesture.last.x;viewPanY+=p.y-gesture.last.y;gesture.last=p;render();}
+  return;
+ }
  if(!drawing&&mode!=='rect')return;lastPointer=e;const p=stagePoint(e);
  if(mode==='free'){freePoints.push(p);render()}else if(mode==='erase'||mode==='restore')brushAt(p);else if(mode==='rect')render();
 });
 function finishPointer(e){
+ viewPointers.delete(e.pointerId);
+ if(mode==='normal'){gesture=null;return;}
  const p=stagePoint(e);if(mode==='rect'&&startPoint){cropRect(startPoint,p);startPoint=null}
  if(mode==='free'&&drawing){cropFree(freePoints);freePoints=[]}
  drawing=false;lastPointer=null;render();
@@ -284,7 +311,7 @@ $('undoEdit').onclick=async()=>{if(!undoStack.length)return;redoStack.push(canva
 $('redoEdit').onclick=async()=>{if(!redoStack.length)return;undoStack.push(canvasURL(sourceCanvas));await restoreCanvas(redoStack.pop());status('やり直したよ。')};
 $('hideBase').onchange=render;
 $('animation').onchange=()=>{if($('animation').checked){if(!raf){lastTick=0;const tick=now=>{if(lastTick)motionTime+=Math.min(0.05,(now-lastTick)/1000);lastTick=now;animFrame++;render();raf=requestAnimationFrame(tick)};raf=requestAnimationFrame(tick)}}else{if(raf)cancelAnimationFrame(raf);raf=null;lastTick=0;render()}};
-$('resetView').onclick=()=>{parts.forEach(p=>{p.scale=100;p.rotation=0;p.sway=8;p.speed=10});syncEditor();render();status('パーツの大きさ・回転・揺れを初期値に戻したよ。')};
+$('zoomIn').onclick=()=>setViewZoom(viewZoom*1.2);$('zoomOut').onclick=()=>setViewZoom(viewZoom/1.2);$('fitView').onclick=fitView;$('resetView').onclick=resetViewOnly;$('artScale').oninput=e=>{artScale=+e.target.value/100;updateZoomLabel();render()};
 $('addCircle').onclick=()=>addShape('circle');$('addRect').onclick=()=>addShape('rect');
 $('partName').oninput=e=>{const p=selected();if(p){p.name=e.target.value;updatePartList();const current=$('parentPart').value;syncEditor();$('parentPart').value=current}};
 $('motionType').onchange=e=>{const p=selected();if(p){p.motion=e.target.value;render();status(p.name+'の動きを設定したよ。アニメーションをONにして確認してね。')}};
@@ -310,13 +337,13 @@ $('deletePart').onclick=()=>{
  parts=parts.filter(q=>q.id!==removedId);selectedId=parts.length?parts[parts.length-1].id:null;
  updatePartList();syncEditor();render();status('パーツを削除したよ。子パーツはその場に残したよ。');
 };
-$('saveProject').onclick=()=>{try{const data={version:5,base:baseImageData,parts:parts.map(({img,...p})=>p),nextId};downloadBlob(new Blob([JSON.stringify(data)],{type:'application/json'}),'mini-live2d-project.json');status('プロジェクトを保存したよ。')}catch(e){status('保存できなかったよ：'+e.message,'error')}};
+$('saveProject').onclick=()=>{try{const data={version:6,base:baseImageData,parts:parts.map(({img,...p})=>p),nextId,artScale};downloadBlob(new Blob([JSON.stringify(data)],{type:'application/json'}),'mini-live2d-project.json');status('プロジェクトを保存したよ。')}catch(e){status('保存できなかったよ：'+e.message,'error')}};
 $('loadProject').onchange=async e=>{
  const f=e.target.files[0];if(!f)return;
  try{
   const data=JSON.parse(await f.text());
   parts=(data.parts||[]).map(p=>({...p,motion:p.motion||'none',parentId:p.parentId??null}));
-  nextId=data.nextId||Math.max(0,...parts.map(p=>p.id))+1;selectedId=parts.length?parts[parts.length-1].id:null;baseImageData=data.base||null;
+  nextId=data.nextId||Math.max(0,...parts.map(p=>p.id))+1;artScale=data.artScale||1;$('artScale').value=Math.round(artScale*100);viewZoom=1;viewPanX=0;viewPanY=0;updateZoomLabel();selectedId=parts.length?parts[parts.length-1].id:null;baseImageData=data.base||null;
   if(data.base){const im=await imageFromURL(data.base);sourceCanvas.width=im.width;sourceCanvas.height=im.height;sourceCtx=sourceCanvas.getContext('2d');sourceCtx.drawImage(im,0,0);originalCanvas=cloneCanvas(sourceCanvas);originalCtx=originalCanvas.getContext('2d')}
   else{sourceCanvas.width=sourceCanvas.height=0}
   updatePartList();syncEditor();render();status('プロジェクトを読み込んだよ。');
@@ -324,7 +351,7 @@ $('loadProject').onchange=async e=>{
  e.target.value='';
 };
 $('downloadImage').onclick=()=>{const out=document.createElement('canvas');out.width=W;out.height=H;const oc=out.getContext('2d');oc.drawImage(stage,0,0);out.toBlob(b=>downloadBlob(b,'mini-live2d.png'))};
-calculateFit();render();updatePartList();syncEditor();status('準備完了。画像またはPSDを読み込んでね。');
+calculateFit();updateZoomLabel();render();updatePartList();syncEditor();status('準備完了。画像またはPSDを読み込んでね。通常モードで指1本移動・2本指ズームができるよ。');
 })();
 </script>
 </body>
