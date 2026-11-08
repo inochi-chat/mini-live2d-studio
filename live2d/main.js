@@ -8,8 +8,8 @@ import {
 import { drawPart } from './render.js';
 
 import {
-  stagePoint,
-  sourcePoint
+  stagePoint as stagePointFromModule,
+  sourcePoint as sourcePointFromModule
 } from './interaction.js';
 
 (() => {
@@ -189,21 +189,13 @@ function fitView(){
  render();
 }
 
-function stagePoint(e){
- const r = stage.getBoundingClientRect();
+const stagePoint = e => {
+ return stagePointFromModule(stage,e,W,H);
+};
 
- return {
-  x:(e.clientX-r.left)*W/r.width,
-  y:(e.clientY-r.top)*H/r.height
- };
-}
-
-function sourcePoint(p){
- return {
-  x:(p.x-fit.ox)/fit.scale,
-  y:(p.y-fit.oy)/fit.scale
- };
-}
+const sourcePoint = p => {
+ return sourcePointFromModule(p,fit);
+};
 
 /* 親子階層のワールド座標を計算 */
 function getWorldTransform(p,seen=new Set()){
