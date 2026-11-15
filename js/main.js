@@ -32,6 +32,7 @@ import { createLoopCutTool } from "./modeling-tools/loop-cut.js";
 import { createMirrorTool } from "./modeling-tools/mirror.js";
 import { createMergeVerticesTool } from "./modeling-tools/merge-vertices.js";
 import { findMatchingVertices } from "./modeling-tools/vertex-utils.js";
+import { createShowVerticesTool } from "./modeling-tools/show-vertices.js";
 
 // =========================
 // 初期設定
@@ -192,6 +193,15 @@ function showVertices(object) {
   vertexHelper.renderOrder = 10;
   object.add(vertexHelper);
 
+  const showVerticesTool = createShowVerticesTool({
+  THREE,
+  setVertexHelper: (helper) => {
+    vertexHelper = helper;
+  },
+  selectedVertexIndices,
+  clearVertexHelper,
+  updateVertexColors
+});
   updateVertexColors();
 }
 
