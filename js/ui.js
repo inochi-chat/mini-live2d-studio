@@ -9,7 +9,17 @@ let workspaceMode = "object";
 
 export function initUI(options = {}) {
   callbacks = options;
-    createWorkspaceModeControls();
+
+window.addEventListener("workspace-mode-change", (event) => {
+  const mode = event.detail?.mode;
+
+  if (mode !== "object" && mode !== "character") return;
+
+  workspaceMode = mode;
+  callbacks.onWorkspaceMode?.(mode);
+
+  console.log("制作モード:", mode);
+});
 
   const addButton = document.getElementById("addButton");
   const moveButton = document.getElementById("moveButton");
