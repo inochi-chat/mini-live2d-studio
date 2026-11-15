@@ -140,11 +140,35 @@ export function createHistoryManager(options = {}) {
     });
   }
 
+  
   function restoreData(data) {
-    let type = "cube";
+    const geometryTypes = {
+      BoxGeometry: "cube",
+      SphereGeometry: "sphere",
+      CylinderGeometry: "cylinder",
+      ConeGeometry: "cone",
+      PlaneGeometry: "plane",
+      TorusGeometry: "torus",
+      TetrahedronGeometry: "triangularPyramid",
+      OctahedronGeometry: "octahedron"
+    };
 
-    if (data.type === "SphereGeometry") type = "sphere";
-    if (data.type === "CylinderGeometry") type = "cylinder";
+    const p = data.parameters || {};
+    let type = geometryTypes[data.type] || "cube";
+
+    // 円柱の分割数から柱の種類を判定
+    if (data.type === "CylinderGeometry") {
+      if (p.radialSegments === 3) type = "triangularPrism";
+      if (p.radialSegments === 4) {
+        type = p.radiusTop === 0
+          ? "squarePyramid"
+          : "squarePrism";
+      }
+      if (p.radialSegments === 6) type = "hexagonalPrism";
+      if (p.radiusTop === 0 && p.radialSegments === 32) {
+        type = "cone";
+      }
+    }
 
     const object = addObject(type);
     if (!object) return;
@@ -171,6 +195,7 @@ export function createHistoryManager(options = {}) {
     applyVertexData(object, data.vertices);
     applyColorData(object, data.colors);
   }
+
 
   function finishRestore() {
     const objects = getObjects();
