@@ -1,6 +1,7 @@
 
 export function createMergeVerticesTool(options = {}) {
   const {
+    THREE,
     getSelectedObject,
     updateEditDisplay,
     refreshObjectList,
