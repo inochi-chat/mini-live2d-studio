@@ -6,103 +6,118 @@ let objects = [];
 let selectedObject = null;
 let nextId = 1;
 
-// キャラクター人体パーツの設定
+// キャラクター人体パーツ設定
 const characterParts = {
   head: {
     label: "頭",
     geometry: "sphere",
     scale: [0.55, 0.65, 0.5],
-    position: [0, 2.35, 0]
+    position: [0, 2.55, 0]
   },
+
   neck: {
     label: "首",
     geometry: "cylinder",
-    scale: [0.2, 0.35, 0.2],
-    position: [0, 1.85, 0]
+    scale: [0.18, 0.28, 0.18],
+    position: [0, 1.88, 0]
   },
+
   torso: {
     label: "胴体",
     geometry: "sphere",
-    scale: [0.65, 0.85, 0.35],
-    position: [0, 1.35, 0]
+    scale: [0.5, 0.7, 0.3],
+    position: [0, 1.12, 0]
   },
+
   upperArmL: {
     label: "左上腕",
     geometry: "cylinder",
-    scale: [0.16, 0.48, 0.16],
-    position: [-0.72, 1.35, 0]
+    scale: [0.17, 0.34, 0.17],
+    position: [-0.58, 1.25, 0]
   },
+
   upperArmR: {
     label: "右上腕",
     geometry: "cylinder",
-    scale: [0.16, 0.48, 0.16],
-    position: [0.72, 1.35, 0]
+    scale: [0.17, 0.34, 0.17],
+    position: [0.58, 1.25, 0]
   },
+
   forearmL: {
     label: "左前腕",
     geometry: "cylinder",
-    scale: [0.13, 0.42, 0.13],
-    position: [-0.78, 0.75, 0]
+    scale: [0.14, 0.32, 0.14],
+    position: [-0.68, 0.59, 0]
   },
+
   forearmR: {
     label: "右前腕",
     geometry: "cylinder",
-    scale: [0.13, 0.42, 0.13],
-    position: [0.78, 0.75, 0]
+    scale: [0.14, 0.32, 0.14],
+    position: [0.68, 0.59, 0]
   },
+
   handL: {
     label: "左手",
     geometry: "sphere",
-    scale: [0.17, 0.2, 0.12],
-    position: [-0.78, 0.28, 0]
+    scale: [0.16, 0.19, 0.13],
+    position: [-0.68, 0.11, 0]
   },
+
   handR: {
     label: "右手",
     geometry: "sphere",
-    scale: [0.17, 0.2, 0.12],
-    position: [0.78, 0.28, 0]
+    scale: [0.16, 0.19, 0.13],
+    position: [0.68, 0.11, 0]
   },
+
   thighL: {
     label: "左太もも",
     geometry: "cylinder",
-    scale: [0.23, 0.48, 0.23],
-    position: [-0.28, 0.55, 0]
+    scale: [0.23, 0.55, 0.23],
+    position: [-0.27, 0.0, 0]
   },
+
   thighR: {
     label: "右太もも",
     geometry: "cylinder",
-    scale: [0.23, 0.48, 0.23],
-    position: [0.28, 0.55, 0]
+    scale: [0.23, 0.55, 0.23],
+    position: [0.27, 0.0, 0]
   },
+
   lowerLegL: {
     label: "左すね",
     geometry: "cylinder",
-    scale: [0.16, 0.43, 0.16],
-    position: [-0.28, -0.12, 0]
+    scale: [0.16, 0.48, 0.16],
+    position: [-0.27, -0.98, 0]
   },
+
   lowerLegR: {
     label: "右すね",
     geometry: "cylinder",
-    scale: [0.16, 0.43, 0.16],
-    position: [0.28, -0.12, 0]
+    scale: [0.16, 0.48, 0.16],
+    position: [0.27, -0.98, 0]
   },
+
   footL: {
     label: "左足",
     geometry: "box",
-    scale: [0.25, 0.15, 0.48],
-    position: [-0.28, -0.48, 0.15]
+    scale: [0.25, 0.14, 0.48],
+    position: [-0.27, -1.52, 0.15]
   },
+
   footR: {
     label: "右足",
     geometry: "box",
-    scale: [0.25, 0.15, 0.48],
-    position: [0.28, -0.48, 0.15]
+    scale: [0.25, 0.14, 0.48],
+    position: [0.27, -1.52, 0.15]
   },
+
   hair: {
     label: "髪",
     geometry: "sphere",
-    scale: [0.58, 0.35, 0.53],
-    position: [0, 2.72, -0.03]
+    scale: [0.58, 0.3, 0.53],
+    position: [0, 2.98, -0.04]
   }
 };
 
@@ -140,39 +155,51 @@ export function addObject(type) {
       case "cube":
         geometry = new THREE.BoxGeometry(1, 1, 1);
         break;
+
       case "sphere":
         geometry = new THREE.SphereGeometry(0.5, 32, 24);
         break;
+
       case "cylinder":
         geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 32);
         break;
+
       case "cone":
         geometry = new THREE.ConeGeometry(0.5, 1, 32);
         break;
+
       case "plane":
         geometry = new THREE.PlaneGeometry(1, 1);
         break;
+
       case "torus":
         geometry = new THREE.TorusGeometry(0.5, 0.18, 16, 48);
         break;
+
       case "triangularPrism":
         geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 3);
         break;
+
       case "squarePrism":
         geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 4);
         break;
+
       case "hexagonalPrism":
         geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 6);
         break;
+
       case "triangularPyramid":
         geometry = new THREE.TetrahedronGeometry(0.7, 0);
         break;
+
       case "squarePyramid":
         geometry = new THREE.CylinderGeometry(0, 0.7, 1, 4);
         break;
+
       case "octahedron":
         geometry = new THREE.OctahedronGeometry(0.7, 0);
         break;
+
       default:
         return null;
     }
@@ -187,17 +214,20 @@ export function addObject(type) {
       case "neck":
       case "handL":
       case "handR":
-        partColor = 0xffaa77;
+        partColor = 0xffc49c;
         break;
+
       case "hair":
-        partColor = 0x110022;
+        partColor = 0x21152f;
         break;
+
       case "footL":
       case "footR":
-        partColor = 0x111111;
+        partColor = 0x222222;
         break;
+
       default:
-        partColor = 0x3366ff;
+        partColor = 0x5278cc;
         break;
     }
   }
@@ -214,6 +244,7 @@ export function addObject(type) {
   if (part) {
     mesh.userData.characterPart = true;
     mesh.userData.partType = type;
+
     mesh.scale.set(...part.scale);
     mesh.position.set(...part.position);
   } else {
@@ -333,6 +364,7 @@ export function duplicateSelectedObject() {
   clone.userData.id = nextId++;
 
   clone.position.x += 1;
+
   clone.castShadow = true;
   clone.receiveShadow = true;
 
