@@ -1707,7 +1707,49 @@ function clearAllObjects() {
     deleteSelectedObject();
   });
 }
+const historyManager = createHistoryManager({
+  getObjects,
+  addObject,
+  selectMesh,
+  clearAllObjects,
+  updateEditDisplay,
+  refreshObjectList,
+  refreshProperties,
+  updateDebugPanel
+});
 
+const {
+  saveHistory,
+  undoHistory,
+  redoHistory,
+  saveProject,
+  loadProject
+} = historyManager;
+
+const createSnapshot = historyManager.createSnapshot;
+
+const loadFileInput = document.getElementById("loadFileInput");
+
+if (loadFileInput) {
+  loadFileInput.addEventListener("change", (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      try {
+        loadProject(JSON.parse(reader.result));
+      } catch (error) {
+        alert("ファイルを読み込めませんでした。");
+        console.error(error);
+      }
+    };
+
+    reader.readAsText(file);
+    event.target.value = "";
+  });
+}
 // =========================
 // UI接続
 // =========================
