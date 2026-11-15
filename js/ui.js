@@ -32,8 +32,9 @@ export function initUI(options = {}) {
   faceModeButton?.addEventListener("click", () => setEditMode("face"));
 
   addButton?.addEventListener("click", () => {
-  console.log("追加ボタンが押されました");
-
+    console.log("追加ボタンが押されました");
+    console.log("現在の制作モード:", workspaceMode);
+    
     showObjectMenu((type) => {
     console.log("追加するパーツ:", type);
 
