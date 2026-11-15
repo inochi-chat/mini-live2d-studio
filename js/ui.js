@@ -85,8 +85,10 @@ function showAddMenu() {
     position:fixed;
     left:12px;
     right:12px;
-    bottom:calc(45% + 15px);
-    z-index:100;
+    bottom:20px;
+    z-index:99999;
+    max-height:70vh;
+    overflow-y:auto;
     padding:16px;
     border-radius:16px;
     background:#292b40;
