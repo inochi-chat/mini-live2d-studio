@@ -31,6 +31,7 @@ import { createExtrudeTool } from "./modeling-tools/extrude.js";
 import { createLoopCutTool } from "./modeling-tools/loop-cut.js";
 import { createMirrorTool } from "./modeling-tools/mirror.js";
 import { createMergeVerticesTool } from "./modeling-tools/merge-vertices.js";
+import { findMatchingVertices } from "./modeling-tools/vertex-utils.js";
 
 // =========================
 // 初期設定
@@ -192,27 +193,6 @@ function showVertices(object) {
   object.add(vertexHelper);
 
   updateVertexColors();
-}
-
-// =========================
-// 頂点検索
-// =========================
-
-function findMatchingVertices(object, point) {
-  const positions = object.geometry.attributes.position;
-  const matches = [];
-
-  for (let i = 0; i < positions.count; i++) {
-    if (
-      Math.abs(positions.getX(i) - point.x) < 0.0001 &&
-      Math.abs(positions.getY(i) - point.y) < 0.0001 &&
-      Math.abs(positions.getZ(i) - point.z) < 0.0001
-    ) {
-      matches.push(i);
-    }
-  }
-
-  return matches;
 }
 
 // =========================
