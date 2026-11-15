@@ -1,5 +1,5 @@
 
-export function showObjectMenu(onAdd) {
+export function showObjectMenu(onAdd, mode = "object") {
   document.getElementById("addMenu")?.remove();
 
   const menu = document.createElement("div");
@@ -22,14 +22,27 @@ export function showObjectMenu(onAdd) {
     gap: 10px;
   `;
 
-  const types = [
+  const heading = document.createElement("div");
+  heading.textContent =
+    mode === "character" ? "キャラクター人体パーツ" : "図形を追加";
+
+  heading.style.cssText = `
+    grid-column: 1 / -1;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 6px;
+  `;
+
+  menu.appendChild(heading);
+
+  const objectTypes = [
     ["cube", "立方体"],
     ["sphere", "球"],
     ["cylinder", "円柱"],
     ["cone", "円錐"],
     ["plane", "平面"],
     ["torus", "ドーナツ"],
-
     ["triangularPrism", "三角柱"],
     ["squarePrism", "四角柱"],
     ["hexagonalPrism", "六角柱"],
@@ -37,6 +50,29 @@ export function showObjectMenu(onAdd) {
     ["squarePyramid", "四角錐"],
     ["octahedron", "八面体"]
   ];
+
+  const characterTypes = [
+    ["head", "頭"],
+    ["neck", "首"],
+    ["torso", "胴体"],
+    ["upperArmL", "左上腕"],
+    ["upperArmR", "右上腕"],
+    ["forearmL", "左前腕"],
+    ["forearmR", "右前腕"],
+    ["handL", "左手"],
+    ["handR", "右手"],
+    ["thighL", "左太もも"],
+    ["thighR", "右太もも"],
+    ["lowerLegL", "左すね"],
+    ["lowerLegR", "右すね"],
+    ["footL", "左足"],
+    ["footR", "右足"],
+    ["hair", "髪"]
+  ];
+
+  const types = mode === "character"
+    ? characterTypes
+    : objectTypes;
 
   types.forEach(([type, label]) => {
     const button = document.createElement("button");
@@ -62,7 +98,11 @@ export function showObjectMenu(onAdd) {
 
   const close = document.createElement("button");
   close.textContent = "閉じる";
-  close.style.gridColumn = "1 / -1";
+  close.style.cssText = `
+    grid-column: 1 / -1;
+    min-height: 42px;
+    border-radius: 10px;
+  `;
 
   close.addEventListener("click", () => menu.remove());
 
