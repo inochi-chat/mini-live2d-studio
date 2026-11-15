@@ -1898,6 +1898,9 @@ function createSnapshot() {
       roughness: object.material.roughness,
       metalness: object.material.metalness,
       vertices: Array.from(geometry.attributes.position.array),
+      colors: geometry.attributes.color
+        ? Array.from(geometry.attributes.color.array)
+        : null,
 
       // 頂点結合などで必要になるインデックス情報
       indices: geometry.index
@@ -1973,6 +1976,30 @@ function restoreCustomGeometry(object, data) {
 }
 
 function applyVertexData(object, vertices) {
+  function applyColorData(object, colors) {
+  if (!Array.isArray(colors)) return;
+
+  const positions = object.geometry.attributes.position;
+
+  if (!positions || colors.length !== positions.count * 3) {
+    return;
+  }
+
+  object.geometry.setAttribute(
+    "color",
+    new THREE.Float32BufferAttribute(colors, 3)
+  );
+
+  const materials = Array.isArray(object.material)
+    ? object.material
+    : [object.material];
+
+  materials.forEach(material => {
+    material.vertexColors = true;
+    material.color.set(0xffffff);
+    material.needsUpdate = true;
+  });
+}
   if (!vertices) return;
 
   const positions = object.geometry.attributes.position;
