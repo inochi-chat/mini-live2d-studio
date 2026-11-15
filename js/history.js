@@ -54,53 +54,101 @@ export function createHistoryManager(options = {}) {
     historyIndex = history.length - 1;
   }
 
+  
   function restoreCustomGeometry(object, data) {
-    if (data.type === "BoxGeometry") {
-      const p = data.parameters || {};
+    const p = data.parameters || {};
+    let geometry = null;
 
-      const geometry = new THREE.BoxGeometry(
-        p.width || 1,
-        p.height || 1,
-        p.depth || 1,
-        p.widthSegments || 1,
-        p.heightSegments || 1,
-        p.depthSegments || 1
-      );
+    switch (data.type) {
+      case "BoxGeometry":
+        geometry = new THREE.BoxGeometry(
+          p.width ?? 1,
+          p.height ?? 1,
+          p.depth ?? 1,
+          p.widthSegments ?? 1,
+          p.heightSegments ?? 1,
+          p.depthSegments ?? 1
+        );
+        break;
 
-      object.geometry.dispose();
-      object.geometry = geometry;
-      return;
+      case "SphereGeometry":
+        geometry = new THREE.SphereGeometry(
+          p.radius ?? 0.5,
+          p.widthSegments ?? 32,
+          p.heightSegments ?? 24,
+          p.phiStart ?? 0,
+          p.phiLength ?? Math.PI * 2,
+          p.thetaStart ?? 0,
+          p.thetaLength ?? Math.PI
+        );
+        break;
+
+      case "CylinderGeometry":
+        geometry = new THREE.CylinderGeometry(
+          p.radiusTop ?? 0.5,
+          p.radiusBottom ?? 0.5,
+          p.height ?? 1,
+          p.radialSegments ?? 32,
+          p.heightSegments ?? 1,
+          p.openEnded ?? false,
+          p.thetaStart ?? 0,
+          p.thetaLength ?? Math.PI * 2
+        );
+        break;
+
+      case "ConeGeometry":
+        geometry = new THREE.ConeGeometry(
+          p.radius ?? 0.5,
+          p.height ?? 1,
+          p.radialSegments ?? 32,
+          p.heightSegments ?? 1,
+          p.openEnded ?? false,
+          p.thetaStart ?? 0,
+          p.thetaLength ?? Math.PI * 2
+        );
+        break;
+
+      case "PlaneGeometry":
+        geometry = new THREE.PlaneGeometry(
+          p.width ?? 1,
+          p.height ?? 1,
+          p.widthSegments ?? 1,
+          p.heightSegments ?? 1
+        );
+        break;
+
+      case "TorusGeometry":
+        geometry = new THREE.TorusGeometry(
+          p.radius ?? 0.5,
+          p.tube ?? 0.18,
+          p.radialSegments ?? 16,
+          p.tubularSegments ?? 48,
+          p.arc ?? Math.PI * 2
+        );
+        break;
+
+      case "TetrahedronGeometry":
+        geometry = new THREE.TetrahedronGeometry(
+          p.radius ?? 0.7,
+          p.detail ?? 0
+        );
+        break;
+
+      case "OctahedronGeometry":
+        geometry = new THREE.OctahedronGeometry(
+          p.radius ?? 0.7,
+          p.detail ?? 0
+        );
+        break;
+
+      default:
+        return;
     }
-
-    if (data.type !== "BufferGeometry") return;
 
     object.geometry.dispose();
-
-    const geometry = new THREE.BufferGeometry();
-
-    geometry.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(data.vertices, 3)
-    );
-
-    if (Array.isArray(data.indices)) {
-      geometry.setIndex(data.indices);
-    }
-
-    geometry.computeVertexNormals();
-    geometry.computeBoundingBox();
-    geometry.computeBoundingSphere();
-
     object.geometry = geometry;
-
-    const materials = Array.isArray(object.material)
-      ? object.material
-      : [object.material];
-
-    materials.forEach(material => {
-      material.side = THREE.DoubleSide;
-    });
   }
+
 
   function applyVertexData(object, vertices) {
     if (!Array.isArray(vertices)) return;
