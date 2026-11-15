@@ -27,6 +27,7 @@ import { getEditMode } from "./edit-mode.js";
 import { paintSelectedFaces } from "./face-paint.js";
 import { createModelingTools } from "./modeling-tools/modeling-tools.js";
 import { createInsetTool } from "./modeling-tools/inset.js";
+import { createExtrudeTool } from "./modeling-tools/extrude.js";
 
 // =========================
 // 初期設定
@@ -1489,6 +1490,20 @@ const modelingTools = createModelingTools({
 });
 
 const insetTool = createInsetTool({
+  getSelectedObject,
+  getEditMode,
+  selectedFaceIndices,
+  getFaceRecords: () => faceRecords,
+  getFaceTriangleToRecord: () => faceTriangleToRecord,
+  updateEditDisplay,
+  updateFaceColors,
+  refreshObjectList,
+  refreshProperties,
+  saveHistory,
+  updateDebugPanel
+});
+
+const extrudeTool = createExtrudeTool({
   getSelectedObject,
   getEditMode,
   selectedFaceIndices,
