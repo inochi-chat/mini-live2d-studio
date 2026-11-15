@@ -29,6 +29,7 @@ import { createModelingTools } from "./modeling-tools/modeling-tools.js";
 import { createInsetTool } from "./modeling-tools/inset.js";
 import { createExtrudeTool } from "./modeling-tools/extrude.js";
 import { createLoopCutTool } from "./modeling-tools/loop-cut.js";
+import { createMirrorTool } from "./modeling-tools/mirror.js";
 
 // =========================
 // 初期設定
@@ -1280,6 +1281,15 @@ const loopCutTool = createLoopCutTool({
   updateDebugPanel
 });
 
+const mirrorTool = createMirrorTool({
+  getSelectedObject,
+  duplicateSelectedObject,
+  refreshObjectList,
+  refreshProperties,
+  saveHistory,
+  updateDebugPanel
+});
+
 const createSnapshot = historyManager.createSnapshot;
 
 const loadFileInput = document.getElementById("loadFileInput");
@@ -1428,7 +1438,10 @@ const mirrorButton = document.getElementById("mirrorButton");
 const extrudeButton = document.getElementById("extrudeButton");
 
 if (mirrorButton) {
-  mirrorButton.addEventListener("click", mirrorSelectedObject);
+  mirrorButton.addEventListener(
+    "click",
+    mirrorTool.mirrorSelectedObject
+  );
 }
 
 if (loopCutButton) {
