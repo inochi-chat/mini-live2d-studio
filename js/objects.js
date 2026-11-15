@@ -131,7 +131,8 @@ export function addObject(type) {
     if (part.geometry === "sphere") {
       geometry = new THREE.SphereGeometry(0.5, 32, 24);
     } else if (part.geometry === "cylinder") {
-      geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 24);
+      geometry = new THREE.CylinderGeometry(0.35, 0.5, 1, 24);
+    }
     } else if (part.geometry === "box") {
       geometry = new THREE.BoxGeometry(1, 1, 1);
     }
