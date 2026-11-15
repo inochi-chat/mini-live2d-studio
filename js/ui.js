@@ -10,16 +10,19 @@ let workspaceMode = "object";
 export function initUI(options = {}) {
   callbacks = options;
 
-window.addEventListener("workspace-mode-change", (event) => {
-  const mode = event.detail?.mode;
+  // 制作モード切り替えボタン
+  const objectWorkspaceButton = document.getElementById("objectWorkspaceButton");
+  const characterWorkspaceButton = document.getElementById("characterWorkspaceButton");
 
-  if (mode !== "object" && mode !== "character") return;
+  objectWorkspaceButton?.addEventListener("click", () => {
+    setWorkspaceMode("object");
+  });
 
-  workspaceMode = mode;
-  callbacks.onWorkspaceMode?.(mode);
+  characterWorkspaceButton?.addEventListener("click", () => {
+    setWorkspaceMode("character");
+  });
 
-  console.log("制作モード:", mode);
-});
+  updateWorkspaceModeButtons();
 
   const addButton = document.getElementById("addButton");
   const moveButton = document.getElementById("moveButton");
@@ -41,21 +44,23 @@ window.addEventListener("workspace-mode-change", (event) => {
   edgeModeButton?.addEventListener("click", () => setEditMode("edge"));
   faceModeButton?.addEventListener("click", () => setEditMode("face"));
 
+  // 追加メニュー
   addButton?.addEventListener("click", () => {
     console.log("追加ボタンが押されました");
     console.log("現在の制作モード:", workspaceMode);
-    
+
     showObjectMenu((type) => {
-    console.log("追加するパーツ:", type);
+      console.log("追加するパーツ:", type);
 
-    const result = callbacks.onAdd?.(type);
+      const result = callbacks.onAdd?.(type);
 
-    refreshObjectList();
-    refreshProperties();
+      refreshObjectList();
+      refreshProperties();
 
-    return result;
-  }, workspaceMode);
-});
+      return result;
+    }, workspaceMode);
+  });
+
   moveButton?.addEventListener("click", () => setMode("translate"));
   rotateButton?.addEventListener("click", () => setMode("rotate"));
   scaleButton?.addEventListener("click", () => setMode("scale"));
@@ -79,6 +84,30 @@ window.addEventListener("workspace-mode-change", (event) => {
   updateModeButtons();
   refreshObjectList();
   refreshProperties();
+}
+
+function setWorkspaceMode(mode) {
+  if (mode !== "object" && mode !== "character") return;
+
+  workspaceMode = mode;
+
+  updateWorkspaceModeButtons();
+
+  callbacks.onWorkspaceMode?.(mode);
+
+  console.log("制作モード:", mode);
+}
+
+function updateWorkspaceModeButtons() {
+  document.getElementById("objectWorkspaceButton")?.classList.toggle(
+    "active",
+    workspaceMode === "object"
+  );
+
+  document.getElementById("characterWorkspaceButton")?.classList.toggle(
+    "active",
+    workspaceMode === "character"
+  );
 }
 
 function setMode(mode) {
@@ -359,60 +388,4 @@ function setEditMode(mode) {
 
 export function getEditMode() {
   return currentEditMode;
-}
-
-export function createWorkspaceModeControls() {
-  const addButton = document.getElementById("addButton");
-  if (!addButton || document.getElementById("workspaceModeBar")) return;
-
-  const bar = document.createElement("div");
-  bar.id = "workspaceModeBar";
-
-  bar.style.cssText = `
-    display: flex;
-    gap: 8px;
-    width: 100%;
-    margin-bottom: 10px;
-  `;
-
-  const modes = [
-    ["object", "通常モード"],
-    ["character", "キャラクター制作"]
-  ];
-
-  modes.forEach(([mode, label]) => {
-    const button = document.createElement("button");
-    button.textContent = label;
-    button.dataset.mode = mode;
-
-    button.style.cssText = `
-      flex: 1;
-      min-height: 44px;
-      border: 1px solid #8c7bd1;
-      border-radius: 10px;
-      background: #292b40;
-      color: white;
-      padding: 8px;
-      font-size: 13px;
-    `;
-
-    button.addEventListener("click", () => {
-      workspaceMode = mode;
-
-      bar.querySelectorAll("button").forEach(item => {
-        item.style.background =
-          item.dataset.mode === mode ? "#7053ad" : "#292b40";
-      });
-
-      callbacks.onWorkspaceMode?.(mode);
-
-      console.log("制作モード:", mode);
-    });
-
-    bar.appendChild(button);
-  });
-
-  addButton.parentElement.insertBefore(bar, addButton);
-
-  bar.querySelector('[data-mode="object"]').click();
 }
