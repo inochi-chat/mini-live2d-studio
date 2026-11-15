@@ -13,7 +13,7 @@ import {
   duplicateSelectedObject,
   setSelectedMaterial,
   getSelectedMaterial
-} from "./objects.js";
+} from "./objects.js?v=20261115-2";
 
 import {
   initTools, attachObject, detachObject, setToolMode
