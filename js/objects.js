@@ -190,8 +190,6 @@ export function addObject(type) {
     }
   }
 
-  
-  
   let partColor = 0x9b8cff;
 
   if (part) {
