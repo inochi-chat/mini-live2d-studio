@@ -28,6 +28,18 @@ export function addObject(type) {
       geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 32);
       break;
 
+    case "cone":
+      geometry = new THREE.ConeGeometry(0.5, 1, 32);
+      break;
+
+    case "plane":
+      geometry = new THREE.PlaneGeometry(1, 1);
+      break;
+
+    case "torus":
+      geometry = new THREE.TorusGeometry(0.5, 0.18, 16, 48);
+      break;
+
     default:
       return null;
   }
@@ -48,6 +60,11 @@ export function addObject(type) {
     0.5,
     (Math.random() - 0.5) * 2
   );
+  
+  if (type === "plane") {
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.y = 0.02;
+  }
 
   mesh.castShadow = true;
   mesh.receiveShadow = true;
