@@ -190,11 +190,27 @@ export function addObject(type) {
     }
   }
 
+  
+  let partColor = 0x9b8cff;
+
+  if (part) {
+    if (["head", "neck", "handL", "handR"].includes(type)) {
+      partColor = 0xffc9a8;
+    } else if (type === "hair") {
+      partColor = 0x292039;
+    } else if (["footL", "footR"].includes(type)) {
+      partColor = 0x24212b;
+    } else {
+      partColor = 0x9b8cff;
+    }
+  }
+
   const material = new THREE.MeshStandardMaterial({
-    color: 0x9b8cff,
+    color: partColor,
     roughness: 0.55,
     metalness: 0.05
   });
+
 
   const mesh = new THREE.Mesh(geometry, material);
 
