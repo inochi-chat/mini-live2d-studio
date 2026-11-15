@@ -34,8 +34,8 @@ export function initUI(options = {}) {
   addButton?.addEventListener("click", () => {
   console.log("追加ボタンが押されました");
 
-  showObjectMenu((type) => {
-    console.log("追加する図形:", type);
+    showObjectMenu((type) => {
+    console.log("追加するパーツ:", type);
 
     const result = callbacks.onAdd?.(type);
 
@@ -43,7 +43,7 @@ export function initUI(options = {}) {
     refreshProperties();
 
     return result;
-  });
+  }, workspaceMode);
 });
   moveButton?.addEventListener("click", () => setMode("translate"));
   rotateButton?.addEventListener("click", () => setMode("rotate"));
