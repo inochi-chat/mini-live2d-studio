@@ -30,6 +30,7 @@ import { createInsetTool } from "./modeling-tools/inset.js";
 import { createExtrudeTool } from "./modeling-tools/extrude.js";
 import { createLoopCutTool } from "./modeling-tools/loop-cut.js";
 import { createMirrorTool } from "./modeling-tools/mirror.js";
+import { createMergeVerticesTool } from "./modeling-tools/merge-vertices.js";
 
 // =========================
 // 初期設定
@@ -1250,6 +1251,16 @@ const loopCutTool = createLoopCutTool({
 const mirrorTool = createMirrorTool({
   getSelectedObject,
   duplicateSelectedObject,
+  refreshObjectList,
+  refreshProperties,
+  saveHistory,
+  updateDebugPanel
+});
+
+const mergeVerticesTool = createMergeVerticesTool({
+  THREE,
+  getSelectedObject,
+  updateEditDisplay,
   refreshObjectList,
   refreshProperties,
   saveHistory,
