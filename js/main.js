@@ -31,8 +31,8 @@ import { createExtrudeTool } from "./modeling-tools/extrude.js";
 import { createLoopCutTool } from "./modeling-tools/loop-cut.js";
 import { createMirrorTool } from "./modeling-tools/mirror.js";
 import { createMergeVerticesTool } from "./modeling-tools/merge-vertices.js";
-import { findMatchingVertices } from "./modeling-tools/vertex-utils.js";
 import { createShowVerticesTool } from "./modeling-tools/show-vertices.js";
+import { createShowEdgesTool } from "./modeling-tools/show-edges.js";
 
 // =========================
 // 初期設定
@@ -196,85 +196,6 @@ function updateEdgeColors() {
   );
 }
 
-function showEdges(object) {
-  clearEdgeHelper();
-
-  const geometry = object.geometry;
-  geometry.computeBoundingBox();
-
-  const bounds = geometry.boundingBox;
-  if (!bounds) return;
-
-  const min = bounds.min;
-  const max = bounds.max;
-
-  const corners = [
-    new THREE.Vector3(min.x, min.y, min.z),
-    new THREE.Vector3(max.x, min.y, min.z),
-    new THREE.Vector3(min.x, max.y, min.z),
-    new THREE.Vector3(max.x, max.y, min.z),
-    new THREE.Vector3(min.x, min.y, max.z),
-    new THREE.Vector3(max.x, min.y, max.z),
-    new THREE.Vector3(min.x, max.y, max.z),
-    new THREE.Vector3(max.x, max.y, max.z)
-  ];
-
-  const positions = [];
-
-  for (let i = 0; i < corners.length; i++) {
-    for (let j = i + 1; j < corners.length; j++) {
-      const a = corners[i];
-      const b = corners[j];
-
-      const axes =
-        Number(Math.abs(a.x - b.x) > 0.0001) +
-        Number(Math.abs(a.y - b.y) > 0.0001) +
-        Number(Math.abs(a.z - b.z) > 0.0001);
-
-      if (axes !== 1) continue;
-
-      const verticesA = findMatchingVertices(object, a);
-      const verticesB = findMatchingVertices(object, b);
-
-      if (!verticesA.length || !verticesB.length) continue;
-
-      edgeRecords.push({
-        a: a.clone(),
-        b: b.clone(),
-        verticesA,
-        verticesB
-      });
-
-      positions.push(
-        a.x, a.y, a.z,
-        b.x, b.y, b.z
-      );
-    }
-  }
-
-  if (!edgeRecords.length) return;
-
-  const lineGeometry = new THREE.BufferGeometry();
-
-  lineGeometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(positions, 3)
-  );
-
-  const material = new THREE.LineBasicMaterial({
-    color: 0xffffff,
-    vertexColors: true,
-    depthTest: false,
-    depthWrite: false
-  });
-
-  edgeHelper = new THREE.LineSegments(lineGeometry, material);
-  edgeHelper.renderOrder = 999;
-  object.add(edgeHelper);
-
-  updateEdgeColors();
-}
-
 // =========================
 // 面表示
 // =========================
@@ -429,9 +350,11 @@ function updateEditDisplay() {
     if (mode === "vertex" && selected) {
       showVerticesTool.showVertices(selected);
     }
-    if (mode === "edge" && selected) showEdges(selected);
+    if (mode === "edge" && selected) {
+      showEdgesTool.showEdges(selected);
+    }
     if (mode === "face" && selected) showFaces(selected);
-  }
+    }
 
   updateDebugPanel("編集モード切り替え済み");
 }
@@ -1222,6 +1145,21 @@ const mergeVerticesTool = createMergeVerticesTool({
   refreshProperties,
   saveHistory,
   updateDebugPanel
+});
+
+const showEdgesTool = createShowEdgesTool({
+  THREE,
+
+  setEdgeHelper: (helper) => {
+    edgeHelper = helper;
+  },
+
+  setEdgeRecords: (records) => {
+    edgeRecords = records;
+  },
+
+  clearEdgeHelper,
+  updateEdgeColors
 });
 
 const createSnapshot = historyManager.createSnapshot;
