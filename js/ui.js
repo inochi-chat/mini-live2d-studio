@@ -99,7 +99,10 @@ function showAddMenu() {
   [
     ["cube", "立方体"],
     ["sphere", "球"],
-    ["cylinder", "円柱"]
+    ["cylinder", "円柱"],
+    ["cone", "円錐"],
+    ["plane", "平面"],
+    ["torus", "ドーナツ"]
   ].forEach(([type, label]) => {
     const button = document.createElement("button");
     button.textContent = label;
