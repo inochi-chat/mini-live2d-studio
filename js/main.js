@@ -2074,6 +2074,7 @@ if (data.metalness !== undefined) {
 
     
     applyVertexData(object, data.vertices);
+    applyColorData(object, data.colors);
   });
 
   const objects = getObjects();
@@ -2163,6 +2164,7 @@ if (item.metalness !== undefined) {
 }
 
     applyVertexData(object, item.vertices);
+    applyColorData(object, item.colors);
   });
 
   const objects = getObjects();
