@@ -5,9 +5,11 @@ import { showObjectMenu } from "./object-menu.js";
 let callbacks = {};
 let selectedMode = "translate";
 let currentEditMode = "object";
+let workspaceMode = "object";
 
 export function initUI(options = {}) {
   callbacks = options;
+    createWorkspaceModeControls();
 
   const addButton = document.getElementById("addButton");
   const moveButton = document.getElementById("moveButton");
@@ -346,4 +348,60 @@ function setEditMode(mode) {
 
 export function getEditMode() {
   return currentEditMode;
+}
+
+export function createWorkspaceModeControls() {
+  const addButton = document.getElementById("addButton");
+  if (!addButton || document.getElementById("workspaceModeBar")) return;
+
+  const bar = document.createElement("div");
+  bar.id = "workspaceModeBar";
+
+  bar.style.cssText = `
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    margin-bottom: 10px;
+  `;
+
+  const modes = [
+    ["object", "通常モード"],
+    ["character", "キャラクター制作"]
+  ];
+
+  modes.forEach(([mode, label]) => {
+    const button = document.createElement("button");
+    button.textContent = label;
+    button.dataset.mode = mode;
+
+    button.style.cssText = `
+      flex: 1;
+      min-height: 44px;
+      border: 1px solid #8c7bd1;
+      border-radius: 10px;
+      background: #292b40;
+      color: white;
+      padding: 8px;
+      font-size: 13px;
+    `;
+
+    button.addEventListener("click", () => {
+      workspaceMode = mode;
+
+      bar.querySelectorAll("button").forEach(item => {
+        item.style.background =
+          item.dataset.mode === mode ? "#7053ad" : "#292b40";
+      });
+
+      callbacks.onWorkspaceMode?.(mode);
+
+      console.log("制作モード:", mode);
+    });
+
+    bar.appendChild(button);
+  });
+
+  addButton.parentElement.insertBefore(bar, addButton);
+
+  bar.querySelector('[data-mode="object"]').click();
 }
