@@ -28,12 +28,29 @@ export function showObjectMenu(onAdd) {
     ["cylinder", "円柱"],
     ["cone", "円錐"],
     ["plane", "平面"],
-    ["torus", "ドーナツ"]
+    ["torus", "ドーナツ"],
+
+    ["triangularPrism", "三角柱"],
+    ["squarePrism", "四角柱"],
+    ["hexagonalPrism", "六角柱"],
+    ["triangularPyramid", "三角錐"],
+    ["squarePyramid", "四角錐"],
+    ["octahedron", "八面体"]
   ];
 
   types.forEach(([type, label]) => {
     const button = document.createElement("button");
     button.textContent = label;
+
+    button.style.cssText = `
+      min-height: 48px;
+      border: 1px solid #8c7bd1;
+      border-radius: 10px;
+      background: #51417c;
+      color: white;
+      font-size: 13px;
+      padding: 8px;
+    `;
 
     button.addEventListener("click", () => {
       onAdd?.(type);
@@ -46,6 +63,7 @@ export function showObjectMenu(onAdd) {
   const close = document.createElement("button");
   close.textContent = "閉じる";
   close.style.gridColumn = "1 / -1";
+
   close.addEventListener("click", () => menu.remove());
 
   menu.appendChild(close);
