@@ -113,6 +113,17 @@ export function initObjects(targetScene) {
 export function addObject(type) {
   if (!scene) return null;
 
+  // 全身キャラクターを一括生成
+  if (type === "fullCharacter") {
+    let lastObject = null;
+
+    Object.keys(characterParts).forEach(partType => {
+      lastObject = addObject(partType);
+    });
+
+    return lastObject;
+  }
+
   let geometry;
   const part = characterParts[type];
 
