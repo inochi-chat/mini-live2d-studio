@@ -599,7 +599,6 @@ function beginVertexDrag(event) {
       )
     );
   });
-   });
 
   vertexDrag = {
     object,
