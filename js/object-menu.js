@@ -51,7 +51,8 @@ export function showObjectMenu(onAdd, mode = "object") {
     ["octahedron", "八面体"]
   ];
 
-  const characterTypes = [
+    const characterTypes = [
+    ["fullCharacter", "🌟 全身を作成"],
     ["head", "頭"],
     ["neck", "首"],
     ["torso", "胴体"],
