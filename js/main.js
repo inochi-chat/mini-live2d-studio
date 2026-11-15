@@ -25,6 +25,7 @@ import {
 
 import { getEditMode } from "./edit-mode.js";
 import { paintSelectedFaces } from "./face-paint.js";
+import { createModelingTools } from "./modeling-tools/modeling-tools.js";
 
 // =========================
 // 初期設定
@@ -1725,6 +1726,17 @@ const {
   saveProject,
   loadProject
 } = historyManager;
+
+const modelingTools = createModelingTools({
+  THREE,
+  RoundedBoxGeometry,
+  getSelectedObject,
+  updateEditDisplay,
+  refreshObjectList,
+  refreshProperties,
+  saveHistory,
+  updateDebugPanel
+});
 
 const createSnapshot = historyManager.createSnapshot;
 
