@@ -181,7 +181,6 @@ function createMaterialControls(panel) {
     return;
   }
 
-  // 色
   const colorLabel = document.createElement("div");
   colorLabel.textContent = "オブジェクトの色";
   colorLabel.style.cssText = "margin-top:12px;font-size:12px;";
@@ -199,7 +198,6 @@ function createMaterialControls(panel) {
 
   panel.appendChild(colorInput);
 
-  // 光沢
   createMaterialSlider(
     panel,
     "光沢（低いほどツヤが強い）",
@@ -207,7 +205,6 @@ function createMaterialControls(panel) {
     material.roughness ?? 0.55
   );
 
-  // 金属感
   createMaterialSlider(
     panel,
     "金属感",
@@ -248,6 +245,52 @@ function createMaterialSlider(panel, labelText, key, initialValue) {
 
   row.append(label, slider);
   panel.appendChild(row);
+}
+
+function createFacePaintControls(panel) {
+  const heading = document.createElement("div");
+  heading.textContent = "面の色塗り";
+  heading.style.cssText =
+    "margin-top:20px;padding-top:12px;border-top:1px solid #555;font-size:14px;color:#c5a5ff;";
+  panel.appendChild(heading);
+
+  const description = document.createElement("p");
+  description.textContent =
+    "面モードで色を塗りたい面を選択してください。";
+  description.style.cssText =
+    "font-size:12px;line-height:1.6;color:#ccc;margin-top:10px;";
+  panel.appendChild(description);
+
+  const colorInput = document.createElement("input");
+  colorInput.type = "color";
+  colorInput.value = "#ff6699";
+  colorInput.style.cssText =
+    "width:100%;height:42px;margin-top:6px;background:#171824;border:1px solid #555;border-radius:8px;";
+  panel.appendChild(colorInput);
+
+  const paintButton = document.createElement("button");
+  paintButton.textContent = "選択した面に色を塗る";
+  paintButton.style.cssText = `
+    width:100%;
+    margin-top:10px;
+    padding:12px;
+    border:1px solid #a78bfa;
+    border-radius:10px;
+    background:#51417c;
+    color:white;
+    font-size:13px;
+  `;
+
+  paintButton.addEventListener("click", () => {
+    if (currentEditMode !== "face") {
+      alert("先に面モードに切り替えてください。");
+      return;
+    }
+
+    callbacks.onFacePaint?.(colorInput.value);
+  });
+
+  panel.appendChild(paintButton);
 }
 
 export function refreshProperties() {
@@ -310,9 +353,9 @@ export function refreshProperties() {
   });
 
   createMaterialControls(panel);
+  createFacePaintControls(panel);
 }
 
-// 編集モード切り替え
 function setEditMode(mode) {
   currentEditMode = mode;
   setEditorEditMode(mode);
@@ -332,6 +375,7 @@ function setEditMode(mode) {
   });
 
   callbacks.onEditMode?.(mode);
+  refreshProperties();
 }
 
 export function getEditMode() {
