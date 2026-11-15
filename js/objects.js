@@ -1,5 +1,5 @@
 
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+import * as THREE from "three";
 
 let scene;
 let objects = [];
@@ -40,6 +40,32 @@ export function addObject(type) {
       geometry = new THREE.TorusGeometry(0.5, 0.18, 16, 48);
       break;
 
+      
+    case "triangularPrism":
+      geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 3);
+      break;
+
+    case "squarePrism":
+      geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 4);
+      break;
+
+    case "hexagonalPrism":
+      geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 6);
+      break;
+
+    case "triangularPyramid":
+      geometry = new THREE.TetrahedronGeometry(0.7, 0);
+      break;
+
+    case "squarePyramid":
+      geometry = new THREE.CylinderGeometry(0, 0.7, 1, 4);
+      break;
+
+    case "octahedron":
+      geometry = new THREE.OctahedronGeometry(0.7, 0);
+      break;
+
+      
     default:
       return null;
   }
