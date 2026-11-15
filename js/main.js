@@ -24,6 +24,7 @@ import {
 } from "./ui.js";
 
 import { getEditMode } from "./edit-mode.js";
+import { paintSelectedFaces } from "./face-paint.js";
 
 // =========================
 // 初期設定
@@ -2247,6 +2248,31 @@ initUI({
     }
   },
 
+    onFacePaint(color) {
+    const object = getSelectedObject();
+
+    if (!object || getEditMode() !== "face") {
+      alert("面モードでオブジェクトの面を選択してください。");
+      return;
+    }
+
+    const changed = paintSelectedFaces(
+      object,
+      faceTriangleToRecord,
+      selectedFaceIndices,
+      color
+    );
+
+    if (!changed) {
+      alert("色を塗る面を選択してください。");
+      return;
+    }
+
+    updateEditDisplay();
+    saveHistory();
+    refreshProperties();
+    updateDebugPanel("選択した面に色を塗りました");
+  },
   getSelected() {
     return getSelectedObject();
   },
