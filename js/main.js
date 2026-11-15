@@ -461,7 +461,9 @@ function updateEditDisplay() {
   } else {
     detachObject();
 
-    if (mode === "vertex" && selected) showVertices(selected);
+    if (mode === "vertex" && selected) {
+      showVerticesTool.showVertices(selected);
+    }
     if (mode === "edge" && selected) showEdges(selected);
     if (mode === "face" && selected) showFaces(selected);
   }
