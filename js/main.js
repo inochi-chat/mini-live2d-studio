@@ -33,6 +33,7 @@ import { createMirrorTool } from "./modeling-tools/mirror.js";
 import { createMergeVerticesTool } from "./modeling-tools/merge-vertices.js";
 import { createShowVerticesTool } from "./modeling-tools/show-vertices.js";
 import { createShowEdgesTool } from "./modeling-tools/show-edges.js";
+import { createShowFacesTool } from "./modeling-tools/show-faces.js";
 
 // =========================
 // 初期設定
@@ -221,111 +222,6 @@ function updateFaceColors() {
   );
   }
 
-function showFaces(object) {
-  clearFaceHelper();
-
-  const geometry = object.geometry;
-  const positions = geometry.attributes.position;
-  const indexAttribute = geometry.index;
-
-  if (!positions) {
-    updateDebugPanel("面データがありません");
-    return;
-  }
-
-  const facePositions = [];
-
-  if (
-    geometry.type === "BoxGeometry" &&
-    indexAttribute &&
-    geometry.groups.length === 6
-  ) {
-    geometry.groups.forEach((group, faceIndex) => {
-      const vertices = [];
-
-      for (
-        let i = group.start;
-        i < group.start + group.count;
-        i++
-      ) {
-        const vertexIndex = indexAttribute.getX(i);
-
-        vertices.push(vertexIndex);
-
-        facePositions.push(
-          positions.getX(vertexIndex),
-          positions.getY(vertexIndex),
-          positions.getZ(vertexIndex)
-        );
-      }
-
-      faceRecords.push({ vertices, faceIndex });
-
-      faceTriangleToRecord.push(faceRecords.length - 1);
-      faceTriangleToRecord.push(faceRecords.length - 1);
-    });
-  } else {
-    const count = indexAttribute
-      ? indexAttribute.count
-      : positions.count;
-
-    for (let i = 0; i + 2 < count; i += 3) {
-      const vertices = [];
-
-      for (let j = 0; j < 3; j++) {
-        const vertexIndex = indexAttribute
-          ? indexAttribute.getX(i + j)
-          : i + j;
-
-        vertices.push(vertexIndex);
-
-        facePositions.push(
-          positions.getX(vertexIndex),
-          positions.getY(vertexIndex),
-          positions.getZ(vertexIndex)
-        );
-      }
-
-      faceRecords.push({
-        vertices,
-        faceIndex: faceRecords.length
-      });
-
-      faceTriangleToRecord.push(faceRecords.length - 1);
-    }
-  }
-
-  if (!faceRecords.length) {
-    updateDebugPanel("面を作成できませんでした");
-    return;
-  }
-
-  const faceGeometry = new THREE.BufferGeometry();
-
-  faceGeometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(facePositions, 3)
-  );
-
-  const material = new THREE.MeshBasicMaterial({
-    color: 0xffffff,
-    vertexColors: true,
-    transparent: true,
-    opacity: 0.45,
-    side: THREE.DoubleSide,
-    depthTest: false,
-    depthWrite: false
-  });
-
-  faceHelper = new THREE.Mesh(faceGeometry, material);
-  faceHelper.renderOrder = 998;
-
-  object.add(faceHelper);
-
-  updateFaceColors();
-  updateDebugPanel("面を表示しました");
-}
-
 // =========================
 // 編集表示更新
 // =========================
@@ -353,7 +249,8 @@ function updateEditDisplay() {
     if (mode === "edge" && selected) {
       showEdgesTool.showEdges(selected);
     }
-    if (mode === "face" && selected) showFaces(selected);
+    if (mode === "face" && selected) {
+      showFacesTool.showFaces(selected);
     }
 
   updateDebugPanel("編集モード切り替え済み");
@@ -1160,6 +1057,26 @@ const showEdgesTool = createShowEdgesTool({
 
   clearEdgeHelper,
   updateEdgeColors
+});
+
+const showFacesTool = createShowFacesTool({
+  THREE,
+
+  setFaceHelper: (helper) => {
+    faceHelper = helper;
+  },
+
+  setFaceRecords: (records) => {
+    faceRecords = records;
+  },
+
+  setFaceTriangleToRecord: (records) => {
+    faceTriangleToRecord = records;
+  },
+
+  clearFaceHelper,
+  updateFaceColors,
+  updateDebugPanel
 });
 
 const createSnapshot = historyManager.createSnapshot;
