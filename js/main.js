@@ -1849,7 +1849,10 @@ if (bevelButton) {
 }
 
 if (insetButton) {
-  insetButton.addEventListener("click", insetSelectedFaces);
+  insetButton.addEventListener(
+    "click",
+    insetTool.insetSelectedFaces
+  );
 }
 
 if (extrudeButton) {
