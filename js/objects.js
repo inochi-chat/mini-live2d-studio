@@ -132,7 +132,6 @@ export function addObject(type) {
       geometry = new THREE.SphereGeometry(0.5, 32, 24);
     } else if (part.geometry === "cylinder") {
       geometry = new THREE.CylinderGeometry(0.35, 0.5, 1, 24);
-    }
     } else if (part.geometry === "box") {
       geometry = new THREE.BoxGeometry(1, 1, 1);
     }
@@ -141,56 +140,45 @@ export function addObject(type) {
       case "cube":
         geometry = new THREE.BoxGeometry(1, 1, 1);
         break;
-
       case "sphere":
         geometry = new THREE.SphereGeometry(0.5, 32, 24);
         break;
-
       case "cylinder":
         geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 32);
         break;
-
       case "cone":
         geometry = new THREE.ConeGeometry(0.5, 1, 32);
         break;
-
       case "plane":
         geometry = new THREE.PlaneGeometry(1, 1);
         break;
-
       case "torus":
         geometry = new THREE.TorusGeometry(0.5, 0.18, 16, 48);
         break;
-
       case "triangularPrism":
         geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 3);
         break;
-
       case "squarePrism":
         geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 4);
         break;
-
       case "hexagonalPrism":
         geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 6);
         break;
-
       case "triangularPyramid":
         geometry = new THREE.TetrahedronGeometry(0.7, 0);
         break;
-
       case "squarePyramid":
         geometry = new THREE.CylinderGeometry(0, 0.7, 1, 4);
         break;
-
       case "octahedron":
         geometry = new THREE.OctahedronGeometry(0.7, 0);
         break;
-
       default:
         return null;
     }
   }
 
+  // パーツごとの色
   let partColor = 0x9b8cff;
 
   if (part) {
@@ -201,16 +189,13 @@ export function addObject(type) {
       case "handR":
         partColor = 0xffaa77;
         break;
-
       case "hair":
         partColor = 0x110022;
         break;
-
       case "footL":
       case "footR":
         partColor = 0x111111;
         break;
-
       default:
         partColor = 0x3366ff;
         break;
@@ -221,8 +206,6 @@ export function addObject(type) {
     color: partColor
   });
 
-
-
   const mesh = new THREE.Mesh(geometry, material);
 
   mesh.name = (part ? part.label : type) + "_" + nextId;
@@ -231,7 +214,6 @@ export function addObject(type) {
   if (part) {
     mesh.userData.characterPart = true;
     mesh.userData.partType = type;
-
     mesh.scale.set(...part.scale);
     mesh.position.set(...part.position);
   } else {
@@ -283,13 +265,13 @@ export function setSelectedMaterial(options = {}) {
       material.color.set(options.color);
     }
 
-    if (options.roughness !== undefined) {
+    if (options.roughness !== undefined && "roughness" in material) {
       material.roughness = THREE.MathUtils.clamp(
         Number(options.roughness), 0, 1
       );
     }
 
-    if (options.metalness !== undefined) {
+    if (options.metalness !== undefined && "metalness" in material) {
       material.metalness = THREE.MathUtils.clamp(
         Number(options.metalness), 0, 1
       );
