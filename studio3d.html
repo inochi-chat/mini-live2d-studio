@@ -65,6 +65,7 @@
         </button>
       </div>
 
+      <!-- 基本操作 -->
       <div class="tool-row">
         <button id="addButton">＋ 追加</button>
         <button id="moveButton">移動</button>
@@ -72,6 +73,7 @@
         <button id="scaleButton">拡縮</button>
       </div>
 
+      <!-- 編集モード -->
       <div class="tool-row">
         <button id="objectModeButton" class="active">オブジェクト</button>
         <button id="vertexModeButton">頂点</button>
@@ -79,6 +81,7 @@
         <button id="faceModeButton">面</button>
       </div>
 
+      <!-- 面の差し込み -->
       <div class="tool-row">
         <button id="insetButton">面を差し込む</button>
         <div class="extrude-control">
@@ -87,6 +90,7 @@
         </div>
       </div>
 
+      <!-- 押し出し -->
       <div class="tool-row">
         <button id="extrudeButton">面を押し出す</button>
         <div class="extrude-control">
@@ -95,6 +99,7 @@
         </div>
       </div>
 
+      <!-- ベベル -->
       <div class="tool-row">
         <button id="bevelButton">角を丸める</button>
         <div class="extrude-control">
@@ -107,6 +112,7 @@
         </div>
       </div>
 
+      <!-- ループカット -->
       <div class="tool-row">
         <button id="loopCutButton">ループカット</button>
         <div class="extrude-control">
@@ -119,6 +125,7 @@
         </div>
       </div>
 
+      <!-- ミラー -->
       <div class="tool-row">
         <button id="mirrorButton">ミラー複製</button>
         <div class="extrude-control">
@@ -131,6 +138,7 @@
         </div>
       </div>
 
+      <!-- 頂点結合 -->
       <div class="tool-row">
         <button id="mergeVerticesButton">頂点を結合</button>
         <div class="extrude-control">
@@ -145,11 +153,13 @@
         <p class="empty-message">オブジェクトがありません</p>
       </div>
 
+      <!-- 複製・削除 -->
       <div class="tool-row secondary">
         <button id="duplicateButton">複製</button>
         <button id="deleteButton">削除</button>
       </div>
 
+      <!-- プロパティ -->
       <div id="properties">
         <div class="section-title">プロパティ</div>
         <p>オブジェクトを選択してください</p>
@@ -162,25 +172,6 @@
 <input type="file" id="loadFileInput" accept=".json,application/json" hidden>
 
 <script type="module" src="js/main.js"></script>
-
-<script type="module">
-  const objectButton = document.getElementById("objectWorkspaceButton");
-  const characterButton = document.getElementById("characterWorkspaceButton");
-
-  function changeWorkspace(mode) {
-    window.dispatchEvent(
-      new CustomEvent("workspace-mode-change", {
-        detail: { mode }
-      })
-    );
-
-    objectButton.classList.toggle("active", mode === "object");
-    characterButton.classList.toggle("active", mode === "character");
-  }
-
-  objectButton.addEventListener("click", () => changeWorkspace("object"));
-  characterButton.addEventListener("click", () => changeWorkspace("character"));
-</script>
 
 </body>
 </html>
