@@ -30,12 +30,19 @@ export function initUI(options = {}) {
   faceModeButton?.addEventListener("click", () => setEditMode("face"));
 
   addButton?.addEventListener("click", () => {
-    showObjectMenu((type) => {
-      callbacks.onAdd?.(type);
-      refreshObjectList();
-      refreshProperties();
-　　 });
-　});
+  console.log("追加ボタンが押されました");
+
+  showObjectMenu((type) => {
+    console.log("追加する図形:", type);
+
+    const result = callbacks.onAdd?.(type);
+
+    refreshObjectList();
+    refreshProperties();
+
+    return result;
+  });
+});
   moveButton?.addEventListener("click", () => setMode("translate"));
   rotateButton?.addEventListener("click", () => setMode("rotate"));
   scaleButton?.addEventListener("click", () => setMode("scale"));
