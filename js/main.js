@@ -1894,7 +1894,10 @@ if (loopCutButton) {
 }
 
 if (bevelButton) {
-  bevelButton.addEventListener("click", bevelSelectedObject);
+  bevelButton.addEventListener(
+  "click",
+  modelingTools.bevelSelectedObject
+);
 }
 
 if (insetButton) {
