@@ -1613,6 +1613,6 @@ const mergeVerticesButton =
 if (mergeVerticesButton) {
   mergeVerticesButton.addEventListener(
     "click",
-    mergeSelectedVertices
+    mergeVerticesTool.mergeSelectedVertices
   );
 }
