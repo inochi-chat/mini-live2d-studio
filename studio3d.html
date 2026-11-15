@@ -39,17 +39,10 @@
   <main id="workspace">
 
     <section id="viewport">
-
       <canvas id="threeCanvas"></canvas>
 
-      <div class="viewport-label">
-        PERSPECTIVE
-      </div>
-
-      <div id="objectCount">
-        Objects: 0
-      </div>
-
+      <div class="viewport-label">PERSPECTIVE</div>
+      <div id="objectCount">Objects: 0</div>
     </section>
 
     <section id="bottomPanel">
@@ -61,6 +54,17 @@
         <button id="redoButton">↷ やり直す</button>
       </div>
 
+      <!-- 制作モード -->
+      <div class="tool-row" id="workspaceModeBar">
+        <button id="objectWorkspaceButton" class="active">
+          通常モード
+        </button>
+
+        <button id="characterWorkspaceButton">
+          キャラクター制作
+        </button>
+      </div>
+
       <div class="tool-row">
         <button id="addButton">＋ 追加</button>
         <button id="moveButton">移動</button>
@@ -69,148 +73,76 @@
       </div>
 
       <div class="tool-row">
-
-        <button id="objectModeButton" class="active">
-          オブジェクト
-        </button>
-
-        <button id="vertexModeButton">
-          頂点
-        </button>
-
-        <button id="edgeModeButton">
-          辺
-        </button>
-
-        <button id="faceModeButton">
-          面
-        </button>
-
+        <button id="objectModeButton" class="active">オブジェクト</button>
+        <button id="vertexModeButton">頂点</button>
+        <button id="edgeModeButton">辺</button>
+        <button id="faceModeButton">面</button>
       </div>
-
-      <!-- 押し出し操作 -->
-   
-<div class="tool-row">
-  <button id="insetButton">
-    面を差し込む
-  </button>
-  <div class="extrude-control">
-    <label for="insetAmount">差し込み幅</label>
-    <input
-      type="number"
-      id="insetAmount"
-      value="0.1"
-      min="0.01"
-      max="1"
-      step="0.01"
-    >
-  </div>
-</div>
-
-<div class="tool-row">
-  <button id="extrudeButton">
-    面を押し出す
-  </button>
-  <div class="extrude-control">
-    <label for="extrudeDistance">押し出す距離</label>
-    <input
-      type="number"
-      id="extrudeDistance"
-      value="0.5"
-      min="-10"
-      max="10"
-      step="0.1"
-    >
-  </div>
-</div>
-    
-<div class="tool-row">
-  <button id="bevelButton">
-    角を丸める
-  </button>
-
-  <div class="extrude-control">
-    <label for="bevelAmount">丸める幅</label>
-    <input
-      type="number"
-      id="bevelAmount"
-      value="0.1"
-      min="0.01"
-      max="1"
-      step="0.01"
-    >
-  </div>
-
-  <div class="extrude-control">
-    <label for="bevelSegments">分割数</label>
-    <input
-      type="number"
-      id="bevelSegments"
-      value="3"
-      min="1"
-      max="8"
-      step="1"
-    >
-  </div>
-</div>
-
 
       <div class="tool-row">
-  <button id="loopCutButton">
-    ループカット
-  </button>
-
-  <div class="extrude-control">
-    <label for="loopCutAxis">切る方向</label>
-    <select id="loopCutAxis">
-      <option value="x">X方向</option>
-      <option value="y">Y方向</option>
-      <option value="z">Z方向</option>
-    </select>
-  </div>
-</div>
-
-<div class="tool-row">
-  <button id="mirrorButton">
-    ミラー複製
-  </button>
-
-  <div class="extrude-control">
-    <label for="mirrorAxis">対称軸</label>
-    <select id="mirrorAxis">
-      <option value="x">X軸</option>
-      <option value="y">Y軸</option>
-      <option value="z">Z軸</option>
-    </select>
-  </div>
-</div>
-
-<div class="tool-row">
-  <button id="mergeVerticesButton">
-    頂点を結合
-  </button>
-
-  <div class="extrude-control">
-    <label for="mergeTolerance">結合距離</label>
-    <input
-      type="number"
-      id="mergeTolerance"
-      value="0.001"
-      min="0.0001"
-      max="1"
-      step="0.001"
-    >
-  </div>
-</div>
-      
-      <div class="section-title">
-        オブジェクト
+        <button id="insetButton">面を差し込む</button>
+        <div class="extrude-control">
+          <label for="insetAmount">差し込み幅</label>
+          <input type="number" id="insetAmount" value="0.1" min="0.01" max="1" step="0.01">
+        </div>
       </div>
 
+      <div class="tool-row">
+        <button id="extrudeButton">面を押し出す</button>
+        <div class="extrude-control">
+          <label for="extrudeDistance">押し出す距離</label>
+          <input type="number" id="extrudeDistance" value="0.5" min="-10" max="10" step="0.1">
+        </div>
+      </div>
+
+      <div class="tool-row">
+        <button id="bevelButton">角を丸める</button>
+        <div class="extrude-control">
+          <label for="bevelAmount">丸める幅</label>
+          <input type="number" id="bevelAmount" value="0.1" min="0.01" max="1" step="0.01">
+        </div>
+        <div class="extrude-control">
+          <label for="bevelSegments">分割数</label>
+          <input type="number" id="bevelSegments" value="3" min="1" max="8" step="1">
+        </div>
+      </div>
+
+      <div class="tool-row">
+        <button id="loopCutButton">ループカット</button>
+        <div class="extrude-control">
+          <label for="loopCutAxis">切る方向</label>
+          <select id="loopCutAxis">
+            <option value="x">X方向</option>
+            <option value="y">Y方向</option>
+            <option value="z">Z方向</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="tool-row">
+        <button id="mirrorButton">ミラー複製</button>
+        <div class="extrude-control">
+          <label for="mirrorAxis">対称軸</label>
+          <select id="mirrorAxis">
+            <option value="x">X軸</option>
+            <option value="y">Y軸</option>
+            <option value="z">Z軸</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="tool-row">
+        <button id="mergeVerticesButton">頂点を結合</button>
+        <div class="extrude-control">
+          <label for="mergeTolerance">結合距離</label>
+          <input type="number" id="mergeTolerance" value="0.001" min="0.0001" max="1" step="0.001">
+        </div>
+      </div>
+
+      <div class="section-title">オブジェクト</div>
+
       <div id="objectList">
-        <p class="empty-message">
-          オブジェクトがありません
-        </p>
+        <p class="empty-message">オブジェクトがありません</p>
       </div>
 
       <div class="tool-row secondary">
@@ -219,31 +151,36 @@
       </div>
 
       <div id="properties">
-
-        <div class="section-title">
-          プロパティ
-        </div>
-
-        <p>
-          オブジェクトを選択してください
-        </p>
-
+        <div class="section-title">プロパティ</div>
+        <p>オブジェクトを選択してください</p>
       </div>
 
     </section>
-
   </main>
-
 </div>
 
-<input
-  type="file"
-  id="loadFileInput"
-  accept=".json,application/json"
-  hidden
->
+<input type="file" id="loadFileInput" accept=".json,application/json" hidden>
 
 <script type="module" src="js/main.js"></script>
+
+<script type="module">
+  const objectButton = document.getElementById("objectWorkspaceButton");
+  const characterButton = document.getElementById("characterWorkspaceButton");
+
+  function changeWorkspace(mode) {
+    window.dispatchEvent(
+      new CustomEvent("workspace-mode-change", {
+        detail: { mode }
+      })
+    );
+
+    objectButton.classList.toggle("active", mode === "object");
+    characterButton.classList.toggle("active", mode === "character");
+  }
+
+  objectButton.addEventListener("click", () => changeWorkspace("object"));
+  characterButton.addEventListener("click", () => changeWorkspace("character"));
+</script>
 
 </body>
 </html>
