@@ -1687,7 +1687,10 @@ if (insetButton) {
 }
 
 if (extrudeButton) {
-  extrudeButton.addEventListener("click", extrudeSelectedFaces);
+  extrudeButton.addEventListener(
+    "click",
+    extrudeTool.extrudeSelectedFaces
+  );
 }
 
 // =========================
