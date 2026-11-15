@@ -160,40 +160,7 @@ function updateVertexColors() {
   );
 }
 
-function showVertices(object) {
-  clearVertexHelper();
-
-  const positions = object.geometry.attributes.position;
-  const points = [];
-
-  for (let i = 0; i < positions.count; i++) {
-    points.push(
-      positions.getX(i),
-      positions.getY(i),
-      positions.getZ(i)
-    );
-  }
-
-  const geometry = new THREE.BufferGeometry();
-
-  geometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(points, 3)
-  );
-
-  const material = new THREE.PointsMaterial({
-    color: 0xffffff,
-    vertexColors: true,
-    size: 0.12,
-    sizeAttenuation: true,
-    depthTest: false
-  });
-
-  vertexHelper = new THREE.Points(geometry, material);
-  vertexHelper.renderOrder = 10;
-  object.add(vertexHelper);
-
-  const showVerticesTool = createShowVerticesTool({
+const showVerticesTool = createShowVerticesTool({
   THREE,
   setVertexHelper: (helper) => {
     vertexHelper = helper;
@@ -202,8 +169,6 @@ function showVertices(object) {
   clearVertexHelper,
   updateVertexColors
 });
-  updateVertexColors();
-}
 
 // =========================
 // 辺表示
@@ -333,7 +298,7 @@ function updateFaceColors() {
     "color",
     new THREE.Float32BufferAttribute(colors, 3)
   );
-}
+  }
 
 function showFaces(object) {
   clearFaceHelper();
@@ -634,6 +599,7 @@ function beginVertexDrag(event) {
       )
     );
   });
+   });
 
   vertexDrag = {
     object,
@@ -932,7 +898,7 @@ function finishVertexDrag() {
 
   saveHistory();
   refreshProperties();
-  updateDebugPanel("頂点を移動しました");
+  updateDebugPanel("頂点を移動しました"); 
 }
 
 function finishEdgeDrag() {
@@ -1233,7 +1199,7 @@ const extrudeTool = createExtrudeTool({
 
 const loopCutTool = createLoopCutTool({
   getSelectedObject,
-  updateEditDisplay,
+    updateEditDisplay,
   refreshObjectList,
   refreshProperties,
   saveHistory,
