@@ -28,6 +28,7 @@ import { paintSelectedFaces } from "./face-paint.js";
 import { createModelingTools } from "./modeling-tools/modeling-tools.js";
 import { createInsetTool } from "./modeling-tools/inset.js";
 import { createExtrudeTool } from "./modeling-tools/extrude.js";
+import { createLoopCutTool } from "./modeling-tools/loop-cut.js";
 
 // =========================
 // 初期設定
@@ -1325,6 +1326,15 @@ const extrudeTool = createExtrudeTool({
   updateDebugPanel
 });
 
+const loopCutTool = createLoopCutTool({
+  getSelectedObject,
+  updateEditDisplay,
+  refreshObjectList,
+  refreshProperties,
+  saveHistory,
+  updateDebugPanel
+});
+
 const createSnapshot = historyManager.createSnapshot;
 
 const loadFileInput = document.getElementById("loadFileInput");
@@ -1477,7 +1487,10 @@ if (mirrorButton) {
 }
 
 if (loopCutButton) {
-  loopCutButton.addEventListener("click", loopCutSelectedObject);
+  loopCutButton.addEventListener(
+    "click",
+    loopCutTool.loopCutSelectedObject
+  );
 }
 
 if (bevelButton) {
