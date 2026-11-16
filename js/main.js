@@ -29,7 +29,7 @@ import {
   initUI,
   refreshObjectList,
   refreshProperties
-} from "./ui.js";
+} from "./ui.js?v=20261117-2";
 
 import { getEditMode } from "./edit-mode.js";
 import { paintSelectedFaces } from "./face-paint.js";
