@@ -19,26 +19,46 @@ export function createHistoryManager(options = {}) {
   function createSnapshot() {
     return getObjects().map(object => {
       const geometry = object.geometry;
+      const materials = Array.isArray(object.material)
+        ? object.material
+        : [object.material];
+
+      const material = materials[0];
 
       return {
         name: object.name,
+        id: object.userData.id,
         type: geometry.type,
         parameters: geometry.parameters
           ? { ...geometry.parameters }
           : null,
+
         position: object.position.toArray(),
         rotation: object.rotation.toArray(),
         scale: object.scale.toArray(),
-        color: object.material.color.getHex(),
-        roughness: object.material.roughness,
-        metalness: object.material.metalness,
-        vertices: Array.from(geometry.attributes.position.array),
+
+        color: material?.color?.getHex() ?? 0xffffff,
+        roughness: material?.roughness,
+        metalness: material?.metalness,
+
+        vertices: Array.from(
+          geometry.attributes.position.array
+        ),
+
         colors: geometry.attributes.color
           ? Array.from(geometry.attributes.color.array)
           : null,
+
         indices: geometry.index
           ? Array.from(geometry.index.array)
-          : null
+          : null,
+
+        customEdges: Array.isArray(object.userData.customEdges)
+          ? JSON.parse(JSON.stringify(object.userData.customEdges))
+          : [],
+
+        characterPart: object.userData.characterPart === true,
+        partType: object.userData.partType ?? null
       };
     });
   }
@@ -49,146 +69,43 @@ export function createHistoryManager(options = {}) {
     history = history.slice(0, historyIndex + 1);
     history.push(JSON.stringify(snapshot));
 
-    if (history.length > 50) history.shift();
+    if (history.length > 50) {
+      history.shift();
+    }
 
     historyIndex = history.length - 1;
   }
 
-  
-  function restoreCustomGeometry(object, data) {
-    const p = data.parameters || {};
-    let geometry = null;
+  function createGeometry(data) {
+    const geometry = new THREE.BufferGeometry();
 
-    switch (data.type) {
-      case "BoxGeometry":
-        geometry = new THREE.BoxGeometry(
-          p.width ?? 1,
-          p.height ?? 1,
-          p.depth ?? 1,
-          p.widthSegments ?? 1,
-          p.heightSegments ?? 1,
-          p.depthSegments ?? 1
-        );
-        break;
-
-      case "SphereGeometry":
-        geometry = new THREE.SphereGeometry(
-          p.radius ?? 0.5,
-          p.widthSegments ?? 32,
-          p.heightSegments ?? 24,
-          p.phiStart ?? 0,
-          p.phiLength ?? Math.PI * 2,
-          p.thetaStart ?? 0,
-          p.thetaLength ?? Math.PI
-        );
-        break;
-
-      case "CylinderGeometry":
-        geometry = new THREE.CylinderGeometry(
-          p.radiusTop ?? 0.5,
-          p.radiusBottom ?? 0.5,
-          p.height ?? 1,
-          p.radialSegments ?? 32,
-          p.heightSegments ?? 1,
-          p.openEnded ?? false,
-          p.thetaStart ?? 0,
-          p.thetaLength ?? Math.PI * 2
-        );
-        break;
-
-      case "ConeGeometry":
-        geometry = new THREE.ConeGeometry(
-          p.radius ?? 0.5,
-          p.height ?? 1,
-          p.radialSegments ?? 32,
-          p.heightSegments ?? 1,
-          p.openEnded ?? false,
-          p.thetaStart ?? 0,
-          p.thetaLength ?? Math.PI * 2
-        );
-        break;
-
-      case "PlaneGeometry":
-        geometry = new THREE.PlaneGeometry(
-          p.width ?? 1,
-          p.height ?? 1,
-          p.widthSegments ?? 1,
-          p.heightSegments ?? 1
-        );
-        break;
-
-      case "TorusGeometry":
-        geometry = new THREE.TorusGeometry(
-          p.radius ?? 0.5,
-          p.tube ?? 0.18,
-          p.radialSegments ?? 16,
-          p.tubularSegments ?? 48,
-          p.arc ?? Math.PI * 2
-        );
-        break;
-
-      case "TetrahedronGeometry":
-        geometry = new THREE.TetrahedronGeometry(
-          p.radius ?? 0.7,
-          p.detail ?? 0
-        );
-        break;
-
-      case "OctahedronGeometry":
-        geometry = new THREE.OctahedronGeometry(
-          p.radius ?? 0.7,
-          p.detail ?? 0
-        );
-        break;
-
-      default:
-        return;
+    if (!Array.isArray(data.vertices)) {
+      return geometry;
     }
 
-    object.geometry.dispose();
-    object.geometry = geometry;
-  }
-
-
-  function applyVertexData(object, vertices) {
-    if (!Array.isArray(vertices)) return;
-
-    const positions = object.geometry.attributes.position;
-
-    if (!positions || positions.array.length !== vertices.length) return;
-
-    positions.array.set(vertices);
-    positions.needsUpdate = true;
-
-    object.geometry.computeVertexNormals();
-    object.geometry.computeBoundingBox();
-    object.geometry.computeBoundingSphere();
-  }
-
-  function applyColorData(object, colors) {
-    if (!Array.isArray(colors)) return;
-
-    const positions = object.geometry.attributes.position;
-
-    if (!positions || colors.length !== positions.count * 3) return;
-
-    object.geometry.setAttribute(
-      "color",
-      new THREE.Float32BufferAttribute(colors, 3)
+    geometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(data.vertices, 3)
     );
 
-    const materials = Array.isArray(object.material)
-      ? object.material
-      : [object.material];
+    if (Array.isArray(data.indices)) {
+      geometry.setIndex(data.indices);
+    }
 
-    materials.forEach(material => {
-      material.vertexColors = true;
-      material.color.set(0xffffff);
-      material.needsUpdate = true;
-    });
+    if (Array.isArray(data.colors)) {
+      geometry.setAttribute(
+        "color",
+        new THREE.Float32BufferAttribute(data.colors, 3)
+      );
+    }
+
+    geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+
+    return geometry;
   }
 
-  
   function restoreData(data) {
     const geometryTypes = {
       BoxGeometry: "cube",
@@ -204,15 +121,21 @@ export function createHistoryManager(options = {}) {
     const p = data.parameters || {};
     let type = geometryTypes[data.type] || "cube";
 
-    // 円柱の分割数から柱の種類を判定
     if (data.type === "CylinderGeometry") {
-      if (p.radialSegments === 3) type = "triangularPrism";
+      if (p.radialSegments === 3) {
+        type = "triangularPrism";
+      }
+
       if (p.radialSegments === 4) {
         type = p.radiusTop === 0
           ? "squarePyramid"
           : "squarePrism";
       }
-      if (p.radialSegments === 6) type = "hexagonalPrism";
+
+      if (p.radialSegments === 6) {
+        type = "hexagonalPrism";
+      }
+
       if (p.radiusTop === 0 && p.radialSegments === 32) {
         type = "cone";
       }
@@ -221,29 +144,50 @@ export function createHistoryManager(options = {}) {
     const object = addObject(type);
     if (!object) return;
 
-    restoreCustomGeometry(object, data);
+    const oldGeometry = object.geometry;
+    object.geometry = createGeometry(data);
+    oldGeometry.dispose();
 
     object.name = data.name;
+
+    if (data.id !== undefined) {
+      object.userData.id = data.id;
+    }
+
     object.position.fromArray(data.position);
     object.rotation.fromArray(data.rotation);
     object.scale.fromArray(data.scale);
 
-    if (data.color !== undefined) {
-      object.material.color.setHex(data.color);
+    object.userData.customEdges = Array.isArray(data.customEdges)
+      ? JSON.parse(JSON.stringify(data.customEdges))
+      : [];
+
+    if (data.characterPart) {
+      object.userData.characterPart = true;
+      object.userData.partType = data.partType;
     }
 
-    if (data.roughness !== undefined) {
-      object.material.roughness = data.roughness;
-    }
+    const materials = Array.isArray(object.material)
+      ? object.material
+      : [object.material];
 
-    if (data.metalness !== undefined) {
-      object.material.metalness = data.metalness;
-    }
+    materials.forEach(material => {
+      if (data.color !== undefined) {
+        material.color.setHex(data.color);
+      }
 
-    applyVertexData(object, data.vertices);
-    applyColorData(object, data.colors);
+      if (data.roughness !== undefined && "roughness" in material) {
+        material.roughness = data.roughness;
+      }
+
+      if (data.metalness !== undefined && "metalness" in material) {
+        material.metalness = data.metalness;
+      }
+
+      material.vertexColors = Array.isArray(data.colors);
+      material.needsUpdate = true;
+    });
   }
-
 
   function finishRestore() {
     const objects = getObjects();
