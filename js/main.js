@@ -46,6 +46,7 @@ import { createShowEdgesTool } from "./modeling-tools/show-edges.js";
 import { createShowFacesTool } from "./modeling-tools/show-faces.js";
 import { createSelectionTool } from "./modeling-tools/selection.js";
 import { createAddVertexTool } from "./modeling-tools/add-vertex.js";
+import { createAddEdgeTool } from "./modeling-tools/add-edge.js";
 
 // =========================
 // 初期設定
@@ -1131,6 +1132,13 @@ const selectionTool = createSelectionTool({
 });
 
 const addVertexTool = createAddVertexTool();
+const addEdgeTool = createAddEdgeTool({
+  getSelectedObject,
+  selectedVertexIndices,
+  updateEditDisplay,
+  refreshProperties,
+  saveHistory
+});
 
 // =========================
 // プロジェクト読み込み
@@ -1383,5 +1391,28 @@ if (addVertexButton) {
         ? "追加したい位置の表面をタップしてください"
         : "頂点配置を終了しました"
     );
+  });
+}
+
+
+// =========================
+// 辺作成
+// =========================
+
+const addEdgeButton =
+  document.getElementById("addEdgeButton");
+
+if (addEdgeButton) {
+  addEdgeButton.addEventListener("click", () => {
+    const result =
+      addEdgeTool.addEdgeBetweenSelectedVertices();
+
+    if (!result.success) {
+      alert(result.message);
+      return;
+    }
+
+    updateDebugPanel(result.message);
+    alert(result.message);
   });
 }
