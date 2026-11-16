@@ -67,13 +67,10 @@ let vertexHelper = null;
 let edgeHelper = null;
 let faceHelper = null;
 
-let vertexDrag = null;
-let edgeDrag = null;
-let faceDrag = null;
-
 let pendingVertex = null;
 let pendingEdge = null;
 let pendingFace = null;
+
 let pointerDownPosition = null;
 
 let selectedVertexIndices = new Set();
@@ -84,23 +81,26 @@ let edgeRecords = [];
 let faceRecords = [];
 let faceTriangleToRecord = [];
 
-let history = [];
-let historyIndex = -1;
-
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
 raycaster.params.Points.threshold = 0.8;
 raycaster.params.Line.threshold = 0.8;
 
+// =========================
+// ヒットテスト
+// =========================
+
 const hitTest = createHitTestTools({
   canvas,
   camera,
   raycaster,
   pointer,
+
   getVertexHelper: () => vertexHelper,
   getEdgeHelper: () => edgeHelper,
   getFaceHelper: () => faceHelper,
+
   getFaceTriangleToRecord: () => faceTriangleToRecord
 });
 
@@ -130,6 +130,7 @@ function clearVertexHelper() {
   vertexHelper.parent?.remove(vertexHelper);
   vertexHelper.geometry.dispose();
   vertexHelper.material.dispose();
+
   vertexHelper = null;
 }
 
@@ -139,8 +140,8 @@ function clearEdgeHelper() {
   edgeHelper.parent?.remove(edgeHelper);
   edgeHelper.geometry.dispose();
   edgeHelper.material.dispose();
-  edgeHelper = null;
 
+  edgeHelper = null;
   edgeRecords = [];
 }
 
@@ -150,8 +151,8 @@ function clearFaceHelper() {
   faceHelper.parent?.remove(faceHelper);
   faceHelper.geometry.dispose();
   faceHelper.material.dispose();
-  faceHelper = null;
 
+  faceHelper = null;
   faceRecords = [];
   faceTriangleToRecord = [];
 }
@@ -182,9 +183,11 @@ function updateVertexColors() {
 
 const showVerticesTool = createShowVerticesTool({
   THREE,
+
   setVertexHelper: (helper) => {
     vertexHelper = helper;
   },
+
   selectedVertexIndices,
   clearVertexHelper,
   updateVertexColors
@@ -303,239 +306,6 @@ function selectMesh(mesh) {
   refreshObjectList();
   refreshProperties();
 }
-
-// =========================
-// ポインター操作
-// =========================
-
-canvas.addEventListener("pointerdown", (event) => {
-  pointerDownPosition = {
-    x: event.clientX,
-    y: event.clientY
-  };
-
-  const mode = getEditMode();
-
-  if (mode === "vertex") {
-    const index = getVertexHit(event);
-
-    pendingVertex = index === null
-      ? null
-      : { index, x: event.clientX, y: event.clientY };
-  }
-
-  if (mode === "edge") {
-    const index = getEdgeHit(event);
-
-    pendingEdge = index === null
-      ? null
-      : { index, x: event.clientX, y: event.clientY };
-  }
-
-  if (mode === "face") {
-    const index = getFaceHit(event);
-
-    pendingFace = index === null
-      ? null
-      : { index, x: event.clientX, y: event.clientY };
-  }
-});
-
-canvas.addEventListener("pointermove", (event) => {
-  if (vertexDrag) {
-    moveVertices(event);
-    return;
-  }
-
-  if (edgeDrag) {
-    moveEdges(event);
-    return;
-  }
-
-  if (faceDrag) {
-    moveFaces(event);
-    return;
-  }
-
-  if (pendingVertex) {
-    const dx = event.clientX - pendingVertex.x;
-    const dy = event.clientY - pendingVertex.y;
-
-    if (
-      Math.hypot(dx, dy) >= 6 &&
-      selectedVertexIndices.has(pendingVertex.index)
-    ) {
-      dragTools.beginVertexDrag(event, pendingVertex);
-      if (vertexDrag) moveVertices(event);
-    }
-  }
-
-  if (pendingEdge) {
-    const dx = event.clientX - pendingEdge.x;
-    const dy = event.clientY - pendingEdge.y;
-
-    if (
-      Math.hypot(dx, dy) >= 6 &&
-      selectedEdgeIndices.has(pendingEdge.index)
-    ) {
-      dragTools.beginEdgeDrag(event, pendingEdge);
-      if (edgeDrag) moveEdges(event);
-    }
-  }
-
-  if (pendingFace) {
-    const dx = event.clientX - pendingFace.x;
-    const dy = event.clientY - pendingFace.y;
-
-    if (
-      Math.hypot(dx, dy) >= 6 &&
-      selectedFaceIndices.has(pendingFace.index)
-    ) {
-      dragTools.beginFaceDrag(event, pendingFace);
-      if (faceDrag) moveFaces(event);
-    }
-  }
-});
-
-canvas.addEventListener("pointerup", (event) => {
-  // 頂点配置モード
-  if (isAddingVertex) {
-    updatePointer(event);
-
-    const hits = raycaster.intersectObjects(
-      getObjects(),
-      false
-    );
-
-    if (hits.length > 0) {
-      const hit = hits[0];
-
-      const newIndex = addVertexTool.addVertex(
-        hit.object,
-        hit.point
-      );
-
-      if (newIndex >= 0) {
-        selectMesh(hit.object);
-
-        if (getEditMode() === "vertex") {
-          selectedVertexIndices.add(newIndex);
-          updateVertexColors();
-        }
-
-        saveHistory();
-        refreshProperties();
-
-        updateDebugPanel(
-          "新しい頂点を追加しました: " + newIndex
-        );
-      }
-    }
-
-    pendingVertex = null;
-    pendingEdge = null;
-    pendingFace = null;
-    pointerDownPosition = null;
-    return;
-  }
-
-  if (vertexDrag) {
-    finishVertexDrag();
-    pendingVertex = null;
-    pendingEdge = null;
-    pendingFace = null;
-    pointerDownPosition = null;
-    return;
-  }
-
-  if (edgeDrag) {
-    finishEdgeDrag();
-    pendingVertex = null;
-    pendingEdge = null;
-    pendingFace = null;
-    pointerDownPosition = null;
-    return;
-  }
-
-  if (faceDrag) {
-    finishFaceDrag();
-    pendingVertex = null;
-    pendingEdge = null;
-    pendingFace = null;
-    pointerDownPosition = null;
-    return;
-  }
-
-  if (pendingVertex) {
-    const dx = event.clientX - pendingVertex.x;
-    const dy = event.clientY - pendingVertex.y;
-
-    if (Math.hypot(dx, dy) < 6) {
-      selectionTool.toggleVertexSelection(pendingVertex.index);
-    }
-
-    pendingVertex = null;
-    pointerDownPosition = null;
-    return;
-  }
-
-  if (pendingEdge) {
-    const dx = event.clientX - pendingEdge.x;
-    const dy = event.clientY - pendingEdge.y;
-
-    if (Math.hypot(dx, dy) < 6) {
-      selectionTool.toggleEdgeSelection(pendingEdge.index);
-    }
-
-    pendingEdge = null;
-    pointerDownPosition = null;
-    return;
-  }
-
-  if (pendingFace) {
-    const dx = event.clientX - pendingFace.x;
-    const dy = event.clientY - pendingFace.y;
-
-    if (Math.hypot(dx, dy) < 6) {
-      selectionTool.toggleFaceSelection(pendingFace.index);
-    }
-
-    pendingFace = null;
-    pointerDownPosition = null;
-    return;
-  }
-
-  if (isDragging || !pointerDownPosition) {
-    pointerDownPosition = null;
-    return;
-  }
-
-  const dx = event.clientX - pointerDownPosition.x;
-  const dy = event.clientY - pointerDownPosition.y;
-
-  pointerDownPosition = null;
-
-  if (Math.hypot(dx, dy) > 5) return;
-
-  updatePointer(event);
-
-  const hits = raycaster.intersectObjects(getObjects(), false);
-
-  if (hits.length > 0) {
-    selectMesh(hits[0].object);
-  }
-});
-
-canvas.addEventListener("pointercancel", () => {
-  if (vertexDrag) finishVertexDrag();
-  if (edgeDrag) finishEdgeDrag();
-  if (faceDrag) finishFaceDrag();
-
-  pendingVertex = null;
-  pendingEdge = null;
-  pendingFace = null;
-  pointerDownPosition = null;
-});
 
 // =========================
 // 全オブジェクト削除
@@ -708,7 +478,12 @@ const selectionTool = createSelectionTool({
   updateFaceColors
 });
 
+// =========================
+// 頂点追加・辺作成ツール
+// =========================
+
 const addVertexTool = createAddVertexTool();
+
 const addEdgeTool = createAddEdgeTool({
   getSelectedObject,
   selectedVertexIndices,
@@ -748,6 +523,259 @@ const dragTools = createDragTools({
   saveHistory,
   refreshProperties,
   updateDebugPanel
+});
+
+// =========================
+// ポインター操作
+// =========================
+
+canvas.addEventListener("pointerdown", (event) => {
+  pointerDownPosition = {
+    x: event.clientX,
+    y: event.clientY
+  };
+
+  const mode = getEditMode();
+
+  if (mode === "vertex") {
+    const index = getVertexHit(event);
+
+    pendingVertex = index === null
+      ? null
+      : { index, x: event.clientX, y: event.clientY };
+  }
+
+  if (mode === "edge") {
+    const index = getEdgeHit(event);
+
+    pendingEdge = index === null
+      ? null
+      : { index, x: event.clientX, y: event.clientY };
+  }
+
+  if (mode === "face") {
+    const index = getFaceHit(event);
+
+    pendingFace = index === null
+      ? null
+      : { index, x: event.clientX, y: event.clientY };
+  }
+});
+
+canvas.addEventListener("pointermove", (event) => {
+  if (dragTools.hasVertexDrag()) {
+    dragTools.moveVertices(event);
+    return;
+  }
+
+  if (dragTools.hasEdgeDrag()) {
+    dragTools.moveEdges(event);
+    return;
+  }
+
+  if (dragTools.hasFaceDrag()) {
+    dragTools.moveFaces(event);
+    return;
+  }
+
+  if (pendingVertex) {
+    const dx = event.clientX - pendingVertex.x;
+    const dy = event.clientY - pendingVertex.y;
+
+    if (
+      Math.hypot(dx, dy) >= 6 &&
+      selectedVertexIndices.has(pendingVertex.index)
+    ) {
+      dragTools.beginVertexDrag(event, pendingVertex);
+
+      if (dragTools.hasVertexDrag()) {
+        dragTools.moveVertices(event);
+      }
+    }
+  }
+
+  if (pendingEdge) {
+    const dx = event.clientX - pendingEdge.x;
+    const dy = event.clientY - pendingEdge.y;
+
+    if (
+      Math.hypot(dx, dy) >= 6 &&
+      selectedEdgeIndices.has(pendingEdge.index)
+    ) {
+      dragTools.beginEdgeDrag(event, pendingEdge);
+
+      if (dragTools.hasEdgeDrag()) {
+        dragTools.moveEdges(event);
+      }
+    }
+  }
+
+  if (pendingFace) {
+    const dx = event.clientX - pendingFace.x;
+    const dy = event.clientY - pendingFace.y;
+
+    if (
+      Math.hypot(dx, dy) >= 6 &&
+      selectedFaceIndices.has(pendingFace.index)
+    ) {
+      dragTools.beginFaceDrag(event, pendingFace);
+
+      if (dragTools.hasFaceDrag()) {
+        dragTools.moveFaces(event);
+      }
+    }
+  }
+});
+
+canvas.addEventListener("pointerup", (event) => {
+  // 頂点配置モード
+  if (isAddingVertex) {
+    updatePointer(event);
+
+    const hits = raycaster.intersectObjects(
+      getObjects(),
+      false
+    );
+
+    if (hits.length > 0) {
+      const hit = hits[0];
+
+      const newIndex = addVertexTool.addVertex(
+        hit.object,
+        hit.point
+      );
+
+      if (newIndex >= 0) {
+        selectMesh(hit.object);
+
+        if (getEditMode() === "vertex") {
+          selectedVertexIndices.add(newIndex);
+          updateVertexColors();
+        }
+
+        saveHistory();
+        refreshProperties();
+
+        updateDebugPanel(
+          "新しい頂点を追加しました: " + newIndex
+        );
+      }
+    }
+
+    pendingVertex = null;
+    pendingEdge = null;
+    pendingFace = null;
+    pointerDownPosition = null;
+    return;
+  }
+
+  if (dragTools.hasVertexDrag()) {
+    dragTools.finishVertexDrag();
+
+    pendingVertex = null;
+    pendingEdge = null;
+    pendingFace = null;
+    pointerDownPosition = null;
+    return;
+  }
+
+  if (dragTools.hasEdgeDrag()) {
+    dragTools.finishEdgeDrag();
+
+    pendingVertex = null;
+    pendingEdge = null;
+    pendingFace = null;
+    pointerDownPosition = null;
+    return;
+  }
+
+  if (dragTools.hasFaceDrag()) {
+    dragTools.finishFaceDrag();
+
+    pendingVertex = null;
+    pendingEdge = null;
+    pendingFace = null;
+    pointerDownPosition = null;
+    return;
+  }
+
+  if (pendingVertex) {
+    const dx = event.clientX - pendingVertex.x;
+    const dy = event.clientY - pendingVertex.y;
+
+    if (Math.hypot(dx, dy) < 6) {
+      selectionTool.toggleVertexSelection(pendingVertex.index);
+    }
+
+    pendingVertex = null;
+    pointerDownPosition = null;
+    return;
+  }
+
+  if (pendingEdge) {
+    const dx = event.clientX - pendingEdge.x;
+    const dy = event.clientY - pendingEdge.y;
+
+    if (Math.hypot(dx, dy) < 6) {
+      selectionTool.toggleEdgeSelection(pendingEdge.index);
+    }
+
+    pendingEdge = null;
+    pointerDownPosition = null;
+    return;
+  }
+
+  if (pendingFace) {
+    const dx = event.clientX - pendingFace.x;
+    const dy = event.clientY - pendingFace.y;
+
+    if (Math.hypot(dx, dy) < 6) {
+      selectionTool.toggleFaceSelection(pendingFace.index);
+    }
+
+    pendingFace = null;
+    pointerDownPosition = null;
+    return;
+  }
+
+  if (isDragging || !pointerDownPosition) {
+    pointerDownPosition = null;
+    return;
+  }
+
+  const dx = event.clientX - pointerDownPosition.x;
+  const dy = event.clientY - pointerDownPosition.y;
+
+  pointerDownPosition = null;
+
+  if (Math.hypot(dx, dy) > 5) return;
+
+  updatePointer(event);
+
+  const hits = raycaster.intersectObjects(getObjects(), false);
+
+  if (hits.length > 0) {
+    selectMesh(hits[0].object);
+  }
+});
+
+canvas.addEventListener("pointercancel", () => {
+  if (dragTools.hasVertexDrag()) {
+    dragTools.finishVertexDrag();
+  }
+
+  if (dragTools.hasEdgeDrag()) {
+    dragTools.finishEdgeDrag();
+  }
+
+  if (dragTools.hasFaceDrag()) {
+    dragTools.finishFaceDrag();
+  }
+
+  pendingVertex = null;
+  pendingEdge = null;
+  pendingFace = null;
+  pointerDownPosition = null;
 });
 
 // =========================
@@ -1003,7 +1031,6 @@ if (addVertexButton) {
     );
   });
 }
-
 
 // =========================
 // 辺作成
