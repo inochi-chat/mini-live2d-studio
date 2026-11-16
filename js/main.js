@@ -48,6 +48,7 @@ import { createSelectionTool } from "./modeling-tools/selection.js";
 import { createAddVertexTool } from "./modeling-tools/add-vertex.js";
 import { createAddEdgeTool } from "./modeling-tools/add-edge.js";
 import { createHitTestTools } from "./modeling-tools/hit-test.js";
+import { createDragTools } from "./modeling-tools/drag-tools.js";
 
 // =========================
 // 初期設定
@@ -303,397 +304,6 @@ function selectMesh(mesh) {
   refreshProperties();
 }
 
-
-// =========================
-// ドラッグ共通
-// =========================
-
-function createDragPlane(event, localPosition, object) {
-  object.updateMatrixWorld(true);
-
-  const worldPosition = object.localToWorld(localPosition.clone());
-  const normal = new THREE.Vector3();
-
-  camera.getWorldDirection(normal);
-
-  const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-    normal,
-    worldPosition
-  );
-
-  updatePointer(event);
-
-  const startPoint = new THREE.Vector3();
-
-  if (!raycaster.ray.intersectPlane(plane, startPoint)) {
-    return null;
-  }
-
-  return {
-    plane,
-    startLocal: object.worldToLocal(startPoint.clone())
-  };
-}
-
-// =========================
-// 頂点ドラッグ
-// =========================
-
-function beginVertexDrag(event) {
-  if (!pendingVertex) return;
-
-  const object = getSelectedObject();
-  if (!object) return;
-
-  const positions = object.geometry.attributes.position;
-  const index = pendingVertex.index;
-
-  const local = new THREE.Vector3(
-    positions.getX(index),
-    positions.getY(index),
-    positions.getZ(index)
-  );
-
-  const drag = createDragPlane(event, local, object);
-  if (!drag) return;
-
-  const originalPositions = new Map();
-
-  selectedVertexIndices.forEach((i) => {
-    originalPositions.set(
-      i,
-      new THREE.Vector3(
-        positions.getX(i),
-        positions.getY(i),
-        positions.getZ(i)
-      )
-    );
-  });
-
-  vertexDrag = {
-    object,
-    plane: drag.plane,
-    startLocal: drag.startLocal,
-    originalPositions
-  };
-
-  isDragging = true;
-  controls.enabled = false;
-}
-
-function moveVertices(event) {
-  if (!vertexDrag) return;
-
-  updatePointer(event);
-
-  const point = new THREE.Vector3();
-
-  if (!raycaster.ray.intersectPlane(vertexDrag.plane, point)) return;
-
-  const object = vertexDrag.object;
-  object.updateMatrixWorld(true);
-
-  const current = object.worldToLocal(point.clone());
-  const delta = current.sub(vertexDrag.startLocal);
-
-  const positions = object.geometry.attributes.position;
-
-  vertexDrag.originalPositions.forEach((original, index) => {
-    positions.setXYZ(
-      index,
-      original.x + delta.x,
-      original.y + delta.y,
-      original.z + delta.z
-    );
-  });
-
-  positions.needsUpdate = true;
-
-  object.geometry.computeVertexNormals();
-  object.geometry.computeBoundingBox();
-  object.geometry.computeBoundingSphere();
-
-  if (vertexHelper) {
-    const helperPositions = vertexHelper.geometry.attributes.position;
-
-    vertexDrag.originalPositions.forEach((original, index) => {
-      helperPositions.setXYZ(
-        index,
-        original.x + delta.x,
-        original.y + delta.y,
-        original.z + delta.z
-      );
-    });
-
-    helperPositions.needsUpdate = true;
-  }
-}
-
-// =========================
-// 辺ドラッグ
-// =========================
-
-function beginEdgeDrag(event) {
-  if (!pendingEdge) return;
-
-  const object = getSelectedObject();
-  if (!object) return;
-
-  const record = edgeRecords[pendingEdge.index];
-  if (!record) return;
-
-  const midpoint = record.a.clone().add(record.b).multiplyScalar(0.5);
-  const drag = createDragPlane(event, midpoint, object);
-
-  if (!drag) return;
-
-  const positions = object.geometry.attributes.position;
-  const originalPositions = new Map();
-
-  selectedEdgeIndices.forEach((edgeIndex) => {
-    const edge = edgeRecords[edgeIndex];
-    if (!edge) return;
-
-    [...edge.verticesA, ...edge.verticesB].forEach((index) => {
-      if (originalPositions.has(index)) return;
-
-      originalPositions.set(
-        index,
-        new THREE.Vector3(
-          positions.getX(index),
-          positions.getY(index),
-          positions.getZ(index)
-        )
-      );
-    });
-  });
-
-  if (!originalPositions.size) return;
-
-  edgeDrag = {
-    object,
-    plane: drag.plane,
-    startLocal: drag.startLocal,
-    originalPositions
-  };
-
-  isDragging = true;
-  controls.enabled = false;
-}
-
-function averageVertexPosition(positions, indices) {
-  const result = new THREE.Vector3();
-
-  for (const index of indices) {
-    result.x += positions.getX(index);
-    result.y += positions.getY(index);
-    result.z += positions.getZ(index);
-  }
-
-  return indices.length
-    ? result.multiplyScalar(1 / indices.length)
-    : result;
-}
-
-function moveEdges(event) {
-  if (!edgeDrag || !edgeHelper) return;
-
-  updatePointer(event);
-
-  const point = new THREE.Vector3();
-
-  if (!raycaster.ray.intersectPlane(edgeDrag.plane, point)) return;
-
-  const object = edgeDrag.object;
-  object.updateMatrixWorld(true);
-
-  const current = object.worldToLocal(point.clone());
-  const delta = current.sub(edgeDrag.startLocal);
-
-  const positions = object.geometry.attributes.position;
-
-  edgeDrag.originalPositions.forEach((original, index) => {
-    positions.setXYZ(
-      index,
-      original.x + delta.x,
-      original.y + delta.y,
-      original.z + delta.z
-    );
-  });
-
-  positions.needsUpdate = true;
-
-  object.geometry.computeVertexNormals();
-  object.geometry.computeBoundingBox();
-  object.geometry.computeBoundingSphere();
-
-  const helperPositions = edgeHelper.geometry.attributes.position;
-
-  edgeRecords.forEach((edge, index) => {
-    const a = averageVertexPosition(positions, edge.verticesA);
-    const b = averageVertexPosition(positions, edge.verticesB);
-
-    edge.a.copy(a);
-    edge.b.copy(b);
-
-    helperPositions.setXYZ(index * 2, a.x, a.y, a.z);
-    helperPositions.setXYZ(index * 2 + 1, b.x, b.y, b.z);
-  });
-
-  helperPositions.needsUpdate = true;
-  edgeHelper.geometry.computeBoundingSphere();
-}
-
-// =========================
-// 面ドラッグ
-// =========================
-
-function beginFaceDrag(event) {
-  if (!pendingFace) return;
-
-  const object = getSelectedObject();
-  if (!object) return;
-
-  const record = faceRecords[pendingFace.index];
-  if (!record) return;
-
-  const positions = object.geometry.attributes.position;
-  const center = new THREE.Vector3();
-
-  record.vertices.forEach((index) => {
-    center.x += positions.getX(index);
-    center.y += positions.getY(index);
-    center.z += positions.getZ(index);
-  });
-
-  center.multiplyScalar(1 / record.vertices.length);
-
-  const drag = createDragPlane(event, center, object);
-  if (!drag) return;
-
-  const originalPositions = new Map();
-
-  selectedFaceIndices.forEach((faceIndex) => {
-    const face = faceRecords[faceIndex];
-    if (!face) return;
-
-    face.vertices.forEach((index) => {
-      if (originalPositions.has(index)) return;
-
-      originalPositions.set(
-        index,
-        new THREE.Vector3(
-          positions.getX(index),
-          positions.getY(index),
-          positions.getZ(index)
-        )
-      );
-    });
-  });
-
-  if (!originalPositions.size) return;
-
-  faceDrag = {
-    object,
-    plane: drag.plane,
-    startLocal: drag.startLocal,
-    originalPositions
-  };
-
-  isDragging = true;
-  controls.enabled = false;
-}
-
-function moveFaces(event) {
-  if (!faceDrag || !faceHelper) return;
-
-  updatePointer(event);
-
-  const point = new THREE.Vector3();
-
-  if (!raycaster.ray.intersectPlane(faceDrag.plane, point)) return;
-
-  const object = faceDrag.object;
-  object.updateMatrixWorld(true);
-
-  const current = object.worldToLocal(point.clone());
-  const delta = current.sub(faceDrag.startLocal);
-
-  const positions = object.geometry.attributes.position;
-
-  faceDrag.originalPositions.forEach((original, index) => {
-    positions.setXYZ(
-      index,
-      original.x + delta.x,
-      original.y + delta.y,
-      original.z + delta.z
-    );
-  });
-
-  positions.needsUpdate = true;
-
-  object.geometry.computeVertexNormals();
-  object.geometry.computeBoundingBox();
-  object.geometry.computeBoundingSphere();
-
-  const helperPositions = faceHelper.geometry.attributes.position;
-  let offset = 0;
-
-  faceRecords.forEach((face) => {
-    face.vertices.forEach((index) => {
-      helperPositions.setXYZ(
-        offset++,
-        positions.getX(index),
-        positions.getY(index),
-        positions.getZ(index)
-      );
-    });
-  });
-
-  helperPositions.needsUpdate = true;
-  faceHelper.geometry.computeBoundingSphere();
-}
-
-// =========================
-// ドラッグ終了
-// =========================
-
-function finishVertexDrag() {
-  if (!vertexDrag) return;
-
-  vertexDrag = null;
-  isDragging = false;
-  controls.enabled = true;
-
-  saveHistory();
-  refreshProperties();
-  updateDebugPanel("頂点を移動しました");
-}
-
-function finishEdgeDrag() {
-  if (!edgeDrag) return;
-
-  edgeDrag = null;
-  isDragging = false;
-  controls.enabled = true;
-
-  saveHistory();
-  refreshProperties();
-  updateDebugPanel("辺を移動しました");
-}
-
-function finishFaceDrag() {
-  if (!faceDrag) return;
-
-  faceDrag = null;
-  isDragging = false;
-  controls.enabled = true;
-
-  saveHistory();
-  refreshProperties();
-  updateDebugPanel("面を移動しました");
-}
-
 // =========================
 // ポインター操作
 // =========================
@@ -755,7 +365,7 @@ canvas.addEventListener("pointermove", (event) => {
       Math.hypot(dx, dy) >= 6 &&
       selectedVertexIndices.has(pendingVertex.index)
     ) {
-      beginVertexDrag(event);
+      dragTools.beginVertexDrag(event, pendingVertex);
       if (vertexDrag) moveVertices(event);
     }
   }
@@ -768,7 +378,7 @@ canvas.addEventListener("pointermove", (event) => {
       Math.hypot(dx, dy) >= 6 &&
       selectedEdgeIndices.has(pendingEdge.index)
     ) {
-      beginEdgeDrag(event);
+      dragTools.beginEdgeDrag(event, pendingEdge);
       if (edgeDrag) moveEdges(event);
     }
   }
@@ -781,7 +391,7 @@ canvas.addEventListener("pointermove", (event) => {
       Math.hypot(dx, dy) >= 6 &&
       selectedFaceIndices.has(pendingFace.index)
     ) {
-      beginFaceDrag(event);
+      dragTools.beginFaceDrag(event, pendingFace);
       if (faceDrag) moveFaces(event);
     }
   }
@@ -1105,6 +715,39 @@ const addEdgeTool = createAddEdgeTool({
   updateEditDisplay,
   refreshProperties,
   saveHistory
+});
+
+// =========================
+// ドラッグツール
+// =========================
+
+const dragTools = createDragTools({
+  THREE,
+  camera,
+  raycaster,
+  controls,
+  updatePointer,
+
+  getSelectedObject,
+
+  getVertexHelper: () => vertexHelper,
+  getEdgeHelper: () => edgeHelper,
+  getFaceHelper: () => faceHelper,
+
+  getEdgeRecords: () => edgeRecords,
+  getFaceRecords: () => faceRecords,
+
+  selectedVertexIndices,
+  selectedEdgeIndices,
+  selectedFaceIndices,
+
+  setDragging: (value) => {
+    isDragging = value;
+  },
+
+  saveHistory,
+  refreshProperties,
+  updateDebugPanel
 });
 
 // =========================
