@@ -47,6 +47,7 @@ import { createShowFacesTool } from "./modeling-tools/show-faces.js";
 import { createSelectionTool } from "./modeling-tools/selection.js";
 import { createAddVertexTool } from "./modeling-tools/add-vertex.js";
 import { createAddEdgeTool } from "./modeling-tools/add-edge.js";
+import { createHitTestTools } from "./modeling-tools/hit-test.js";
 
 // =========================
 // 初期設定
@@ -88,8 +89,24 @@ let historyIndex = -1;
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
-raycaster.params.Points.threshold = 0.5;
-raycaster.params.Line.threshold = 0.5;
+raycaster.params.Points.threshold = 0.8;
+raycaster.params.Line.threshold = 0.8;
+
+const hitTest = createHitTestTools({
+  canvas,
+  camera,
+  raycaster,
+  pointer,
+  getVertexHelper: () => vertexHelper,
+  getEdgeHelper: () => edgeHelper,
+  getFaceHelper: () => faceHelper,
+  getFaceTriangleToRecord: () => faceTriangleToRecord
+});
+
+const updatePointer = hitTest.updatePointer;
+const getVertexHit = hitTest.getVertexHit;
+const getEdgeHit = hitTest.getEdgeHit;
+const getFaceHit = hitTest.getFaceHit;
 
 // =========================
 // 診断パネル
@@ -299,43 +316,6 @@ function selectMesh(mesh) {
   refreshProperties();
 }
 
-// =========================
-// ヒット判定
-// =========================
-
-function getVertexHit(event) {
-  if (!vertexHelper) return null;
-
-  updatePointer(event);
-
-  const hits = raycaster.intersectObject(vertexHelper, false);
-
-  return hits.length ? hits[0].index : null;
-}
-
-function getEdgeHit(event) {
-  if (!edgeHelper) return null;
-
-  updatePointer(event);
-
-  const hits = raycaster.intersectObject(edgeHelper, false);
-
-  if (!hits.length || hits[0].index == null) return null;
-
-  return Math.floor(hits[0].index / 2);
-}
-
-function getFaceHit(event) {
-  if (!faceHelper) return null;
-
-  updatePointer(event);
-
-  const hits = raycaster.intersectObject(faceHelper, false);
-
-  if (!hits.length || hits[0].faceIndex == null) return null;
-
-  return faceTriangleToRecord[hits[0].faceIndex] ?? null;
-}
 
 // =========================
 // ドラッグ共通
