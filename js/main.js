@@ -1,8 +1,11 @@
+
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import * as THREE from "three";
+
 import { createDebugPanel } from "./debug-panel.js";
 import { createScene } from "./scene.js";
 import { createHistoryManager } from "./history.js";
+
 import {
   initObjects,
   addObject,
@@ -16,24 +19,32 @@ import {
 } from "./objects.js?v=20261115-2";
 
 import {
-  initTools, attachObject, detachObject, setToolMode
+  initTools,
+  attachObject,
+  detachObject,
+  setToolMode
 } from "./tools.js";
 
 import {
-  initUI, refreshObjectList, refreshProperties
+  initUI,
+  refreshObjectList,
+  refreshProperties
 } from "./ui.js";
 
 import { getEditMode } from "./edit-mode.js";
 import { paintSelectedFaces } from "./face-paint.js";
+
 import { createModelingTools } from "./modeling-tools/modeling-tools.js";
 import { createInsetTool } from "./modeling-tools/inset.js";
 import { createExtrudeTool } from "./modeling-tools/extrude.js";
 import { createLoopCutTool } from "./modeling-tools/loop-cut.js";
 import { createMirrorTool } from "./modeling-tools/mirror.js";
 import { createMergeVerticesTool } from "./modeling-tools/merge-vertices.js";
+
 import { createShowVerticesTool } from "./modeling-tools/show-vertices.js";
 import { createShowEdgesTool } from "./modeling-tools/show-edges.js";
 import { createShowFacesTool } from "./modeling-tools/show-faces.js";
+import { createSelectionTool } from "./modeling-tools/selection.js";
 
 // =========================
 // 初期設定
@@ -77,9 +88,8 @@ const pointer = new THREE.Vector2();
 raycaster.params.Points.threshold = 0.5;
 raycaster.params.Line.threshold = 0.5;
 
-
 // =========================
-// 診断パネル（移動・折りたたみ・位置保存対応）
+// 診断パネル
 // =========================
 
 const updateDebugPanel = createDebugPanel({
@@ -122,6 +132,7 @@ function clearEdgeHelper() {
   edgeHelper.geometry.dispose();
   edgeHelper.material.dispose();
   edgeHelper = null;
+
   edgeRecords = [];
 }
 
@@ -220,7 +231,7 @@ function updateFaceColors() {
     "color",
     new THREE.Float32BufferAttribute(colors, 3)
   );
-  }
+}
 
 // =========================
 // 編集表示更新
@@ -246,12 +257,15 @@ function updateEditDisplay() {
     if (mode === "vertex" && selected) {
       showVerticesTool.showVertices(selected);
     }
+
     if (mode === "edge" && selected) {
       showEdgesTool.showEdges(selected);
     }
+
     if (mode === "face" && selected) {
       showFacesTool.showFaces(selected);
     }
+  }
 
   updateDebugPanel("編集モード切り替え済み");
 }
@@ -280,40 +294,6 @@ function selectMesh(mesh) {
   updateEditDisplay();
   refreshObjectList();
   refreshProperties();
-}
-
-// =========================
-// 選択切り替え
-// =========================
-
-function toggleVertexSelection(index) {
-  if (selectedVertexIndices.has(index)) {
-    selectedVertexIndices.delete(index);
-  } else {
-    selectedVertexIndices.add(index);
-  }
-
-  updateVertexColors();
-}
-
-function toggleEdgeSelection(index) {
-  if (selectedEdgeIndices.has(index)) {
-    selectedEdgeIndices.delete(index);
-  } else {
-    selectedEdgeIndices.add(index);
-  }
-
-  updateEdgeColors();
-}
-
-function toggleFaceSelection(index) {
-  if (selectedFaceIndices.has(index)) {
-    selectedFaceIndices.delete(index);
-  } else {
-    selectedFaceIndices.add(index);
-  }
-
-  updateFaceColors();
 }
 
 // =========================
@@ -717,7 +697,7 @@ function finishVertexDrag() {
 
   saveHistory();
   refreshProperties();
-  updateDebugPanel("頂点を移動しました"); 
+  updateDebugPanel("頂点を移動しました");
 }
 
 function finishEdgeDrag() {
@@ -743,7 +723,6 @@ function finishFaceDrag() {
   refreshProperties();
   updateDebugPanel("面を移動しました");
 }
-
 
 // =========================
 // ポインター操作
@@ -871,7 +850,7 @@ canvas.addEventListener("pointerup", (event) => {
     const dy = event.clientY - pendingVertex.y;
 
     if (Math.hypot(dx, dy) < 6) {
-      toggleVertexSelection(pendingVertex.index);
+      selectionTool.toggleVertexSelection(pendingVertex.index);
     }
 
     pendingVertex = null;
@@ -884,7 +863,7 @@ canvas.addEventListener("pointerup", (event) => {
     const dy = event.clientY - pendingEdge.y;
 
     if (Math.hypot(dx, dy) < 6) {
-      toggleEdgeSelection(pendingEdge.index);
+      selectionTool.toggleEdgeSelection(pendingEdge.index);
     }
 
     pendingEdge = null;
@@ -897,7 +876,7 @@ canvas.addEventListener("pointerup", (event) => {
     const dy = event.clientY - pendingFace.y;
 
     if (Math.hypot(dx, dy) < 6) {
-      toggleFaceSelection(pendingFace.index);
+      selectionTool.toggleFaceSelection(pendingFace.index);
     }
 
     pendingFace = null;
@@ -937,7 +916,6 @@ canvas.addEventListener("pointercancel", () => {
   pointerDownPosition = null;
 });
 
-
 // =========================
 // 全オブジェクト削除
 // =========================
@@ -958,6 +936,11 @@ function clearAllObjects() {
     deleteSelectedObject();
   });
 }
+
+// =========================
+// 履歴
+// =========================
+
 const historyManager = createHistoryManager({
   getObjects,
   addObject,
@@ -976,6 +959,10 @@ const {
   saveProject,
   loadProject
 } = historyManager;
+
+// =========================
+// モデリングツール
+// =========================
 
 const modelingTools = createModelingTools({
   THREE,
@@ -1018,7 +1005,7 @@ const extrudeTool = createExtrudeTool({
 
 const loopCutTool = createLoopCutTool({
   getSelectedObject,
-    updateEditDisplay,
+  updateEditDisplay,
   refreshObjectList,
   refreshProperties,
   saveHistory,
@@ -1044,6 +1031,10 @@ const mergeVerticesTool = createMergeVerticesTool({
   updateDebugPanel
 });
 
+// =========================
+// 辺表示ツール
+// =========================
+
 const showEdgesTool = createShowEdgesTool({
   THREE,
 
@@ -1058,6 +1049,10 @@ const showEdgesTool = createShowEdgesTool({
   clearEdgeHelper,
   updateEdgeColors
 });
+
+// =========================
+// 面表示ツール
+// =========================
 
 const showFacesTool = createShowFacesTool({
   THREE,
@@ -1078,6 +1073,23 @@ const showFacesTool = createShowFacesTool({
   updateFaceColors,
   updateDebugPanel
 });
+
+// =========================
+// 選択ツール
+// =========================
+
+const selectionTool = createSelectionTool({
+  selectedVertexIndices,
+  selectedEdgeIndices,
+  selectedFaceIndices,
+  updateVertexColors,
+  updateEdgeColors,
+  updateFaceColors
+});
+
+// =========================
+// プロジェクト読み込み
+// =========================
 
 const createSnapshot = historyManager.createSnapshot;
 
@@ -1103,6 +1115,7 @@ if (loadFileInput) {
     event.target.value = "";
   });
 }
+
 // =========================
 // UI接続
 // =========================
@@ -1174,7 +1187,7 @@ initUI({
     }
   },
 
-    onFacePaint(color) {
+  onFacePaint(color) {
     const object = getSelectedObject();
 
     if (!object || getEditMode() !== "face") {
@@ -1199,6 +1212,7 @@ initUI({
     refreshProperties();
     updateDebugPanel("選択した面に色を塗りました");
   },
+
   getSelected() {
     return getSelectedObject();
   },
@@ -1242,9 +1256,9 @@ if (loopCutButton) {
 
 if (bevelButton) {
   bevelButton.addEventListener(
-  "click",
-  modelingTools.bevelSelectedObject
-);
+    "click",
+    modelingTools.bevelSelectedObject
+  );
 }
 
 if (insetButton) {
