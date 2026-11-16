@@ -162,36 +162,15 @@ function clearFaceHelper() {
 // 頂点表示
 // =========================
 
+
 function updateVertexColors() {
   if (!vertexHelper) return;
 
   const positions = vertexHelper.geometry.attributes.position;
   const colors = [];
 
-  const selectedPositions = [];
-
-  for (const index of selectedVertexIndices) {
-    if (index < 0 || index >= positions.count) continue;
-
-    selectedPositions.push({
-      x: positions.getX(index),
-      y: positions.getY(index),
-      z: positions.getZ(index)
-    });
-  }
-
   for (let i = 0; i < positions.count; i++) {
-    const x = positions.getX(i);
-    const y = positions.getY(i);
-    const z = positions.getZ(i);
-
-    const isSelected = selectedPositions.some(p =>
-      Math.abs(p.x - x) < 0.0001 &&
-      Math.abs(p.y - y) < 0.0001 &&
-      Math.abs(p.z - z) < 0.0001
-    );
-
-    const color = isSelected
+    const color = selectedVertexIndices.has(i)
       ? new THREE.Color(0xff6600)
       : new THREE.Color(0xffff00);
 
@@ -202,42 +181,8 @@ function updateVertexColors() {
     "color",
     new THREE.Float32BufferAttribute(colors, 3)
   );
-
-  vertexHelper.geometry.attributes.color.needsUpdate = true;
-
-  // 頂点を確実に表示
-  vertexHelper.visible = true;
-  vertexHelper.material.visible = true;
-  vertexHelper.material.size = 18;
-  vertexHelper.material.sizeAttenuation = false;
-  vertexHelper.material.needsUpdate = true;
 }
 
-// =========================
-// 辺表示
-// =========================
-
-function updateEdgeColors() {
-  if (!edgeHelper) return;
-
-  const colors = [];
-
-  for (let i = 0; i < edgeRecords.length; i++) {
-    const color = new THREE.Color(
-      selectedEdgeIndices.has(i) ? 0xff6600 : 0xffff00
-    );
-
-    colors.push(
-      color.r, color.g, color.b,
-      color.r, color.g, color.b
-    );
-  }
-
-  edgeHelper.geometry.setAttribute(
-    "color",
-    new THREE.Float32BufferAttribute(colors, 3)
-  );
-}
 
 // =========================
 // 面表示
