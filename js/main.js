@@ -29,7 +29,7 @@ import {
   initUI,
   refreshObjectList,
   refreshProperties
-} from "./ui.js?v=20261117-2";
+} from "./ui.js?v=20261117-3";
 
 import { getEditMode } from "./edit-mode.js";
 import { paintSelectedFaces } from "./face-paint.js";
@@ -56,6 +56,11 @@ import { createDragTools } from "./modeling-tools/drag-tools.js";
 // =========================
 
 const canvas = document.getElementById("threeCanvas");
+
+if (!canvas) {
+  throw new Error("threeCanvas が見つかりません");
+}
+
 const { scene, camera, renderer, controls } = createScene(canvas);
 
 initObjects(scene);
@@ -74,9 +79,9 @@ let pendingFace = null;
 
 let pointerDownPosition = null;
 
-let selectedVertexIndices = new Set();
-let selectedEdgeIndices = new Set();
-let selectedFaceIndices = new Set();
+const selectedVertexIndices = new Set();
+const selectedEdgeIndices = new Set();
+const selectedFaceIndices = new Set();
 
 let edgeRecords = [];
 let faceRecords = [];
@@ -136,7 +141,10 @@ function clearVertexHelper() {
 }
 
 function clearEdgeHelper() {
-  if (!edgeHelper) return;
+  if (!edgeHelper) {
+    edgeRecords = [];
+    return;
+  }
 
   edgeHelper.parent?.remove(edgeHelper);
   edgeHelper.geometry.dispose();
@@ -147,7 +155,11 @@ function clearEdgeHelper() {
 }
 
 function clearFaceHelper() {
-  if (!faceHelper) return;
+  if (!faceHelper) {
+    faceRecords = [];
+    faceTriangleToRecord = [];
+    return;
+  }
 
   faceHelper.parent?.remove(faceHelper);
   faceHelper.geometry.dispose();
@@ -159,9 +171,8 @@ function clearFaceHelper() {
 }
 
 // =========================
-// 頂点表示
+// 頂点の色更新
 // =========================
-
 
 function updateVertexColors() {
   if (!vertexHelper) return;
@@ -181,11 +192,57 @@ function updateVertexColors() {
     "color",
     new THREE.Float32BufferAttribute(colors, 3)
   );
+
+  vertexHelper.geometry.attributes.color.needsUpdate = true;
 }
 
+// =========================
+// 頂点表示ツール
+// =========================
+
+const showVerticesTool = createShowVerticesTool({
+  THREE,
+
+  setVertexHelper: (helper) => {
+    vertexHelper = helper;
+  },
+
+  clearVertexHelper,
+  updateVertexColors
+});
 
 // =========================
-// 面表示
+// 辺の色更新
+// =========================
+
+function updateEdgeColors() {
+  if (!edgeHelper) return;
+
+  const colors = [];
+
+  for (let i = 0; i < edgeRecords.length; i++) {
+    const color = new THREE.Color(
+      selectedEdgeIndices.has(i)
+        ? 0xff6600
+        : 0xffff00
+    );
+
+    colors.push(
+      color.r, color.g, color.b,
+      color.r, color.g, color.b
+    );
+  }
+
+  edgeHelper.geometry.setAttribute(
+    "color",
+    new THREE.Float32BufferAttribute(colors, 3)
+  );
+
+  edgeHelper.geometry.attributes.color.needsUpdate = true;
+}
+
+// =========================
+// 面の色更新
 // =========================
 
 function updateFaceColors() {
@@ -195,7 +252,9 @@ function updateFaceColors() {
 
   faceRecords.forEach((face, index) => {
     const color = new THREE.Color(
-      selectedFaceIndices.has(index) ? 0xff6600 : 0xffff00
+      selectedFaceIndices.has(index)
+        ? 0xff6600
+        : 0xffff00
     );
 
     for (let i = 0; i < face.vertices.length; i++) {
@@ -207,7 +266,52 @@ function updateFaceColors() {
     "color",
     new THREE.Float32BufferAttribute(colors, 3)
   );
+
+  faceHelper.geometry.attributes.color.needsUpdate = true;
 }
+
+// =========================
+// 辺表示ツール
+// =========================
+
+const showEdgesTool = createShowEdgesTool({
+  THREE,
+
+  setEdgeHelper: (helper) => {
+    edgeHelper = helper;
+  },
+
+  setEdgeRecords: (records) => {
+    edgeRecords = records;
+  },
+
+  clearEdgeHelper,
+  updateEdgeColors
+});
+
+// =========================
+// 面表示ツール
+// =========================
+
+const showFacesTool = createShowFacesTool({
+  THREE,
+
+  setFaceHelper: (helper) => {
+    faceHelper = helper;
+  },
+
+  setFaceRecords: (records) => {
+    faceRecords = records;
+  },
+
+  setFaceTriangleToRecord: (records) => {
+    faceTriangleToRecord = records;
+  },
+
+  clearFaceHelper,
+  updateFaceColors,
+  updateDebugPanel
+});
 
 // =========================
 // 編集表示更新
@@ -226,7 +330,9 @@ function updateEditDisplay() {
   selectedFaceIndices.clear();
 
   if (mode === "object") {
-    if (selected) attachObject(selected);
+    if (selected) {
+      attachObject(selected);
+    }
   } else {
     detachObject();
 
@@ -287,7 +393,9 @@ function clearAllObjects() {
   selectedEdgeIndices.clear();
   selectedFaceIndices.clear();
 
-  getObjects().forEach((object) => {
+  const objects = [...getObjects()];
+
+  objects.forEach((object) => {
     selectObject(object);
     deleteSelectedObject();
   });
@@ -388,49 +496,6 @@ const mergeVerticesTool = createMergeVerticesTool({
 });
 
 // =========================
-// 辺表示ツール
-// =========================
-
-const showEdgesTool = createShowEdgesTool({
-  THREE,
-
-  setEdgeHelper: (helper) => {
-    edgeHelper = helper;
-  },
-
-  setEdgeRecords: (records) => {
-    edgeRecords = records;
-  },
-
-  clearEdgeHelper,
-  updateEdgeColors
-});
-
-// =========================
-// 面表示ツール
-// =========================
-
-const showFacesTool = createShowFacesTool({
-  THREE,
-
-  setFaceHelper: (helper) => {
-    faceHelper = helper;
-  },
-
-  setFaceRecords: (records) => {
-    faceRecords = records;
-  },
-
-  setFaceTriangleToRecord: (records) => {
-    faceTriangleToRecord = records;
-  },
-
-  clearFaceHelper,
-  updateFaceColors,
-  updateDebugPanel
-});
-
-// =========================
 // 選択ツール
 // =========================
 
@@ -519,7 +584,11 @@ canvas.addEventListener("pointerdown", (event) => {
 
     pendingVertex = index === null
       ? null
-      : { index, x: event.clientX, y: event.clientY };
+      : {
+          index,
+          x: event.clientX,
+          y: event.clientY
+        };
   }
 
   if (mode === "edge") {
@@ -527,7 +596,11 @@ canvas.addEventListener("pointerdown", (event) => {
 
     pendingEdge = index === null
       ? null
-      : { index, x: event.clientX, y: event.clientY };
+      : {
+          index,
+          x: event.clientX,
+          y: event.clientY
+        };
   }
 
   if (mode === "face") {
@@ -535,7 +608,11 @@ canvas.addEventListener("pointerdown", (event) => {
 
     pendingFace = index === null
       ? null
-      : { index, x: event.clientX, y: event.clientY };
+      : {
+          index,
+          x: event.clientX,
+          y: event.clientY
+        };
   }
 });
 
