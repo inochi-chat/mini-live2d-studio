@@ -21,32 +21,26 @@
 </head>
 
 <body>
-
 <div id="app">
 
   <header class="topbar">
     <button id="menuButton">☰</button>
-
     <div class="brand">
       <strong>INOCHI 3D</strong>
       <small>3D MODELING STUDIO</small>
     </div>
-
     <button id="saveButton">保存</button>
     <button id="loadButton">読込</button>
   </header>
 
   <main id="workspace">
-
     <section id="viewport">
       <canvas id="threeCanvas"></canvas>
-
       <div class="viewport-label">PERSPECTIVE</div>
       <div id="objectCount">Objects: 0</div>
     </section>
 
     <section id="bottomPanel">
-
       <div class="panel-handle"></div>
 
       <div class="tool-row">
@@ -54,18 +48,11 @@
         <button id="redoButton">↷ やり直す</button>
       </div>
 
-      <!-- 制作モード -->
       <div class="tool-row" id="workspaceModeBar">
-        <button id="objectWorkspaceButton" class="active">
-          通常モード
-        </button>
-
-        <button id="characterWorkspaceButton">
-          キャラクター制作
-        </button>
+        <button id="objectWorkspaceButton" class="active">通常モード</button>
+        <button id="characterWorkspaceButton">キャラクター制作</button>
       </div>
 
-      <!-- 基本操作 -->
       <div class="tool-row">
         <button id="addButton">＋ 追加</button>
         <button id="moveButton">移動</button>
@@ -73,7 +60,6 @@
         <button id="scaleButton">拡縮</button>
       </div>
 
-      <!-- 編集モード -->
       <div class="tool-row">
         <button id="objectModeButton" class="active">オブジェクト</button>
         <button id="vertexModeButton">頂点</button>
@@ -81,7 +67,6 @@
         <button id="faceModeButton">面</button>
       </div>
 
-      <!-- 面の差し込み -->
       <div class="tool-row">
         <button id="insetButton">面を差し込む</button>
         <div class="extrude-control">
@@ -90,7 +75,6 @@
         </div>
       </div>
 
-      <!-- 押し出し -->
       <div class="tool-row">
         <button id="extrudeButton">面を押し出す</button>
         <div class="extrude-control">
@@ -99,7 +83,6 @@
         </div>
       </div>
 
-      <!-- ベベル -->
       <div class="tool-row">
         <button id="bevelButton">角を丸める</button>
         <div class="extrude-control">
@@ -112,7 +95,6 @@
         </div>
       </div>
 
-      <!-- ループカット -->
       <div class="tool-row">
         <button id="loopCutButton">ループカット</button>
         <div class="extrude-control">
@@ -125,7 +107,6 @@
         </div>
       </div>
 
-      <!-- ミラー -->
       <div class="tool-row">
         <button id="mirrorButton">ミラー複製</button>
         <div class="extrude-control">
@@ -138,20 +119,22 @@
         </div>
       </div>
 
-      <!-- 頂点結合 -->
       <div class="tool-row">
         <button id="mergeVerticesButton">頂点を結合</button>
-        
-      <!-- メッシュ作成 -->
+        <div class="extrude-control">
+          <label for="mergeTolerance">結合距離</label>
+          <input type="number" id="mergeTolerance" value="0.001" min="0.0001" max="1" step="0.001">
+        </div>
+      </div>
+
       <div class="tool-row">
         <button id="addVertexButton">＋ 頂点を追加</button>
         <span>クリックした位置に頂点を配置</span>
       </div>
 
-        <div class="extrude-control">
-          <label for="mergeTolerance">結合距離</label>
-          <input type="number" id="mergeTolerance" value="0.001" min="0.0001" max="1" step="0.001">
-        </div>
+      <div class="tool-row">
+        <button id="addEdgeButton">＋ 辺を作成</button>
+        <span>頂点モードで2つ選択して作成</span>
       </div>
 
       <div class="section-title">オブジェクト</div>
@@ -160,25 +143,21 @@
         <p class="empty-message">オブジェクトがありません</p>
       </div>
 
-      <!-- 複製・削除 -->
       <div class="tool-row secondary">
         <button id="duplicateButton">複製</button>
         <button id="deleteButton">削除</button>
       </div>
 
-      <!-- プロパティ -->
       <div id="properties">
         <div class="section-title">プロパティ</div>
         <p>オブジェクトを選択してください</p>
       </div>
-
     </section>
   </main>
 </div>
 
 <input type="file" id="loadFileInput" accept=".json,application/json" hidden>
 
-<script type="module" src="js/main.js?v=20261115-2"></script>
-
+<script type="module" src="js/main.js?v=20261116-1"></script>
 </body>
 </html>
