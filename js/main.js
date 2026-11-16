@@ -47,6 +47,7 @@ import { createShowFacesTool } from "./modeling-tools/show-faces.js";
 import { createSelectionTool } from "./modeling-tools/selection.js";
 import { createAddVertexTool } from "./modeling-tools/add-vertex.js";
 import { createAddEdgeTool } from "./modeling-tools/add-edge.js";
+import { createFaceTool } from "./modeling-tools/create-face.js";
 import { createHitTestTools } from "./modeling-tools/hit-test.js";
 import { createDragTools } from "./modeling-tools/drag-tools.js";
 
@@ -490,6 +491,18 @@ const addEdgeTool = createAddEdgeTool({
   updateEditDisplay,
   refreshProperties,
   saveHistory
+});
+
+// =========================
+// 面作成ツール
+// =========================
+
+const createFaceToolInstance = createFaceTool({
+  getSelectedObject,
+  selectedVertexIndices,
+  saveHistory,
+  refreshProperties,
+  updateDebugPanel
 });
 
 // =========================
@@ -1048,6 +1061,35 @@ if (addEdgeButton) {
       alert(result.message);
       return;
     }
+
+    updateDebugPanel(result.message);
+    alert(result.message);
+  });
+}
+
+// =========================
+// 面作成
+// =========================
+
+const createFaceButton =
+  document.getElementById("createFaceButton");
+
+if (createFaceButton) {
+  createFaceButton.addEventListener("click", () => {
+    if (getEditMode() !== "vertex") {
+      alert("頂点モードに切り替えてください");
+      return;
+    }
+
+    const result =
+      createFaceToolInstance.createFaceFromSelectedVertices();
+
+    if (!result.success) {
+      alert(result.message);
+      return;
+    }
+
+    updateEditDisplay();
 
     updateDebugPanel(result.message);
     alert(result.message);
