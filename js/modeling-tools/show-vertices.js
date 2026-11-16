@@ -33,11 +33,13 @@ export function createShowVerticesTool(options = {}) {
       new THREE.Float32BufferAttribute(points, 3)
     );
 
+    geometry.computeBoundingSphere();
+
     const material = new THREE.PointsMaterial({
       color: 0xffffff,
       vertexColors: true,
-      size: 0.12,
-      sizeAttenuation: true,
+      size: 18,
+      sizeAttenuation: false,
       depthTest: false,
       depthWrite: false
     });
