@@ -19,7 +19,7 @@ export function createShowFacesTool(options = {}) {
     const positions = geometry.attributes.position;
     const indexAttribute = geometry.index;
 
-    if (!positions) {
+    if (!positions || !indexAttribute) {
       updateDebugPanel("面データがありません");
       return;
     }
@@ -28,12 +28,52 @@ export function createShowFacesTool(options = {}) {
     const records = [];
     const triangleToRecord = [];
 
+    const customFaces = object.userData?.customFaces || [];
+
+    // 自作した面の三角形番号を調べる
+    const customTriangleMap = new Map();
+
+    for (const customFace of customFaces) {
+      const startIndex = customFace.startIndex;
+      const triangleCount = customFace.triangleCount;
+
+      if (
+        !Number.isInteger(startIndex) ||
+        !Number.isInteger(triangleCount) ||
+        startIndex < 0 ||
+        triangleCount < 1 ||
+        startIndex + triangleCount * 3 > indexAttribute.count
+      ) {
+        continue;
+      }
+
+      const firstTriangle = Math.floor(startIndex / 3);
+
+      for (let i = 0; i < triangleCount; i++) {
+        customTriangleMap.set(
+          firstTriangle + i,
+          customFace
+        );
+      }
+    }
+
+    function addTrianglePositions(indices) {
+      for (const vertexIndex of indices) {
+        facePositions.push(
+          positions.getX(vertexIndex),
+          positions.getY(vertexIndex),
+          positions.getZ(vertexIndex)
+        );
+      }
+    }
+
+    // BoxGeometryの元の四角形をまとめて表示
     if (
       geometry.type === "BoxGeometry" &&
-      indexAttribute &&
-      geometry.groups.length === 6
+      geometry.groups.length >= 6
     ) {
-      geometry.groups.forEach((group, faceIndex) => {
+      for (let groupIndex = 0; groupIndex < 6; groupIndex++) {
+        const group = geometry.groups[groupIndex];
         const vertices = [];
 
         for (
@@ -42,50 +82,94 @@ export function createShowFacesTool(options = {}) {
           i++
         ) {
           const vertexIndex = indexAttribute.getX(i);
-
           vertices.push(vertexIndex);
-
-          facePositions.push(
-            positions.getX(vertexIndex),
-            positions.getY(vertexIndex),
-            positions.getZ(vertexIndex)
-          );
         }
 
-        records.push({ vertices, faceIndex });
+        if (vertices.length < 3) continue;
 
-        triangleToRecord.push(records.length - 1);
-        triangleToRecord.push(records.length - 1);
-      });
-    } else {
-      const count = indexAttribute
-        ? indexAttribute.count
-        : positions.count;
-
-      for (let i = 0; i + 2 < count; i += 3) {
-        const vertices = [];
-
-        for (let j = 0; j < 3; j++) {
-          const vertexIndex = indexAttribute
-            ? indexAttribute.getX(i + j)
-            : i + j;
-
-          vertices.push(vertexIndex);
-
-          facePositions.push(
-            positions.getX(vertexIndex),
-            positions.getY(vertexIndex),
-            positions.getZ(vertexIndex)
-          );
-        }
+        const recordIndex = records.length;
 
         records.push({
           vertices,
-          faceIndex: records.length
+          faceIndex: recordIndex
         });
 
-        triangleToRecord.push(records.length - 1);
+        for (let i = 0; i + 2 < vertices.length; i += 3) {
+          addTrianglePositions([
+            vertices[i],
+            vertices[i + 1],
+            vertices[i + 2]
+          ]);
+
+          triangleToRecord.push(recordIndex);
+        }
       }
+    } else {
+      // 通常のジオメトリは三角形ごとに表示
+      const triangleCount = Math.floor(indexAttribute.count / 3);
+
+      for (let triangleIndex = 0; triangleIndex < triangleCount; triangleIndex++) {
+        // 自作面の三角形は後でまとめて登録する
+        if (customTriangleMap.has(triangleIndex)) {
+          continue;
+        }
+
+        const offset = triangleIndex * 3;
+
+        const vertices = [
+          indexAttribute.getX(offset),
+          indexAttribute.getX(offset + 1),
+          indexAttribute.getX(offset + 2)
+        ];
+
+        const recordIndex = records.length;
+
+        records.push({
+          vertices,
+          faceIndex: recordIndex
+        });
+
+        addTrianglePositions(vertices);
+        triangleToRecord.push(recordIndex);
+      }
+    }
+
+    // 自作した三角形・四角形をまとめて登録
+    for (const customFace of customFaces) {
+      const startIndex = customFace.startIndex;
+      const triangleCount = customFace.triangleCount;
+
+      if (
+        !Number.isInteger(startIndex) ||
+        !Number.isInteger(triangleCount) ||
+        startIndex < 0 ||
+        triangleCount < 1 ||
+        startIndex + triangleCount * 3 > indexAttribute.count
+      ) {
+        continue;
+      }
+
+      const vertices = [];
+      const recordIndex = records.length;
+
+      for (let i = 0; i < triangleCount; i++) {
+        const offset = startIndex + i * 3;
+
+        const triangle = [
+          indexAttribute.getX(offset),
+          indexAttribute.getX(offset + 1),
+          indexAttribute.getX(offset + 2)
+        ];
+
+        vertices.push(...triangle);
+        addTrianglePositions(triangle);
+        triangleToRecord.push(recordIndex);
+      }
+
+      records.push({
+        vertices,
+        faceIndex: recordIndex
+      });
     }
 
     setFaceRecords(records);
@@ -114,16 +198,15 @@ export function createShowFacesTool(options = {}) {
     });
 
     const helper = new THREE.Mesh(faceGeometry, material);
-    helper.renderOrder = 998;
 
+    helper.renderOrder = 998;
     object.add(helper);
+
     setFaceHelper(helper);
 
     updateFaceColors();
     updateDebugPanel("面を表示しました");
   }
 
-  return {
-    showFaces
-  };
+  return { showFaces };
 }
