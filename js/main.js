@@ -162,14 +162,12 @@ function clearFaceHelper() {
 // 頂点表示
 // =========================
 
-
 function updateVertexColors() {
   if (!vertexHelper) return;
 
   const positions = vertexHelper.geometry.attributes.position;
   const colors = [];
 
-  // 選択中の頂点の位置を取得
   const selectedPositions = [];
 
   for (const index of selectedVertexIndices) {
@@ -187,17 +185,14 @@ function updateVertexColors() {
     const y = positions.getY(i);
     const z = positions.getZ(i);
 
-    // 選択中の頂点と同じ位置か調べる
-    const isSelected = selectedPositions.some(p => {
-      return (
-        Math.abs(p.x - x) < 0.0001 &&
-        Math.abs(p.y - y) < 0.0001 &&
-        Math.abs(p.z - z) < 0.0001
-      );
-    });
+    const isSelected = selectedPositions.some(p =>
+      Math.abs(p.x - x) < 0.0001 &&
+      Math.abs(p.y - y) < 0.0001 &&
+      Math.abs(p.z - z) < 0.0001
+    );
 
     const color = isSelected
-      ? new THREE.Color(0x00ffff)
+      ? new THREE.Color(0xff6600)
       : new THREE.Color(0xffff00);
 
     colors.push(color.r, color.g, color.b);
@@ -207,8 +202,16 @@ function updateVertexColors() {
     "color",
     new THREE.Float32BufferAttribute(colors, 3)
   );
-}
 
+  vertexHelper.geometry.attributes.color.needsUpdate = true;
+
+  // 頂点を確実に表示
+  vertexHelper.visible = true;
+  vertexHelper.material.visible = true;
+  vertexHelper.material.size = 18;
+  vertexHelper.material.sizeAttenuation = false;
+  vertexHelper.material.needsUpdate = true;
+}
 
 // =========================
 // 辺表示
