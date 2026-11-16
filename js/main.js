@@ -45,6 +45,7 @@ import { createShowVerticesTool } from "./modeling-tools/show-vertices.js";
 import { createShowEdgesTool } from "./modeling-tools/show-edges.js";
 import { createShowFacesTool } from "./modeling-tools/show-faces.js";
 import { createSelectionTool } from "./modeling-tools/selection.js";
+import { createAddVertexTool } from "./modeling-tools/add-vertex.js";
 
 // =========================
 // 初期設定
@@ -57,7 +58,7 @@ initObjects(scene);
 initTools(camera, renderer, scene);
 
 let isDragging = false;
-
+let isAddingVertex = false;
 let vertexHelper = null;
 let edgeHelper = null;
 let faceHelper = null;
@@ -906,6 +907,48 @@ canvas.addEventListener("pointerup", (event) => {
 });
 
 canvas.addEventListener("pointercancel", () => {
+  
+  // 頂点配置モード
+  if (isAddingVertex) {
+    updatePointer(event);
+
+    const hits = raycaster.intersectObjects(
+      getObjects(),
+      false
+    );
+
+    if (hits.length > 0) {
+      const hit = hits[0];
+
+      const newIndex = addVertexTool.addVertex(
+        hit.object,
+        hit.point
+      );
+
+      if (newIndex >= 0) {
+        selectMesh(hit.object);
+
+        if (getEditMode() === "vertex") {
+          selectedVertexIndices.add(newIndex);
+          updateVertexColors();
+        }
+
+        saveHistory();
+        refreshProperties();
+
+        updateDebugPanel(
+          "新しい頂点を追加しました: " + newIndex
+        );
+      }
+    }
+
+    pendingVertex = null;
+    pendingEdge = null;
+    pendingFace = null;
+    pointerDownPosition = null;
+    return;
+  }
+
   if (vertexDrag) finishVertexDrag();
   if (edgeDrag) finishEdgeDrag();
   if (faceDrag) finishFaceDrag();
@@ -1086,7 +1129,7 @@ const selectionTool = createSelectionTool({
   updateEdgeColors,
   updateFaceColors
 });
-
+const addVertexTool = createAddVertexTool();
 // =========================
 // プロジェクト読み込み
 // =========================
@@ -1317,3 +1360,28 @@ if (mergeVerticesButton) {
     mergeVerticesTool.mergeSelectedVertices
   );
 }
+
+
+// =========================
+// 頂点追加
+// =========================
+
+const addVertexButton =
+  document.getElementById("addVertexButton");
+
+if (addVertexButton) {
+  addVertexButton.addEventListener("click", () => {
+    isAddingVertex = !isAddingVertex;
+
+    addVertexButton.textContent = isAddingVertex
+      ? "配置中（終了）"
+      : "＋ 頂点を追加";
+
+    updateDebugPanel(
+      isAddingVertex
+        ? "追加したい位置の表面をタップしてください"
+        : "頂点配置を終了しました"
+    );
+  });
+}
+
