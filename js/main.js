@@ -162,15 +162,42 @@ function clearFaceHelper() {
 // 頂点表示
 // =========================
 
+
 function updateVertexColors() {
   if (!vertexHelper) return;
 
   const positions = vertexHelper.geometry.attributes.position;
   const colors = [];
 
+  // 選択中の頂点の位置を取得
+  const selectedPositions = [];
+
+  for (const index of selectedVertexIndices) {
+    if (index < 0 || index >= positions.count) continue;
+
+    selectedPositions.push({
+      x: positions.getX(index),
+      y: positions.getY(index),
+      z: positions.getZ(index)
+    });
+  }
+
   for (let i = 0; i < positions.count; i++) {
-    const color = selectedVertexIndices.has(i)
-      ? new THREE.Color(0xff6600)
+    const x = positions.getX(i);
+    const y = positions.getY(i);
+    const z = positions.getZ(i);
+
+    // 選択中の頂点と同じ位置か調べる
+    const isSelected = selectedPositions.some(p => {
+      return (
+        Math.abs(p.x - x) < 0.0001 &&
+        Math.abs(p.y - y) < 0.0001 &&
+        Math.abs(p.z - z) < 0.0001
+      );
+    });
+
+    const color = isSelected
+      ? new THREE.Color(0x00ffff)
       : new THREE.Color(0xffff00);
 
     colors.push(color.r, color.g, color.b);
@@ -182,17 +209,6 @@ function updateVertexColors() {
   );
 }
 
-const showVerticesTool = createShowVerticesTool({
-  THREE,
-
-  setVertexHelper: (helper) => {
-    vertexHelper = helper;
-  },
-
-  selectedVertexIndices,
-  clearVertexHelper,
-  updateVertexColors
-});
 
 // =========================
 // 辺表示
