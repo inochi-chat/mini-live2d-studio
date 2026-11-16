@@ -192,6 +192,15 @@ export function createFaceTool(options = {}) {
 
     geometry.index.needsUpdate = true;
 
+    // 既存の面グループがある場合、新しい面の表示範囲も登録
+    if (geometry.groups.length > 0) {
+      geometry.addGroup(
+        startIndex,
+        newTriangles.length,
+        0
+      );
+    }
+
     // 作成した面の情報を保存
     if (!object.userData.customFaces) {
       object.userData.customFaces = [];
