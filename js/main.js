@@ -59,6 +59,7 @@ initTools(camera, renderer, scene);
 
 let isDragging = false;
 let isAddingVertex = false;
+
 let vertexHelper = null;
 let edgeHelper = null;
 let faceHelper = null;
@@ -819,6 +820,47 @@ canvas.addEventListener("pointermove", (event) => {
 });
 
 canvas.addEventListener("pointerup", (event) => {
+  // 頂点配置モード
+  if (isAddingVertex) {
+    updatePointer(event);
+
+    const hits = raycaster.intersectObjects(
+      getObjects(),
+      false
+    );
+
+    if (hits.length > 0) {
+      const hit = hits[0];
+
+      const newIndex = addVertexTool.addVertex(
+        hit.object,
+        hit.point
+      );
+
+      if (newIndex >= 0) {
+        selectMesh(hit.object);
+
+        if (getEditMode() === "vertex") {
+          selectedVertexIndices.add(newIndex);
+          updateVertexColors();
+        }
+
+        saveHistory();
+        refreshProperties();
+
+        updateDebugPanel(
+          "新しい頂点を追加しました: " + newIndex
+        );
+      }
+    }
+
+    pendingVertex = null;
+    pendingEdge = null;
+    pendingFace = null;
+    pointerDownPosition = null;
+    return;
+  }
+
   if (vertexDrag) {
     finishVertexDrag();
     pendingVertex = null;
@@ -907,48 +949,6 @@ canvas.addEventListener("pointerup", (event) => {
 });
 
 canvas.addEventListener("pointercancel", () => {
-  
-  // 頂点配置モード
-  if (isAddingVertex) {
-    updatePointer(event);
-
-    const hits = raycaster.intersectObjects(
-      getObjects(),
-      false
-    );
-
-    if (hits.length > 0) {
-      const hit = hits[0];
-
-      const newIndex = addVertexTool.addVertex(
-        hit.object,
-        hit.point
-      );
-
-      if (newIndex >= 0) {
-        selectMesh(hit.object);
-
-        if (getEditMode() === "vertex") {
-          selectedVertexIndices.add(newIndex);
-          updateVertexColors();
-        }
-
-        saveHistory();
-        refreshProperties();
-
-        updateDebugPanel(
-          "新しい頂点を追加しました: " + newIndex
-        );
-      }
-    }
-
-    pendingVertex = null;
-    pendingEdge = null;
-    pendingFace = null;
-    pointerDownPosition = null;
-    return;
-  }
-
   if (vertexDrag) finishVertexDrag();
   if (edgeDrag) finishEdgeDrag();
   if (faceDrag) finishFaceDrag();
@@ -1129,7 +1129,9 @@ const selectionTool = createSelectionTool({
   updateEdgeColors,
   updateFaceColors
 });
+
 const addVertexTool = createAddVertexTool();
+
 // =========================
 // プロジェクト読み込み
 // =========================
@@ -1361,7 +1363,6 @@ if (mergeVerticesButton) {
   );
 }
 
-
 // =========================
 // 頂点追加
 // =========================
@@ -1384,4 +1385,3 @@ if (addVertexButton) {
     );
   });
 }
-
