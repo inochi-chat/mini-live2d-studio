@@ -38,7 +38,7 @@ export function createShowVerticesTool(options = {}) {
     const material = new THREE.PointsMaterial({
       color: 0xffffff,
       vertexColors: true,
-      size: 18,
+      size: 10,
       sizeAttenuation: false,
       depthTest: false,
       depthWrite: false
