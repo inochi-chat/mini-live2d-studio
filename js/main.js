@@ -51,6 +51,7 @@ import { createFaceTool } from "./modeling-tools/create-face.js";
 import { createHitTestTools } from "./modeling-tools/hit-test.js";
 import { createDragTools } from "./modeling-tools/drag-tools.js";
 import { createBoxSelectionTool } from "./modeling-tools/box-selection.js";
+import { createSubdivideTool } from "./sculpt/subdivide-tool.js";
 
 // =========================
 // 初期設定
@@ -493,6 +494,19 @@ const mergeVerticesTool = createMergeVerticesTool({
   refreshObjectList,
   refreshProperties,
   saveHistory,
+  updateDebugPanel
+});
+
+// =========================
+// スカルプト用細分化
+// =========================
+
+const subdivideTool = createSubdivideTool({
+  getSelectedObject,
+  saveHistory,
+  updateEditDisplay,
+  refreshObjectList,
+  refreshProperties,
   updateDebugPanel
 });
 
@@ -1034,6 +1048,26 @@ if (extrudeButton) {
     "click",
     extrudeTool.extrudeSelectedFaces
   );
+}
+
+// =========================
+// スカルプト用細分化ボタン
+// =========================
+
+const subdivideButton =
+  document.getElementById("subdivideButton");
+
+const subdivideLevel =
+  document.getElementById("subdivideLevel");
+
+if (subdivideButton) {
+  subdivideButton.addEventListener("click", () => {
+    const level = subdivideLevel
+      ? Number(subdivideLevel.value)
+      : 1;
+
+    subdivideTool.subdivideSelectedObject(level);
+  });
 }
 
 // =========================
