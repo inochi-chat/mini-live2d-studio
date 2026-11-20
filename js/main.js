@@ -50,6 +50,7 @@ import { createAddEdgeTool } from "./modeling-tools/add-edge.js";
 import { createFaceTool } from "./modeling-tools/create-face.js";
 import { createHitTestTools } from "./modeling-tools/hit-test.js";
 import { createDragTools } from "./modeling-tools/drag-tools.js";
+import { createBoxSelectionTool } from "./modeling-tools/box-selection.js";
 
 // =========================
 // 初期設定
@@ -506,6 +507,21 @@ const selectionTool = createSelectionTool({
   updateVertexColors,
   updateEdgeColors,
   updateFaceColors
+});
+
+// =========================
+// ボックス選択
+// =========================
+
+const boxSelectionTool = createBoxSelectionTool({
+  THREE,
+  canvas,
+  camera,
+  getEditMode,
+  getVertexHelper: () => vertexHelper,
+  selectedVertexIndices,
+  updateVertexColors,
+  updateDebugPanel
 });
 
 // =========================
