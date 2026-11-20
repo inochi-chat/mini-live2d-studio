@@ -24,21 +24,17 @@ export function createSubdivideTool(options = {}) {
       Math.min(3, Math.floor(Number(levels) || 1))
     );
 
-    const oldGeometry = object.geometry;
+    let newGeometry;
 
     try {
-      const newGeometry = subdivideGeometry(
-        oldGeometry,
-        level
-      );
+      newGeometry = subdivideGeometry(object.geometry, level);
 
       if (!newGeometry.attributes.position?.count) {
         newGeometry.dispose();
         return false;
       }
 
-      saveHistory();
-
+      const oldGeometry = object.geometry;
       object.geometry = newGeometry;
       oldGeometry.dispose();
 
@@ -46,12 +42,15 @@ export function createSubdivideTool(options = {}) {
       refreshObjectList();
       refreshProperties();
 
+      saveHistory();
+
       updateDebugPanel(
         `メッシュを${level}段階細分化しました`
       );
 
       return true;
     } catch (error) {
+      newGeometry?.dispose();
       console.error("細分化エラー:", error);
       updateDebugPanel("細分化に失敗しました");
       return false;
