@@ -39,7 +39,10 @@ export function createSculptBrush(options = {}) {
 
   brushCircle.visible = false;
   brushCircle.renderOrder = 999;
-  scene.add(brushCircle);
+
+  if (scene) {
+    scene.add(brushCircle);
+  }
 
   // =========================
   // ブラシ設定
