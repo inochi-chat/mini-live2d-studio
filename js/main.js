@@ -53,6 +53,7 @@ import { createBoxSelectionTool } from "./modeling-tools/box-selection.js";
 import { createPointerEvents } from "./editing/pointer-events.js";
 import { createEditDisplay } from "./editing/edit-display.js?v=20261121-1";
 import { createEditHelpers } from "./editing/edit-helpers.js?v=20261121-2";
+import { createObjectSelection } from "./editing/object-selection.js?v=20261121-1";
 import { initToolButtons } from "./ui-tool-buttons.js?v=20261121-1";
 
 // =========================
@@ -261,25 +262,22 @@ const updateEditDisplay = editDisplay.updateEditDisplay;
 // オブジェクト選択
 // =========================
 
-function selectMesh(mesh) {
-  if (!mesh) return;
+const objectSelection = createObjectSelection({
+  selectObject,
+  getEditMode,
+  attachObject,
+  detachObject,
 
-  selectObject(mesh);
+  selectedVertexIndices,
+  selectedEdgeIndices,
+  selectedFaceIndices,
 
-  selectedVertexIndices.clear();
-  selectedEdgeIndices.clear();
-  selectedFaceIndices.clear();
+  updateEditDisplay,
+  refreshObjectList,
+  refreshProperties
+});
 
-  if (getEditMode() === "object") {
-    attachObject(mesh);
-  } else {
-    detachObject();
-  }
-
-  updateEditDisplay();
-  refreshObjectList();
-  refreshProperties();
-}
+const { selectMesh } = objectSelection;
 
 // =========================
 // 全オブジェクト削除
