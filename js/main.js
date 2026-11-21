@@ -739,10 +739,6 @@ updateDebugPanel("準備完了");
 // スカルプトUI接続
 // =========================
 
-createSculptUI({
-  sculptBrush,
-  subdivideTool,
-  updateDebugPanel
-});
+sculptSystem.connectUI();
 
 console.log("INOCHI 3D STUDIO 起動完了");
