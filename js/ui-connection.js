@@ -27,7 +27,6 @@ export function connectStudioUI({
   getSelectedObject,
   getEditMode,
   updateEditDisplay,
-  updateEditDisplay,
   faceTriangleToRecord,
   undoHistory,
   redoHistory,
