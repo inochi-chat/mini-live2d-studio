@@ -16,38 +16,24 @@ export function createSculptBrush(options = {}) {
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
 
-  // =========================
-  // ブラシ範囲の表示
-  // =========================
-
-  const brushCircleGeometry =
-    new THREE.RingGeometry(0.96, 1, 64);
-
-  const brushCircleMaterial =
+  // ブラシ円
+  const brushCircle = new THREE.Mesh(
+    new THREE.RingGeometry(0.96, 1, 64),
     new THREE.MeshBasicMaterial({
       color: 0x00ffff,
       side: THREE.DoubleSide,
       depthTest: false,
       transparent: true,
       opacity: 0.9
-    });
-
-  const brushCircle = new THREE.Mesh(
-    brushCircleGeometry,
-    brushCircleMaterial
+    })
   );
 
   brushCircle.visible = false;
   brushCircle.renderOrder = 999;
 
-  if (scene) {
-    scene.add(brushCircle);
-  }
+  if (scene) scene.add(brushCircle);
 
-  // =========================
-  // ブラシ設定
-  // =========================
-
+  // 設定
   let enabled = false;
   let drawing = false;
   let changed = false;
@@ -57,12 +43,16 @@ export function createSculptBrush(options = {}) {
   let brushRadius = 0.2;
   let brushStrength = 0.035;
 
+  // Grab用
+  let grabStartPoint = null;
+  let grabOriginalPositions = null;
+  let grabObject = null;
+
   function setRadius(value) {
     brushRadius = Math.max(
       0.05,
       Math.min(0.8, Number(value) || 0.2)
     );
-
     brushCircle.scale.setScalar(brushRadius);
   }
 
@@ -75,11 +65,20 @@ export function createSculptBrush(options = {}) {
 
   function setMode(mode) {
     if (
-      mode === "raise" ||
-      mode === "lower" ||
-      mode === "smooth"
+      ["raise", "lower", "smooth", "grab"].includes(mode)
     ) {
       brushMode = mode;
+
+      const names = {
+        raise: "盛り上げ",
+        lower: "へこませ",
+        smooth: "スムーズ",
+        grab: "つまむ"
+      };
+
+      updateDebugPanel(
+        "スカルプト：" + names[mode]
+      );
     }
   }
 
@@ -94,15 +93,15 @@ export function createSculptBrush(options = {}) {
       drawing = false;
       brushCircle.visible = false;
       pointerId = null;
+      grabStartPoint = null;
+      grabOriginalPositions = null;
+      grabObject = null;
 
       updateDebugPanel("スカルプトモード終了");
     }
   }
 
-  // =========================
-  // ブラシ位置の取得
-  // =========================
-
+  // ヒット位置
   function getHit(event) {
     const object = getSelectedObject();
 
@@ -131,7 +130,6 @@ export function createSculptBrush(options = {}) {
     }
 
     const hit = hits[0];
-
     const worldPoint = hit.point.clone();
 
     const worldNormal = hit.face.normal.clone()
@@ -139,10 +137,7 @@ export function createSculptBrush(options = {}) {
       .normalize();
 
     brushCircle.position.copy(worldPoint);
-    brushCircle.position.addScaledVector(
-      worldNormal,
-      0.003
-    );
+    brushCircle.position.addScaledVector(worldNormal, 0.003);
 
     brushCircle.quaternion.setFromUnitVectors(
       new THREE.Vector3(0, 0, 1),
@@ -158,10 +153,7 @@ export function createSculptBrush(options = {}) {
     };
   }
 
-  // =========================
-  // 頂点のつながりを取得
-  // =========================
-
+  // 頂点のつながり
   function createNeighbors(geometry) {
     const count = geometry.attributes.position.count;
 
@@ -172,26 +164,17 @@ export function createSculptBrush(options = {}) {
 
     const indexArray = geometry.index
       ? Array.from(geometry.index.array)
-      : Array.from(
-          { length: count },
-          (_, i) => i
-        );
+      : Array.from({ length: count }, (_, i) => i);
 
-    for (
-      let i = 0;
-      i + 2 < indexArray.length;
-      i += 3
-    ) {
+    for (let i = 0; i + 2 < indexArray.length; i += 3) {
       const a = indexArray[i];
       const b = indexArray[i + 1];
       const c = indexArray[i + 2];
 
       neighbors[a].add(b);
       neighbors[a].add(c);
-
       neighbors[b].add(a);
       neighbors[b].add(c);
-
       neighbors[c].add(a);
       neighbors[c].add(b);
     }
@@ -199,10 +182,7 @@ export function createSculptBrush(options = {}) {
     return neighbors;
   }
 
-  // =========================
-  // スカルプト処理
-  // =========================
-
+  // 通常のスカルプト
   function sculpt(hit) {
     const object = hit.object;
     const geometry = object.geometry;
@@ -214,11 +194,9 @@ export function createSculptBrush(options = {}) {
 
     const normals = geometry.attributes.normal;
     const neighbors = createNeighbors(geometry);
-
     const originalPositions = positions.array.slice();
 
     const sign = brushMode === "lower" ? -1 : 1;
-
     let moved = false;
 
     for (let i = 0; i < positions.count; i++) {
@@ -226,7 +204,6 @@ export function createSculptBrush(options = {}) {
         .fromBufferAttribute(positions, i);
 
       const distance = vertex.distanceTo(hit.point);
-
       if (distance >= brushRadius) continue;
 
       const normal = new THREE.Vector3()
@@ -238,13 +215,9 @@ export function createSculptBrush(options = {}) {
         2
       );
 
-      const amount =
-        brushStrength * weight * sign;
-
       if (brushMode === "smooth") {
         const list = Array.from(neighbors[i]);
-
-        if (list.length === 0) continue;
+        if (!list.length) continue;
 
         const average = new THREE.Vector3();
 
@@ -256,46 +229,97 @@ export function createSculptBrush(options = {}) {
 
         average.divideScalar(list.length);
 
-        const smoothAmount = Math.min(
-          1,
-          brushStrength * 20 * weight
+        vertex.lerp(
+          average,
+          Math.min(1, brushStrength * 20 * weight)
         );
-
-        vertex.lerp(average, smoothAmount);
       } else {
-        vertex.addScaledVector(normal, amount);
+        vertex.addScaledVector(
+          normal,
+          brushStrength * weight * sign
+        );
       }
+
+      positions.setXYZ(i, vertex.x, vertex.y, vertex.z);
+      moved = true;
+    }
+
+    if (moved) updateGeometry(geometry);
+  }
+
+  // Grab開始時の頂点を保存
+  function startGrab(hit) {
+    const positions = hit.object.geometry.attributes.position;
+
+    grabObject = hit.object;
+    grabStartPoint = hit.point.clone();
+    grabOriginalPositions = positions.array.slice();
+
+    changed = true;
+  }
+
+  // Grab：指の移動に合わせて頂点を引っ張る
+  function moveGrab(hit) {
+    if (!grabObject || !grabStartPoint || !grabOriginalPositions) {
+      return;
+    }
+
+    const geometry = grabObject.geometry;
+    const positions = geometry.attributes.position;
+
+    const delta = hit.point.clone().sub(grabStartPoint);
+
+    let moved = false;
+
+    for (let i = 0; i < positions.count; i++) {
+      const original = new THREE.Vector3(
+        grabOriginalPositions[i * 3],
+        grabOriginalPositions[i * 3 + 1],
+        grabOriginalPositions[i * 3 + 2]
+      );
+
+      const distance = original.distanceTo(grabStartPoint);
+      if (distance >= brushRadius) continue;
+
+      const weight = Math.pow(
+        1 - distance / brushRadius,
+        2
+      );
+
+      const target = original.clone().addScaledVector(
+        delta,
+        weight
+      );
 
       positions.setXYZ(
         i,
-        vertex.x,
-        vertex.y,
-        vertex.z
+        target.x,
+        target.y,
+        target.z
       );
 
       moved = true;
     }
 
-    if (moved) {
-      positions.needsUpdate = true;
-
-      geometry.computeVertexNormals();
-      geometry.computeBoundingBox();
-      geometry.computeBoundingSphere();
-
-      changed = true;
-    }
+    if (moved) updateGeometry(geometry);
   }
 
-  // =========================
-  // 指の操作
-  // =========================
+  function updateGeometry(geometry) {
+    const positions = geometry.attributes.position;
+    positions.needsUpdate = true;
 
+    geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+
+    changed = true;
+  }
+
+  // 指を押した
   function onPointerDown(event) {
     if (!enabled) return;
 
     const hit = getHit(event);
-
     if (!hit) return;
 
     event.preventDefault();
@@ -309,9 +333,14 @@ export function createSculptBrush(options = {}) {
       canvas.setPointerCapture(pointerId);
     } catch {}
 
-    sculpt(hit);
+    if (brushMode === "grab") {
+      startGrab(hit);
+    } else {
+      sculpt(hit);
+    }
   }
 
+  // 指を動かした
   function onPointerMove(event) {
     if (!enabled || !drawing) return;
     if (event.pointerId !== pointerId) return;
@@ -320,18 +349,19 @@ export function createSculptBrush(options = {}) {
     event.stopImmediatePropagation();
 
     const hit = getHit(event);
+    if (!hit) return;
 
-    if (hit) {
+    if (brushMode === "grab") {
+      moveGrab(hit);
+    } else {
       sculpt(hit);
     }
   }
 
+  // 指を離した
   function finishStroke(event) {
     if (!drawing) return;
-
-    if (event && event.pointerId !== pointerId) {
-      return;
-    }
+    if (event && event.pointerId !== pointerId) return;
 
     drawing = false;
     brushCircle.visible = false;
@@ -343,6 +373,9 @@ export function createSculptBrush(options = {}) {
     } catch {}
 
     pointerId = null;
+    grabStartPoint = null;
+    grabOriginalPositions = null;
+    grabObject = null;
 
     if (changed) {
       saveHistory();
@@ -352,33 +385,10 @@ export function createSculptBrush(options = {}) {
     changed = false;
   }
 
-  // =========================
-  // イベント登録
-  // =========================
-
-  canvas.addEventListener(
-    "pointerdown",
-    onPointerDown,
-    true
-  );
-
-  canvas.addEventListener(
-    "pointermove",
-    onPointerMove,
-    true
-  );
-
-  canvas.addEventListener(
-    "pointerup",
-    finishStroke,
-    true
-  );
-
-  canvas.addEventListener(
-    "pointercancel",
-    finishStroke,
-    true
-  );
+  canvas.addEventListener("pointerdown", onPointerDown, true);
+  canvas.addEventListener("pointermove", onPointerMove, true);
+  canvas.addEventListener("pointerup", finishStroke, true);
+  canvas.addEventListener("pointercancel", finishStroke, true);
 
   return {
     setEnabled,
