@@ -39,7 +39,7 @@ import { createExtrudeTool } from "./modeling-tools/extrude.js";
 import { createLoopCutTool } from "./modeling-tools/loop-cut.js";
 import { createMirrorTool } from "./modeling-tools/mirror.js";
 import { createMergeVerticesTool } from "./modeling-tools/merge-vertices.js";
-
+import { createSculptSystem } from "./sculpt/setup.js?v=20261121-1";
 import { createShowVerticesTool } from "./modeling-tools/show-vertices.js";
 import { createShowEdgesTool } from "./modeling-tools/show-edges.js";
 import { createShowFacesTool } from "./modeling-tools/show-faces.js";
@@ -50,10 +50,6 @@ import { createFaceTool } from "./modeling-tools/create-face.js";
 import { createHitTestTools } from "./modeling-tools/hit-test.js";
 import { createDragTools } from "./modeling-tools/drag-tools.js";
 import { createBoxSelectionTool } from "./modeling-tools/box-selection.js";
-
-import { createSculptUI } from "./sculpt/sculpt-ui.js";
-import { createSculptBrush } from "./sculpt/brush.js";
-import { createSubdivideTool } from "./sculpt/subdivide-tool.js";
 import { createPointerEvents } from "./editing/pointer-events.js";
 
 import { initToolButtons } from "./ui-tool-buttons.js?v=20261121-1";
@@ -497,51 +493,23 @@ const mergeVerticesTool = createMergeVerticesTool({
 });
 
 // =========================
-// スカルプトブラシ
+// スカルプトシステム
 // =========================
 
-let sculptBrush = {
-  setEnabled() {},
-  setMode() {},
-  setRadius() {},
-  setStrength() {},
-  clearMask() {},
-  invertMask() {}
-};
-
-try {
-  sculptBrush = createSculptBrush({
-    scene,
-    camera,
-    renderer,
-    getSelectedObject,
-    saveHistory,
-    updateDebugPanel,
-    updateEditDisplay
-  });
-
-  console.log("スカルプトブラシ初期化成功");
-
-} catch (error) {
-  console.error("スカルプトブラシ初期化エラー:", error);
-
-  updateDebugPanel(
-    "スカルプト初期化エラー：コンソールを確認してください"
-  );
-}
-
-// =========================
-// スカルプト用細分化
-// =========================
-
-const subdivideTool = createSubdivideTool({
+const sculptSystem = createSculptSystem({
+  scene,
+  camera,
+  renderer,
   getSelectedObject,
   saveHistory,
+  updateDebugPanel,
   updateEditDisplay,
   refreshObjectList,
-  refreshProperties,
-  updateDebugPanel
+  refreshProperties
 });
+
+const sculptBrush = sculptSystem.sculptBrush;
+const subdivideTool = sculptSystem.subdivideTool;
 
 // =========================
 // 選択ツール
