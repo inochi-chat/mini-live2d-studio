@@ -51,7 +51,7 @@ import { createFaceTool } from "./modeling-tools/create-face.js";
 import { createHitTestTools } from "./modeling-tools/hit-test.js";
 import { createDragTools } from "./modeling-tools/drag-tools.js";
 import { createBoxSelectionTool } from "./modeling-tools/box-selection.js";
-
+import { createSculptUI } from "./sculpt/sculpt-ui.js";
 import { createSculptBrush } from "./sculpt/brush.js";
 import { createSubdivideTool } from "./sculpt/subdivide-tool.js";
 
@@ -1087,26 +1087,6 @@ if (extrudeButton) {
 }
 
 // =========================
-// スカルプト用細分化ボタン
-// =========================
-
-const subdivideButton =
-  document.getElementById("subdivideButton");
-
-const subdivideLevel =
-  document.getElementById("subdivideLevel");
-
-if (subdivideButton) {
-  subdivideButton.addEventListener("click", () => {
-    const level = subdivideLevel
-      ? Number(subdivideLevel.value)
-      : 1;
-
-    subdivideTool.subdivideSelectedObject(level);
-  });
-}
-
-// =========================
 // TransformControls
 // =========================
 
@@ -1223,123 +1203,15 @@ if (createFaceButton) {
   });
 }
 
-// =========================
-// スカルプト操作ボタン
-// =========================
-
-const sculptToggleButton =
-  document.getElementById("sculptToggleButton");
-
-const sculptRaiseButton =
-  document.getElementById("sculptRaiseButton");
-
-const sculptLowerButton =
-  document.getElementById("sculptLowerButton");
-
-let sculptEnabled = false;
-
-if (sculptToggleButton) {
-  sculptToggleButton.addEventListener("click", () => {
-    sculptEnabled = !sculptEnabled;
-
-    sculptBrush.setEnabled(sculptEnabled);
-
-    sculptToggleButton.textContent = sculptEnabled
-      ? "スカルプト終了"
-      : "スカルプト開始";
-  });
-}
-
-if (sculptRaiseButton) {
-  sculptRaiseButton.addEventListener("click", () => {
-    sculptBrush.setMode("raise");
-    updateDebugPanel("盛り上げブラシを選択");
-  });
-}
-
-if (sculptLowerButton) {
-  sculptLowerButton.addEventListener("click", () => {
-    sculptBrush.setMode("lower");
-    updateDebugPanel("へこませブラシを選択");
-  });
-}
 
 // =========================
-// Grab（つまむ）ブラシ
+// スカルプトUI接続
 // =========================
 
-const sculptGrabButton =
-  document.getElementById("sculptGrabButton");
-
-if (sculptGrabButton) {
-  sculptGrabButton.addEventListener("click", () => {
-    sculptBrush.setMode("grab");
-    updateDebugPanel("つまむブラシを選択");
-  });
-}
-
-// =========================
-// ブラシサイズ・強さ
-// =========================
-
-const sculptRadiusInput =
-  document.getElementById("sculptRadius");
-
-const sculptStrengthInput =
-  document.getElementById("sculptStrength");
-
-if (sculptRadiusInput) {
-  sculptBrush.setRadius(sculptRadiusInput.value);
-
-  sculptRadiusInput.addEventListener("input", () => {
-    sculptBrush.setRadius(sculptRadiusInput.value);
-  });
-}
-
-if (sculptStrengthInput) {
-  sculptBrush.setStrength(sculptStrengthInput.value);
-
-  sculptStrengthInput.addEventListener("input", () => {
-    sculptBrush.setStrength(sculptStrengthInput.value);
-  });
-}
-
-const sculptSmoothButton =
-  document.getElementById("sculptSmoothButton");
-
-if (sculptSmoothButton) {
-  sculptSmoothButton.addEventListener("click", () => {
-    sculptBrush.setMode("smooth");
-    updateDebugPanel("なめらかブラシを選択");
-  });
-}
-
-// =========================
-// Inflate（膨らませる）ブラシ
-// =========================
-
-const sculptInflateButton =
-  document.getElementById("sculptInflateButton");
-
-if (sculptInflateButton) {
-  sculptInflateButton.addEventListener("click", () => {
-    sculptBrush.setMode("inflate");
-    updateDebugPanel("膨らませるブラシを選択");
-  });
-}
-
-// =========================
-// Flatten（平らにする）ブラシ
-// =========================
-
-const sculptFlattenButton =
-  document.getElementById("sculptFlattenButton");
-
-if (sculptFlattenButton) {
-  sculptFlattenButton.addEventListener("click", () => {
-    sculptBrush.setMode("flatten");
-    updateDebugPanel("平らにするブラシを選択");
-  });
-}
+createSculptUI({
+  sculptBrush,
+  subdivideTool,
+  updateDebugPanel
+});
 
 console.log("INOCHI 3D STUDIO 起動完了");
