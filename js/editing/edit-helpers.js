@@ -6,6 +6,7 @@ export function createEditHelpers({
   setVertexHelper,
   getEdgeHelper,
   setEdgeHelper,
+  setFaceTriangleToRecord,
   getFaceHelper,
   setFaceHelper,
   getEdgeRecords,
@@ -55,12 +56,14 @@ export function createEditHelpers({
 
     if (!helper) {
       setFaceRecords([]);
+      setFaceTriangleToRecord([]);
       return;
     }
 
     disposeHelper(helper);
     setFaceHelper(null);
     setFaceRecords([]);
+    setFaceTriangleToRecord([]);
   }
 
   function updateVertexColors() {
