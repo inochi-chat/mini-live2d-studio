@@ -23,36 +23,46 @@
 <body>
 <div id="app">
 
+  <!-- ヘッダー -->
   <header class="topbar">
     <button id="menuButton">☰</button>
+
     <div class="brand">
       <strong>INOCHI 3D</strong>
       <small>3D MODELING STUDIO</small>
     </div>
+
     <button id="saveButton">保存</button>
     <button id="loadButton">読込</button>
   </header>
 
   <main id="workspace">
+
+    <!-- 3Dビューポート -->
     <section id="viewport">
       <canvas id="threeCanvas"></canvas>
       <div class="viewport-label">PERSPECTIVE</div>
       <div id="objectCount">Objects: 0</div>
     </section>
 
+    <!-- 操作パネル -->
     <section id="bottomPanel">
+
       <div class="panel-handle"></div>
 
+      <!-- 履歴 -->
       <div class="tool-row">
         <button id="undoButton">↶ 元に戻す</button>
         <button id="redoButton">↷ やり直す</button>
       </div>
 
+      <!-- ワークスペース -->
       <div class="tool-row" id="workspaceModeBar">
         <button id="objectWorkspaceButton" class="active">通常モード</button>
         <button id="characterWorkspaceButton">キャラクター制作</button>
       </div>
 
+      <!-- 基本操作 -->
       <div class="tool-row">
         <button id="addButton">＋ 追加</button>
         <button id="moveButton">移動</button>
@@ -60,6 +70,7 @@
         <button id="scaleButton">拡縮</button>
       </div>
 
+      <!-- 編集モード -->
       <div class="tool-row">
         <button id="objectModeButton" class="active">オブジェクト</button>
         <button id="vertexModeButton">頂点</button>
@@ -67,104 +78,73 @@
         <button id="faceModeButton">面</button>
       </div>
 
+      <!-- 面の差し込み -->
       <div class="tool-row">
         <button id="insetButton">面を差し込む</button>
+
         <div class="extrude-control">
           <label for="insetAmount">差し込み幅</label>
-          <input type="number" id="insetAmount" value="0.1" min="0.01" max="1" step="0.01">
+          <input
+            type="number"
+            id="insetAmount"
+            value="0.1"
+            min="0.01"
+            max="1"
+            step="0.01"
+          >
         </div>
       </div>
 
+      <!-- 押し出し -->
       <div class="tool-row">
         <button id="extrudeButton">面を押し出す</button>
+
         <div class="extrude-control">
           <label for="extrudeDistance">押し出す距離</label>
-          <input type="number" id="extrudeDistance" value="0.5" min="-10" max="10" step="0.1">
+          <input
+            type="number"
+            id="extrudeDistance"
+            value="0.5"
+            min="-10"
+            max="10"
+            step="0.1"
+          >
         </div>
       </div>
 
+      <!-- ベベル -->
       <div class="tool-row">
         <button id="bevelButton">角を丸める</button>
+
         <div class="extrude-control">
           <label for="bevelAmount">丸める幅</label>
-          <input type="number" id="bevelAmount" value="0.1" min="0.01" max="1" step="0.01">
+          <input
+            type="number"
+            id="bevelAmount"
+            value="0.1"
+            min="0.01"
+            max="1"
+            step="0.01"
+          >
         </div>
+
         <div class="extrude-control">
           <label for="bevelSegments">分割数</label>
-          <input type="number" id="bevelSegments" value="3" min="1" max="8" step="1">
+          <input
+            type="number"
+            id="bevelSegments"
+            value="3"
+            min="1"
+            max="8"
+            step="1"
+          >
         </div>
       </div>
 
+      <!-- ループカット -->
       <div class="tool-row">
         <button id="loopCutButton">ループカット</button>
-        <div class="tool-row">
-          <button id="subdivideButton">メッシュ細分化</button>
-      <!-- スカルプト -->
-      <div class="tool-row">
-        <button id="sculptToggleButton">
-          スカルプト開始
-        </button>
 
-        <button id="sculptRaiseButton">
-          盛り上げ
-        </button>
-
-        <button id="sculptLowerButton">
-          へこませ
-        </button>
-
-        <button id="sculptSmoothButton">
-          なめらか
-        </button>
-
-        <button id="sculptGrabButton">
-          つまむ（Grab）
-        </button>
-
-        <button id="sculptInflateButton">
-          膨らませる（Inflate）
-        </button>
-
-        <button id="sculptFlattenButton">
-          平らにする（Flatten）
-        </button>
-        
-      </div>
-          <div class="tool-row">
-  <label>
-    ブラシサイズ
-    <input
-      id="sculptRadius"
-      type="range"
-      min="0.05"
-      max="0.8"
-      step="0.01"
-      value="0.2"
-    >
-  </label>
-
-  <label>
-    ブラシ強さ
-    <input
-      id="sculptStrength"
-      type="range"
-      min="0.005"
-      max="0.15"
-      step="0.005"
-      value="0.035"
-    >
-  </label>
-</div>
-
-          <div class="extrude-control">
-            <label for="subdivideLevel">分割レベル</label>
-            <select id="subdivideLevel">
-              <option value="1">1段階</option>
-              <option value="2">2段階</option>
-              <option value="3">3段階</option>
-           </select>
-         </div>
-       </div>
         <div class="extrude-control">
           <label for="loopCutAxis">切る方向</label>
           <select id="loopCutAxis">
@@ -175,8 +155,64 @@
         </div>
       </div>
 
+      <!-- メッシュ細分化 -->
+      <div class="tool-row">
+        <button id="subdivideButton">メッシュ細分化</button>
+
+        <div class="extrude-control">
+          <label for="subdivideLevel">分割レベル</label>
+          <select id="subdivideLevel">
+            <option value="1">1段階</option>
+            <option value="2">2段階</option>
+            <option value="3">3段階</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- スカルプト -->
+      <div class="section-title">スカルプト</div>
+
+      <div class="tool-row">
+        <button id="sculptToggleButton">スカルプト開始</button>
+        <button id="sculptRaiseButton">盛り上げ</button>
+        <button id="sculptLowerButton">へこませ</button>
+        <button id="sculptSmoothButton">なめらか</button>
+        <button id="sculptGrabButton">つまむ（Grab）</button>
+        <button id="sculptInflateButton">膨らませる（Inflate）</button>
+        <button id="sculptFlattenButton">平らにする（Flatten）</button>
+      </div>
+
+      <!-- ブラシ設定 -->
+      <div class="tool-row">
+        <label>
+          ブラシサイズ
+          <input
+            id="sculptRadius"
+            type="range"
+            min="0.05"
+            max="0.8"
+            step="0.01"
+            value="0.2"
+          >
+        </label>
+
+        <label>
+          ブラシ強さ
+          <input
+            id="sculptStrength"
+            type="range"
+            min="0.005"
+            max="0.15"
+            step="0.005"
+            value="0.035"
+          >
+        </label>
+      </div>
+
+      <!-- ミラー -->
       <div class="tool-row">
         <button id="mirrorButton">ミラー複製</button>
+
         <div class="extrude-control">
           <label for="mirrorAxis">対称軸</label>
           <select id="mirrorAxis">
@@ -187,50 +223,74 @@
         </div>
       </div>
 
+      <!-- 頂点結合 -->
       <div class="tool-row">
         <button id="mergeVerticesButton">頂点を結合</button>
+
         <div class="extrude-control">
           <label for="mergeTolerance">結合距離</label>
-          <input type="number" id="mergeTolerance" value="0.001" min="0.0001" max="1" step="0.001">
+          <input
+            type="number"
+            id="mergeTolerance"
+            value="0.001"
+            min="0.0001"
+            max="1"
+            step="0.001"
+          >
         </div>
       </div>
 
+      <!-- 頂点追加 -->
       <div class="tool-row">
         <button id="addVertexButton">＋ 頂点を追加</button>
         <span>クリックした位置に頂点を配置</span>
       </div>
 
+      <!-- 辺作成 -->
       <div class="tool-row">
         <button id="addEdgeButton">＋ 辺を作成</button>
         <span>頂点モードで2つ選択して作成</span>
       </div>
 
+      <!-- 面作成 -->
       <div class="tool-row">
         <button id="createFaceButton">＋ 面を作成</button>
         <span>頂点モードで3つまたは4つ選択して作成</span>
       </div>
 
+      <!-- オブジェクト一覧 -->
       <div class="section-title">オブジェクト</div>
 
       <div id="objectList">
         <p class="empty-message">オブジェクトがありません</p>
       </div>
 
+      <!-- オブジェクト操作 -->
       <div class="tool-row secondary">
         <button id="duplicateButton">複製</button>
         <button id="deleteButton">削除</button>
       </div>
 
+      <!-- プロパティ -->
       <div id="properties">
         <div class="section-title">プロパティ</div>
         <p>オブジェクトを選択してください</p>
       </div>
+
     </section>
   </main>
 </div>
 
-<input type="file" id="loadFileInput" accept=".json,application/json" hidden>
+<!-- ファイル読み込み -->
+<input
+  type="file"
+  id="loadFileInput"
+  accept=".json,application/json"
+  hidden
+>
 
+<!-- メインプログラム -->
 <script type="module" src="js/main.js?v=20261117-1"></script>
+
 </body>
 </html>
