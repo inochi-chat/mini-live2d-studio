@@ -708,7 +708,7 @@ connectStudioUI({
 
   getSelectedObject,
   getEditMode,
-
+  updateEditDisplay,
   faceTriangleToRecord,
 
   undoHistory,
