@@ -306,7 +306,8 @@ const { clearAllObjects } = objectCleanup;
 // 履歴
 // =========================
 
-const historyManager = createHistoryManager({
+const historyManager = createHistoryConnection({
+  createHistoryManager,
   getObjects,
   addObject,
   selectMesh,
