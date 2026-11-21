@@ -54,6 +54,7 @@ import { createBoxSelectionTool } from "./modeling-tools/box-selection.js";
 import { createSculptUI } from "./sculpt/sculpt-ui.js";
 import { createSculptBrush } from "./sculpt/brush.js";
 import { createSubdivideTool } from "./sculpt/subdivide-tool.js";
+import { createPointerEvents } from "./editing/pointer-events.js";
 
 // =========================
 // 初期設定
@@ -76,12 +77,6 @@ let isAddingVertex = false;
 let vertexHelper = null;
 let edgeHelper = null;
 let faceHelper = null;
-
-let pendingVertex = null;
-let pendingEdge = null;
-let pendingFace = null;
-
-let pointerDownPosition = null;
 
 const selectedVertexIndices = new Set();
 const selectedEdgeIndices = new Set();
@@ -509,7 +504,9 @@ let sculptBrush = {
   setEnabled() {},
   setMode() {},
   setRadius() {},
-  setStrength() {}
+  setStrength() {},
+  clearMask() {},
+  invertMask() {}
 };
 
 try {
@@ -633,270 +630,46 @@ const dragTools = createDragTools({
   updateDebugPanel
 });
 
-// =========================
-// ポインター操作
-// =========================
 
-canvas.addEventListener("pointerdown", (event) => {
-  pointerDownPosition = {
-    x: event.clientX,
-    y: event.clientY
-  };
+ // =========================
+ // ポインター操作
+ // =========================
 
-  const mode = getEditMode();
+createPointerEvents({
+  canvas,
 
-  if (mode === "vertex") {
-    const index = getVertexHit(event);
+  getEditMode,
+  updatePointer,
 
-    pendingVertex = index === null
-      ? null
-      : {
-          index,
-          x: event.clientX,
-          y: event.clientY
-        };
-  }
+  getVertexHit,
+  getEdgeHit,
+  getFaceHit,
 
-  if (mode === "edge") {
-    const index = getEdgeHit(event);
+  raycaster,
+  getObjects,
 
-    pendingEdge = index === null
-      ? null
-      : {
-          index,
-          x: event.clientX,
-          y: event.clientY
-        };
-  }
+  addVertexTool,
+  selectMesh,
 
-  if (mode === "face") {
-    const index = getFaceHit(event);
+  selectedVertexIndices,
+  selectedEdgeIndices,
+  selectedFaceIndices,
 
-    pendingFace = index === null
-      ? null
-      : {
-          index,
-          x: event.clientX,
-          y: event.clientY
-        };
-  }
+  updateVertexColors,
+
+  dragTools,
+
+  getIsAddingVertex: () => isAddingVertex,
+  getIsDragging: () => isDragging,
+
+  saveHistory,
+  refreshProperties,
+
+  selectionTool,
+
+  updateDebugPanel
 });
 
-canvas.addEventListener("pointermove", (event) => {
-  if (dragTools.hasVertexDrag()) {
-    dragTools.moveVertices(event);
-    return;
-  }
-
-  if (dragTools.hasEdgeDrag()) {
-    dragTools.moveEdges(event);
-    return;
-  }
-
-  if (dragTools.hasFaceDrag()) {
-    dragTools.moveFaces(event);
-    return;
-  }
-
-  if (pendingVertex) {
-    const dx = event.clientX - pendingVertex.x;
-    const dy = event.clientY - pendingVertex.y;
-
-    if (
-      Math.hypot(dx, dy) >= 6 &&
-      selectedVertexIndices.has(pendingVertex.index)
-    ) {
-      dragTools.beginVertexDrag(event, pendingVertex);
-
-      if (dragTools.hasVertexDrag()) {
-        dragTools.moveVertices(event);
-      }
-    }
-  }
-
-  if (pendingEdge) {
-    const dx = event.clientX - pendingEdge.x;
-    const dy = event.clientY - pendingEdge.y;
-
-    if (
-      Math.hypot(dx, dy) >= 6 &&
-      selectedEdgeIndices.has(pendingEdge.index)
-    ) {
-      dragTools.beginEdgeDrag(event, pendingEdge);
-
-      if (dragTools.hasEdgeDrag()) {
-        dragTools.moveEdges(event);
-      }
-    }
-  }
-
-  if (pendingFace) {
-    const dx = event.clientX - pendingFace.x;
-    const dy = event.clientY - pendingFace.y;
-
-    if (
-      Math.hypot(dx, dy) >= 6 &&
-      selectedFaceIndices.has(pendingFace.index)
-    ) {
-      dragTools.beginFaceDrag(event, pendingFace);
-
-      if (dragTools.hasFaceDrag()) {
-        dragTools.moveFaces(event);
-      }
-    }
-  }
-});
-
-canvas.addEventListener("pointerup", (event) => {
-  // 頂点配置モード
-  if (isAddingVertex) {
-    updatePointer(event);
-
-    const hits = raycaster.intersectObjects(
-      getObjects(),
-      false
-    );
-
-    if (hits.length > 0) {
-      const hit = hits[0];
-
-      const newIndex = addVertexTool.addVertex(
-        hit.object,
-        hit.point
-      );
-
-      if (newIndex >= 0) {
-        selectMesh(hit.object);
-
-        if (getEditMode() === "vertex") {
-          selectedVertexIndices.add(newIndex);
-          updateVertexColors();
-        }
-
-        saveHistory();
-        refreshProperties();
-
-        updateDebugPanel(
-          "新しい頂点を追加しました: " + newIndex
-        );
-      }
-    }
-
-    pendingVertex = null;
-    pendingEdge = null;
-    pendingFace = null;
-    pointerDownPosition = null;
-    return;
-  }
-
-  if (dragTools.hasVertexDrag()) {
-    dragTools.finishVertexDrag();
-
-    pendingVertex = null;
-    pendingEdge = null;
-    pendingFace = null;
-    pointerDownPosition = null;
-    return;
-  }
-
-  if (dragTools.hasEdgeDrag()) {
-    dragTools.finishEdgeDrag();
-
-    pendingVertex = null;
-    pendingEdge = null;
-    pendingFace = null;
-    pointerDownPosition = null;
-    return;
-  }
-
-  if (dragTools.hasFaceDrag()) {
-    dragTools.finishFaceDrag();
-
-    pendingVertex = null;
-    pendingEdge = null;
-    pendingFace = null;
-    pointerDownPosition = null;
-    return;
-  }
-
-  if (pendingVertex) {
-    const dx = event.clientX - pendingVertex.x;
-    const dy = event.clientY - pendingVertex.y;
-
-    if (Math.hypot(dx, dy) < 6) {
-      selectionTool.toggleVertexSelection(pendingVertex.index);
-    }
-
-    pendingVertex = null;
-    pointerDownPosition = null;
-    return;
-  }
-
-  if (pendingEdge) {
-    const dx = event.clientX - pendingEdge.x;
-    const dy = event.clientY - pendingEdge.y;
-
-    if (Math.hypot(dx, dy) < 6) {
-      selectionTool.toggleEdgeSelection(pendingEdge.index);
-    }
-
-    pendingEdge = null;
-    pointerDownPosition = null;
-    return;
-  }
-
-  if (pendingFace) {
-    const dx = event.clientX - pendingFace.x;
-    const dy = event.clientY - pendingFace.y;
-
-    if (Math.hypot(dx, dy) < 6) {
-      selectionTool.toggleFaceSelection(pendingFace.index);
-    }
-
-    pendingFace = null;
-    pointerDownPosition = null;
-    return;
-  }
-
-  if (isDragging || !pointerDownPosition) {
-    pointerDownPosition = null;
-    return;
-  }
-
-  const dx = event.clientX - pointerDownPosition.x;
-  const dy = event.clientY - pointerDownPosition.y;
-
-  pointerDownPosition = null;
-
-  if (Math.hypot(dx, dy) > 5) return;
-
-  updatePointer(event);
-
-  const hits = raycaster.intersectObjects(getObjects(), false);
-
-  if (hits.length > 0) {
-    selectMesh(hits[0].object);
-  }
-});
-
-canvas.addEventListener("pointercancel", () => {
-  if (dragTools.hasVertexDrag()) {
-    dragTools.finishVertexDrag();
-  }
-
-  if (dragTools.hasEdgeDrag()) {
-    dragTools.finishEdgeDrag();
-  }
-
-  if (dragTools.hasFaceDrag()) {
-    dragTools.finishFaceDrag();
-  }
-
-  pendingVertex = null;
-  pendingEdge = null;
-  pendingFace = null;
-  pointerDownPosition = null;
-});
 
 // =========================
 // プロジェクト読み込み
