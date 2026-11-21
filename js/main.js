@@ -31,7 +31,7 @@ import {
   refreshProperties
 } from "./ui.js?v=20261117-3";
 
-import { connectStudioUI } from "./ui-connection.js";
+import { connectStudioUI } from "./ui-connection.js?v=20261121-1";
 import { getEditMode } from "./edit-mode.js";
 import { paintSelectedFaces } from "./face-paint.js";
 import { initProjectLoader } from "./project-io.js";
