@@ -52,6 +52,7 @@ import { createDragTools } from "./modeling-tools/drag-tools.js";
 import { createBoxSelectionTool } from "./modeling-tools/box-selection.js";
 import { createPointerEvents } from "./editing/pointer-events.js";
 import { createEditDisplay } from "./editing/edit-display.js?v=20261121-1";
+import { createEditHelpers } from "./editing/edit-helpers.js?v=20261121-2";
 import { initToolButtons } from "./ui-tool-buttons.js?v=20261121-1";
 
 // =========================
