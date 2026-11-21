@@ -503,6 +503,7 @@ const mergeVerticesTool = createMergeVerticesTool({
 // =========================
 
 const sculptBrush = createSculptBrush({
+  scene,
   camera,
   renderer,
   getSelectedObject,
