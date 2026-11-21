@@ -21,8 +21,16 @@ export function createSculptBrush(options = {}) {
   let pointerId = null;
 
   let brushMode = "raise";
-  const brushRadius = 0.2;
-  const brushStrength = 0.035;
+  let brushRadius = 0.2;
+  let brushStrength = 0.035;
+
+  function setRadius(value) {
+    brushRadius = Math.max(0.05, Math.min(0.8, Number(value) || 0.2));
+  }
+
+  function setStrength(value) {
+    brushStrength = Math.max(0.005, Math.min(0.15, Number(value) || 0.035));
+  }
 
   function setMode(mode) {
     brushMode = mode === "lower" ? "lower" : "raise";
@@ -182,6 +190,8 @@ export function createSculptBrush(options = {}) {
 
   return {
     setEnabled,
-    setMode
+    setMode,
+    setRadius,
+    setStrength
   };
 }
