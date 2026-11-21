@@ -33,7 +33,7 @@ import {
 
 import { getEditMode } from "./edit-mode.js";
 import { paintSelectedFaces } from "./face-paint.js";
-
+import { initProjectLoader } from "./project-io.js";
 import { createModelingTools } from "./modeling-tools/modeling-tools.js";
 import { createInsetTool } from "./modeling-tools/inset.js";
 import { createExtrudeTool } from "./modeling-tools/extrude.js";
@@ -675,30 +675,7 @@ createPointerEvents({
 // プロジェクト読み込み
 // =========================
 
-const createSnapshot = historyManager.createSnapshot;
-
-const loadFileInput = document.getElementById("loadFileInput");
-
-if (loadFileInput) {
-  loadFileInput.addEventListener("change", (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      try {
-        loadProject(JSON.parse(reader.result));
-      } catch (error) {
-        alert("ファイルを読み込めませんでした。");
-        console.error(error);
-      }
-    };
-
-    reader.readAsText(file);
-    event.target.value = "";
-  });
-}
+initProjectLoader(loadProject);
 
 // =========================
 // UI接続
