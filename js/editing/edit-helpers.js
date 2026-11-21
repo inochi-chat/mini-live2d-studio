@@ -2,78 +2,72 @@
 import * as THREE from "three";
 
 export function createEditHelpers({
-  scene,
+  getVertexHelper,
+  setVertexHelper,
+  getEdgeHelper,
+  setEdgeHelper,
+  getFaceHelper,
+  setFaceHelper,
+  getEdgeRecords,
+  setEdgeRecords,
+  getFaceRecords,
+  setFaceRecords,
   selectedVertexIndices,
   selectedEdgeIndices,
   selectedFaceIndices
 }) {
-  let vertexHelper = null;
-  let edgeHelper = null;
-  let faceHelper = null;
+  function disposeHelper(helper) {
+    if (!helper) return;
 
-  let edgeRecords = [];
-  let faceRecords = [];
-  let faceTriangleToRecord = [];
+    helper.parent?.remove(helper);
+    helper.geometry?.dispose();
+
+    if (Array.isArray(helper.material)) {
+      helper.material.forEach((material) => material.dispose());
+    } else {
+      helper.material?.dispose();
+    }
+  }
 
   function clearVertexHelper() {
-    if (!vertexHelper) return;
+    const helper = getVertexHelper();
+    if (!helper) return;
 
-    vertexHelper.parent?.remove(vertexHelper);
-    vertexHelper.geometry.dispose();
-
-    if (Array.isArray(vertexHelper.material)) {
-      vertexHelper.material.forEach((material) => material.dispose());
-    } else {
-      vertexHelper.material.dispose();
-    }
-
-    vertexHelper = null;
+    disposeHelper(helper);
+    setVertexHelper(null);
   }
 
   function clearEdgeHelper() {
-    if (!edgeHelper) {
-      edgeRecords = [];
+    const helper = getEdgeHelper();
+
+    if (!helper) {
+      setEdgeRecords([]);
       return;
     }
 
-    edgeHelper.parent?.remove(edgeHelper);
-    edgeHelper.geometry.dispose();
-
-    if (Array.isArray(edgeHelper.material)) {
-      edgeHelper.material.forEach((material) => material.dispose());
-    } else {
-      edgeHelper.material.dispose();
-    }
-
-    edgeHelper = null;
-    edgeRecords = [];
+    disposeHelper(helper);
+    setEdgeHelper(null);
+    setEdgeRecords([]);
   }
 
   function clearFaceHelper() {
-    if (!faceHelper) {
-      faceRecords = [];
-      faceTriangleToRecord = [];
+    const helper = getFaceHelper();
+
+    if (!helper) {
+      setFaceRecords([]);
       return;
     }
 
-    faceHelper.parent?.remove(faceHelper);
-    faceHelper.geometry.dispose();
-
-    if (Array.isArray(faceHelper.material)) {
-      faceHelper.material.forEach((material) => material.dispose());
-    } else {
-      faceHelper.material.dispose();
-    }
-
-    faceHelper = null;
-    faceRecords = [];
-    faceTriangleToRecord = [];
+    disposeHelper(helper);
+    setFaceHelper(null);
+    setFaceRecords([]);
   }
 
   function updateVertexColors() {
-    if (!vertexHelper) return;
+    const helper = getVertexHelper();
+    if (!helper) return;
 
-    const positions = vertexHelper.geometry.attributes.position;
+    const positions = helper.geometry.attributes.position;
     const colors = [];
 
     for (let i = 0; i < positions.count; i++) {
@@ -84,20 +78,22 @@ export function createEditHelpers({
       colors.push(color.r, color.g, color.b);
     }
 
-    vertexHelper.geometry.setAttribute(
+    helper.geometry.setAttribute(
       "color",
       new THREE.Float32BufferAttribute(colors, 3)
     );
 
-    vertexHelper.geometry.attributes.color.needsUpdate = true;
+    helper.geometry.attributes.color.needsUpdate = true;
   }
 
   function updateEdgeColors() {
-    if (!edgeHelper) return;
+    const helper = getEdgeHelper();
+    if (!helper) return;
 
+    const records = getEdgeRecords();
     const colors = [];
 
-    for (let i = 0; i < edgeRecords.length; i++) {
+    for (let i = 0; i < records.length; i++) {
       const color = new THREE.Color(
         selectedEdgeIndices.has(i) ? 0xff6600 : 0xffff00
       );
@@ -108,20 +104,22 @@ export function createEditHelpers({
       );
     }
 
-    edgeHelper.geometry.setAttribute(
+    helper.geometry.setAttribute(
       "color",
       new THREE.Float32BufferAttribute(colors, 3)
     );
 
-    edgeHelper.geometry.attributes.color.needsUpdate = true;
+    helper.geometry.attributes.color.needsUpdate = true;
   }
 
   function updateFaceColors() {
-    if (!faceHelper) return;
+    const helper = getFaceHelper();
+    if (!helper) return;
 
+    const records = getFaceRecords();
     const colors = [];
 
-    faceRecords.forEach((face, index) => {
+    records.forEach((face, index) => {
       const color = new THREE.Color(
         selectedFaceIndices.has(index) ? 0xff6600 : 0xffff00
       );
@@ -131,47 +129,18 @@ export function createEditHelpers({
       }
     });
 
-    faceHelper.geometry.setAttribute(
+    helper.geometry.setAttribute(
       "color",
       new THREE.Float32BufferAttribute(colors, 3)
     );
 
-    faceHelper.geometry.attributes.color.needsUpdate = true;
+    helper.geometry.attributes.color.needsUpdate = true;
   }
 
   return {
-    getVertexHelper: () => vertexHelper,
-    getEdgeHelper: () => edgeHelper,
-    getFaceHelper: () => faceHelper,
-
-    setVertexHelper: (helper) => {
-      vertexHelper = helper;
-    },
-    setEdgeHelper: (helper) => {
-      edgeHelper = helper;
-    },
-    setFaceHelper: (helper) => {
-      faceHelper = helper;
-    },
-
-    getEdgeRecords: () => edgeRecords,
-    getFaceRecords: () => faceRecords,
-    getFaceTriangleToRecord: () => faceTriangleToRecord,
-
-    setEdgeRecords: (records) => {
-      edgeRecords = records;
-    },
-    setFaceRecords: (records) => {
-      faceRecords = records;
-    },
-    setFaceTriangleToRecord: (records) => {
-      faceTriangleToRecord = records;
-    },
-
     clearVertexHelper,
     clearEdgeHelper,
     clearFaceHelper,
-
     updateVertexColors,
     updateEdgeColors,
     updateFaceColors
