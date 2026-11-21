@@ -15,8 +15,8 @@ export function createPointerEvents({
   selectedFaceIndices,
   updateVertexColors,
   dragTools,
-  isAddingVertex,
-  isDragging,
+  getIsAddingVertex,
+  getIsDragging,
   saveHistory,
   refreshProperties,
   selectionTool,
@@ -159,7 +159,7 @@ export function createPointerEvents({
 
   function onPointerUp(event) {
     // 頂点配置モード
-    if (isAddingVertex()) {
+    if (getIsAddingVertex()) {
       updatePointer(event);
 
       const hits = raycaster.intersectObjects(
@@ -219,7 +219,9 @@ export function createPointerEvents({
       const dy = event.clientY - pendingVertex.y;
 
       if (Math.hypot(dx, dy) < 6) {
-        toggleVertexSelection(pendingVertex.index);
+        selectionTool.toggleVertexSelection(
+          pendingVertex.index
+        );
       }
 
       clearPending();
@@ -231,7 +233,9 @@ export function createPointerEvents({
       const dy = event.clientY - pendingEdge.y;
 
       if (Math.hypot(dx, dy) < 6) {
-        toggleEdgeSelection(pendingEdge.index);
+        selectionTool.toggleEdgeSelection(
+          pendingEdge.index
+        );
       }
 
       clearPending();
@@ -243,14 +247,16 @@ export function createPointerEvents({
       const dy = event.clientY - pendingFace.y;
 
       if (Math.hypot(dx, dy) < 6) {
-        toggleFaceSelection(pendingFace.index);
+        selectionTool.toggleFaceSelection(
+          pendingFace.index
+        );
       }
 
       clearPending();
       return;
     }
 
-    if (isDragging() || !pointerDownPosition) {
+    if (getIsDragging() || !pointerDownPosition) {
       clearPending();
       return;
     }
@@ -272,28 +278,6 @@ export function createPointerEvents({
     if (hits.length > 0) {
       selectMesh(hits[0].object);
     }
-  }
-
-  // =========================
-  // 選択切り替え
-  // =========================
-
-  
-  function toggleVertexSelection(index) {
-    selectionTool.toggleVertexSelection(index);
-  }
-
-  function toggleEdgeSelection(index) {
-    selectionTool.toggleEdgeSelection(index);
-  }
-
-  function toggleFaceSelection(index) {
-    selectionTool.toggleFaceSelection(index);
-  }
-
-
-    // 面の色更新は既存の選択ツールに任せる
-    updateDebugPanel("面を選択しました");
   }
 
   // =========================
