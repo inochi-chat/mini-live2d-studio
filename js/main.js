@@ -51,7 +51,7 @@ import { createHitTestTools } from "./modeling-tools/hit-test.js";
 import { createDragTools } from "./modeling-tools/drag-tools.js";
 import { createBoxSelectionTool } from "./modeling-tools/box-selection.js";
 import { createPointerEvents } from "./editing/pointer-events.js";
-
+import { createEditDisplay } from "./editing/edit-display.js?v=20261121-1";
 import { initToolButtons } from "./ui-tool-buttons.js?v=20261121-1";
 
 // =========================
@@ -314,42 +314,28 @@ const showFacesTool = createShowFacesTool({
 // 編集表示更新
 // =========================
 
-function updateEditDisplay() {
-  const mode = getEditMode();
-  const selected = getSelectedObject();
+const editDisplay = createEditDisplay({
+  getEditMode,
+  getSelectedObject,
+  attachObject,
+  detachObject,
 
-  clearVertexHelper();
-  clearEdgeHelper();
-  clearFaceHelper();
+  clearVertexHelper,
+  clearEdgeHelper,
+  clearFaceHelper,
 
-  selectedVertexIndices.clear();
-  selectedEdgeIndices.clear();
-  selectedFaceIndices.clear();
+  selectedVertexIndices,
+  selectedEdgeIndices,
+  selectedFaceIndices,
 
-  if (mode === "object") {
-    if (selected) {
-      attachObject(selected);
-    }
-  } else {
-    detachObject();
+  showVerticesTool,
+  showEdgesTool,
+  showFacesTool,
 
-    if (mode === "vertex" && selected) {
-      showVerticesTool.showVertices(selected);
-    }
+  updateDebugPanel
+});
 
-    if (mode === "edge" && selected) {
-      showEdgesTool.showEdges(selected);
-    }
-
-    if (mode === "face" && selected) {
-      showFacesTool.showFaces(selected);
-    }
-  }
-
-  updateDebugPanel("編集モード切り替え済み");
-}
-
-window.addEventListener("edit-mode-changed", updateEditDisplay);
+const updateEditDisplay = editDisplay.updateEditDisplay;
 
 // =========================
 // オブジェクト選択
