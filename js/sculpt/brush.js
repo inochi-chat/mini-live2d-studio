@@ -83,6 +83,33 @@ export function createSculptBrush(options = {}) {
     }
 
     const normals = geometry.attributes.normal;
+    // 頂点同士のつながりを取得
+const neighbors = Array.from(
+  { length: positions.count },
+  () => new Set()
+);
+
+const indexArray = geometry.index
+  ? Array.from(geometry.index.array)
+  : Array.from(
+      { length: positions.count },
+      (_, i) => i
+    );
+
+for (let i = 0; i + 2 < indexArray.length; i += 3) {
+  const a = indexArray[i];
+  const b = indexArray[i + 1];
+  const c = indexArray[i + 2];
+
+  neighbors[a].add(b);
+  neighbors[a].add(c);
+  neighbors[b].add(a);
+  neighbors[b].add(c);
+  neighbors[c].add(a);
+  neighbors[c].add(b);
+}
+
+const originalPositions = positions.array.slice();
     const sign = brushMode === "lower" ? -1 : 1;
 
     let moved = false;
@@ -109,7 +136,30 @@ export function createSculptBrush(options = {}) {
 
       const amount = brushStrength * weight * sign;
 
-      vertex.addScaledVector(normal, amount);
+      if (brushMode === "smooth") {
+  const list = Array.from(neighbors[i]);
+
+  if (list.length === 0) continue;
+
+  const average = new THREE.Vector3();
+
+  for (const neighbor of list) {
+    average.x += originalPositions[neighbor * 3];
+    average.y += originalPositions[neighbor * 3 + 1];
+    average.z += originalPositions[neighbor * 3 + 2];
+  }
+
+  average.divideScalar(list.length);
+
+  const smoothAmount = Math.min(
+    1,
+    brushStrength * 20 * weight
+  );
+
+  vertex.lerp(average, smoothAmount);
+} else {
+  vertex.addScaledVector(normal, amount);
+}
 
       positions.setXYZ(
         i,
