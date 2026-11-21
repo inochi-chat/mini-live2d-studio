@@ -26,6 +26,8 @@ export function connectStudioUI({
   getSelectedMaterial,
   getSelectedObject,
   getEditMode,
+  updateEditDisplay,
+  updateEditDisplay,
   faceTriangleToRecord,
   undoHistory,
   redoHistory,
@@ -82,7 +84,7 @@ export function connectStudioUI({
     },
 
     onEditMode() {
-      // 編集モードの表示更新は既存イベントに任せる
+      updateEditDisplay();
     },
 
     getMaterial() {
