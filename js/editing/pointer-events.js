@@ -19,6 +19,7 @@ export function createPointerEvents({
   isDragging,
   saveHistory,
   refreshProperties,
+  selectionTool,
   updateDebugPanel
 }) {
   let pointerDownPosition = null;
@@ -277,33 +278,19 @@ export function createPointerEvents({
   // 選択切り替え
   // =========================
 
+  
   function toggleVertexSelection(index) {
-    if (selectedVertexIndices.has(index)) {
-      selectedVertexIndices.delete(index);
-    } else {
-      selectedVertexIndices.add(index);
-    }
-
-    updateVertexColors();
+    selectionTool.toggleVertexSelection(index);
   }
 
   function toggleEdgeSelection(index) {
-    if (selectedEdgeIndices.has(index)) {
-      selectedEdgeIndices.delete(index);
-    } else {
-      selectedEdgeIndices.add(index);
-    }
-
-    // 辺の色更新は既存の選択ツールに任せる
-    updateDebugPanel("辺を選択しました");
+    selectionTool.toggleEdgeSelection(index);
   }
 
   function toggleFaceSelection(index) {
-    if (selectedFaceIndices.has(index)) {
-      selectedFaceIndices.delete(index);
-    } else {
-      selectedFaceIndices.add(index);
-    }
+    selectionTool.toggleFaceSelection(index);
+  }
+
 
     // 面の色更新は既存の選択ツールに任せる
     updateDebugPanel("面を選択しました");
