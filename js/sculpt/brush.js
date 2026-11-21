@@ -65,7 +65,7 @@ export function createSculptBrush(options = {}) {
 
   function setMode(mode) {
     if (
-      ["raise", "lower", "smooth", "grab", "inflate"].includes(mode)
+      ["raise", "lower", "smooth", "grab", "inflate", "flatten"].includes(mode)
     ) {
       brushMode = mode;
 
@@ -75,6 +75,7 @@ export function createSculptBrush(options = {}) {
         smooth: "スムーズ",
         grab: "つまむ",
         inflate: "膨らませる"
+        flatten: "平らにする"
       };
 
       updateDebugPanel(
@@ -150,7 +151,8 @@ export function createSculptBrush(options = {}) {
 
     return {
       object,
-      point: object.worldToLocal(worldPoint)
+      point: object.worldToLocal(worldPoint),
+      normal: hit.face.normal.clone().normalize()
     };
   }
 
@@ -199,6 +201,8 @@ export function createSculptBrush(options = {}) {
 
     const sign = brushMode === "lower" ? -1 : 1;
     const isInflate = brushMode === "inflate";
+    const flattenHeight = hit.point.clone();
+    const flattenNormal = hit.normal.clone().normalize();
     let moved = false;
 
     for (let i = 0; i < positions.count; i++) {
@@ -217,7 +221,16 @@ export function createSculptBrush(options = {}) {
         2
       );
 
-      if (brushMode === "smooth") {
+      if (brushMode === "flatten") {
+  const distanceFromPlane = vertex.clone()
+    .sub(flattenHeight)
+    .dot(flattenNormal);
+
+  vertex.addScaledVector(
+    flattenNormal,
+    -distanceFromPlane * weight
+  );
+} else if (brushMode === "smooth") {
         const list = Array.from(neighbors[i]);
         if (!list.length) continue;
 
