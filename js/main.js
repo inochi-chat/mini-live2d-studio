@@ -1200,3 +1200,44 @@ if (createFaceButton) {
     alert(result.message);
   });
 }
+
+// =========================
+// スカルプト操作ボタン
+// =========================
+
+const sculptToggleButton =
+  document.getElementById("sculptToggleButton");
+
+const sculptRaiseButton =
+  document.getElementById("sculptRaiseButton");
+
+const sculptLowerButton =
+  document.getElementById("sculptLowerButton");
+
+let sculptEnabled = false;
+
+if (sculptToggleButton) {
+  sculptToggleButton.addEventListener("click", () => {
+    sculptEnabled = !sculptEnabled;
+
+    sculptBrush.setEnabled(sculptEnabled);
+
+    sculptToggleButton.textContent = sculptEnabled
+      ? "スカルプト終了"
+      : "スカルプト開始";
+  });
+}
+
+if (sculptRaiseButton) {
+  sculptRaiseButton.addEventListener("click", () => {
+    sculptBrush.setMode("raise");
+    updateDebugPanel("盛り上げブラシを選択");
+  });
+}
+
+if (sculptLowerButton) {
+  sculptLowerButton.addEventListener("click", () => {
+    sculptBrush.setMode("lower");
+    updateDebugPanel("へこませブラシを選択");
+  });
+}
