@@ -31,6 +31,7 @@ import {
   refreshProperties
 } from "./ui.js?v=20261117-3";
 
+import { connectStudioUI } from "./ui-connection.js";
 import { getEditMode } from "./edit-mode.js";
 import { paintSelectedFaces } from "./face-paint.js";
 import { initProjectLoader } from "./project-io.js";
@@ -677,119 +678,44 @@ createPointerEvents({
 
 initProjectLoader(loadProject);
 
-// =========================
-// UI接続
-// =========================
 
-initUI({
-  onAdd(type) {
-    const object = addObject(type);
+ // =========================
+ // UI接続
+ // =========================
 
-    if (object) {
-      selectMesh(object);
-      saveHistory();
-    }
-  },
+connectStudioUI({
+  addObject,
+  selectMesh,
+  saveHistory,
+  setToolMode,
 
-  onMode(mode) {
-    setToolMode(mode);
-  },
+  clearVertexHelper,
+  clearEdgeHelper,
+  clearFaceHelper,
 
-  onSelect(object) {
-    selectMesh(object);
-  },
+  selectedVertexIndices,
+  selectedEdgeIndices,
+  selectedFaceIndices,
 
-  onDelete() {
-    clearVertexHelper();
-    clearEdgeHelper();
-    clearFaceHelper();
+  detachObject,
+  deleteSelectedObject,
 
-    selectedVertexIndices.clear();
-    selectedEdgeIndices.clear();
-    selectedFaceIndices.clear();
+  updateDebugPanel,
+  duplicateSelectedObject,
 
-    detachObject();
-    deleteSelectedObject();
+  setSelectedMaterial,
+  getSelectedMaterial,
 
-    refreshObjectList();
-    refreshProperties();
-    updateDebugPanel("オブジェクトを削除しました");
+  getSelectedObject,
+  getEditMode,
 
-    saveHistory();
-  },
+  faceTriangleToRecord,
 
-  onDuplicate() {
-    const object = duplicateSelectedObject();
-
-    if (object) {
-      selectMesh(object);
-      saveHistory();
-    }
-  },
-
-  onPropertyChange() {
-    saveHistory();
-  },
-
-  onEditMode() {
-    updateEditDisplay();
-  },
-
-  getMaterial() {
-    return getSelectedMaterial();
-  },
-
-  onMaterialChange(options) {
-    const changed = setSelectedMaterial(options);
-
-    if (changed) {
-      saveHistory();
-      updateDebugPanel("材質を変更しました");
-    }
-  },
-
-  onFacePaint(color) {
-    const object = getSelectedObject();
-
-    if (!object || getEditMode() !== "face") {
-      alert("面モードでオブジェクトの面を選択してください。");
-      return;
-    }
-
-    const changed = paintSelectedFaces(
-      object,
-      faceTriangleToRecord,
-      selectedFaceIndices,
-      color
-    );
-
-    if (!changed) {
-      alert("色を塗る面を選択してください。");
-      return;
-    }
-
-    updateEditDisplay();
-    saveHistory();
-    refreshProperties();
-    updateDebugPanel("選択した面に色を塗りました");
-  },
-
-  getSelected() {
-    return getSelectedObject();
-  },
-
-  onSave() {
-    saveProject();
-  },
-
-  onUndo() {
-    undoHistory();
-  },
-
-  onRedo() {
-    redoHistory();
-  }
+  undoHistory,
+  redoHistory,
+  saveProject
 });
+
 
 // =========================
 // 編集ツールボタン
