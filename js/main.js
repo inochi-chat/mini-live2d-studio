@@ -51,6 +51,7 @@ import { createFaceTool } from "./modeling-tools/create-face.js";
 import { createHitTestTools } from "./modeling-tools/hit-test.js";
 import { createDragTools } from "./modeling-tools/drag-tools.js";
 import { createBoxSelectionTool } from "./modeling-tools/box-selection.js";
+import { createSculptBrush } from "./sculpt/brush.js";
 import { createSubdivideTool } from "./sculpt/subdivide-tool.js";
 
 // =========================
@@ -495,6 +496,19 @@ const mergeVerticesTool = createMergeVerticesTool({
   refreshProperties,
   saveHistory,
   updateDebugPanel
+});
+
+// =========================
+// スカルプトブラシ
+// =========================
+
+const sculptBrush = createSculptBrush({
+  camera,
+  renderer,
+  getSelectedObject,
+  saveHistory,
+  updateDebugPanel,
+  updateEditDisplay
 });
 
 // =========================
