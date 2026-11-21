@@ -84,6 +84,54 @@ let edgeRecords = [];
 let faceRecords = [];
 let faceTriangleToRecord = [];
 
+// =========================
+// 編集ヘルパー管理
+// =========================
+
+const editHelpers = createEditHelpers({
+  getVertexHelper: () => vertexHelper,
+  setVertexHelper: (value) => {
+    vertexHelper = value;
+  },
+
+  getEdgeHelper: () => edgeHelper,
+  setEdgeHelper: (value) => {
+    edgeHelper = value;
+  },
+
+  getFaceHelper: () => faceHelper,
+  setFaceHelper: (value) => {
+    faceHelper = value;
+  },
+
+  getEdgeRecords: () => edgeRecords,
+  setEdgeRecords: (value) => {
+    edgeRecords = value;
+  },
+
+  getFaceRecords: () => faceRecords,
+  setFaceRecords: (value) => {
+    faceRecords = value;
+  },
+
+  setFaceTriangleToRecord: (value) => {
+    faceTriangleToRecord = value;
+  },
+
+  selectedVertexIndices,
+  selectedEdgeIndices,
+  selectedFaceIndices
+});
+
+const {
+  clearVertexHelper,
+  clearEdgeHelper,
+  clearFaceHelper,
+  updateVertexColors,
+  updateEdgeColors,
+  updateFaceColors
+} = editHelpers;
+
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
@@ -124,76 +172,6 @@ const updateDebugPanel = createDebugPanel({
 });
 
 // =========================
-// ヘルパー削除
-// =========================
-
-function clearVertexHelper() {
-  if (!vertexHelper) return;
-
-  vertexHelper.parent?.remove(vertexHelper);
-  vertexHelper.geometry.dispose();
-  vertexHelper.material.dispose();
-
-  vertexHelper = null;
-}
-
-function clearEdgeHelper() {
-  if (!edgeHelper) {
-    edgeRecords = [];
-    return;
-  }
-
-  edgeHelper.parent?.remove(edgeHelper);
-  edgeHelper.geometry.dispose();
-  edgeHelper.material.dispose();
-
-  edgeHelper = null;
-  edgeRecords = [];
-}
-
-function clearFaceHelper() {
-  if (!faceHelper) {
-    faceRecords = [];
-    faceTriangleToRecord = [];
-    return;
-  }
-
-  faceHelper.parent?.remove(faceHelper);
-  faceHelper.geometry.dispose();
-  faceHelper.material.dispose();
-
-  faceHelper = null;
-  faceRecords = [];
-  faceTriangleToRecord = [];
-}
-
-// =========================
-// 頂点の色更新
-// =========================
-
-function updateVertexColors() {
-  if (!vertexHelper) return;
-
-  const positions = vertexHelper.geometry.attributes.position;
-  const colors = [];
-
-  for (let i = 0; i < positions.count; i++) {
-    const color = selectedVertexIndices.has(i)
-      ? new THREE.Color(0xff6600)
-      : new THREE.Color(0xffff00);
-
-    colors.push(color.r, color.g, color.b);
-  }
-
-  vertexHelper.geometry.setAttribute(
-    "color",
-    new THREE.Float32BufferAttribute(colors, 3)
-  );
-
-  vertexHelper.geometry.attributes.color.needsUpdate = true;
-}
-
-// =========================
 // 頂点表示ツール
 // =========================
 
@@ -207,65 +185,6 @@ const showVerticesTool = createShowVerticesTool({
   clearVertexHelper,
   updateVertexColors
 });
-
-// =========================
-// 辺の色更新
-// =========================
-
-function updateEdgeColors() {
-  if (!edgeHelper) return;
-
-  const colors = [];
-
-  for (let i = 0; i < edgeRecords.length; i++) {
-    const color = new THREE.Color(
-      selectedEdgeIndices.has(i)
-        ? 0xff6600
-        : 0xffff00
-    );
-
-    colors.push(
-      color.r, color.g, color.b,
-      color.r, color.g, color.b
-    );
-  }
-
-  edgeHelper.geometry.setAttribute(
-    "color",
-    new THREE.Float32BufferAttribute(colors, 3)
-  );
-
-  edgeHelper.geometry.attributes.color.needsUpdate = true;
-}
-
-// =========================
-// 面の色更新
-// =========================
-
-function updateFaceColors() {
-  if (!faceHelper) return;
-
-  const colors = [];
-
-  faceRecords.forEach((face, index) => {
-    const color = new THREE.Color(
-      selectedFaceIndices.has(index)
-        ? 0xff6600
-        : 0xffff00
-    );
-
-    for (let i = 0; i < face.vertices.length; i++) {
-      colors.push(color.r, color.g, color.b);
-    }
-  });
-
-  faceHelper.geometry.setAttribute(
-    "color",
-    new THREE.Float32BufferAttribute(colors, 3)
-  );
-
-  faceHelper.geometry.attributes.color.needsUpdate = true;
-}
 
 // =========================
 // 辺表示ツール
