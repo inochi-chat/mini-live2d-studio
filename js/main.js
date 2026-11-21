@@ -1265,6 +1265,20 @@ if (sculptLowerButton) {
 }
 
 // =========================
+// Grab（つまむ）ブラシ
+// =========================
+
+const sculptGrabButton =
+  document.getElementById("sculptGrabButton");
+
+if (sculptGrabButton) {
+  sculptGrabButton.addEventListener("click", () => {
+    sculptBrush.setMode("grab");
+    updateDebugPanel("つまむブラシを選択");
+  });
+}
+
+// =========================
 // ブラシサイズ・強さ
 // =========================
 
