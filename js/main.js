@@ -51,6 +51,7 @@ import { createFaceTool } from "./modeling-tools/create-face.js";
 import { createHitTestTools } from "./modeling-tools/hit-test.js";
 import { createDragTools } from "./modeling-tools/drag-tools.js";
 import { createBoxSelectionTool } from "./modeling-tools/box-selection.js";
+
 import { createSculptBrush } from "./sculpt/brush.js";
 import { createSubdivideTool } from "./sculpt/subdivide-tool.js";
 
@@ -502,15 +503,35 @@ const mergeVerticesTool = createMergeVerticesTool({
 // スカルプトブラシ
 // =========================
 
-const sculptBrush = createSculptBrush({
-  scene,
-  camera,
-  renderer,
-  getSelectedObject,
-  saveHistory,
-  updateDebugPanel,
-  updateEditDisplay
-});
+// 初期化に失敗してもアプリ全体を止めない
+
+let sculptBrush = {
+  setEnabled() {},
+  setMode() {},
+  setRadius() {},
+  setStrength() {}
+};
+
+try {
+  sculptBrush = createSculptBrush({
+    scene,
+    camera,
+    renderer,
+    getSelectedObject,
+    saveHistory,
+    updateDebugPanel,
+    updateEditDisplay
+  });
+
+  console.log("スカルプトブラシ初期化成功");
+
+} catch (error) {
+  console.error("スカルプトブラシ初期化エラー:", error);
+
+  updateDebugPanel(
+    "スカルプト初期化エラー：コンソールを確認してください"
+  );
+}
 
 // =========================
 // スカルプト用細分化
@@ -1278,3 +1299,5 @@ if (sculptSmoothButton) {
     updateDebugPanel("なめらかブラシを選択");
   });
 }
+
+console.log("INOCHI 3D STUDIO 起動完了");
