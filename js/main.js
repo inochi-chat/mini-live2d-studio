@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { createDebugPanel } from "./debug-panel.js";
 import { createScene } from "./scene.js";
 import { createHistoryManager } from "./history.js";
-
+import { createHistoryConnection } from "./editing/history-connection.js";
 import {
   initObjects,
   addObject,
