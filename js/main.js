@@ -1267,3 +1267,13 @@ if (sculptStrengthInput) {
     sculptBrush.setStrength(sculptStrengthInput.value);
   });
 }
+
+const sculptSmoothButton =
+  document.getElementById("sculptSmoothButton");
+
+if (sculptSmoothButton) {
+  sculptSmoothButton.addEventListener("click", () => {
+    sculptBrush.setMode("smooth");
+    updateDebugPanel("なめらかブラシを選択");
+  });
+}
