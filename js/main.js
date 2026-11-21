@@ -1314,4 +1314,18 @@ if (sculptSmoothButton) {
   });
 }
 
+// =========================
+// Inflate（膨らませる）ブラシ
+// =========================
+
+const sculptInflateButton =
+  document.getElementById("sculptInflateButton");
+
+if (sculptInflateButton) {
+  sculptInflateButton.addEventListener("click", () => {
+    sculptBrush.setMode("inflate");
+    updateDebugPanel("膨らませるブラシを選択");
+  });
+}
+
 console.log("INOCHI 3D STUDIO 起動完了");
