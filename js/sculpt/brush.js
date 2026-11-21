@@ -65,7 +65,7 @@ export function createSculptBrush(options = {}) {
 
   function setMode(mode) {
     if (
-      ["raise", "lower", "smooth", "grab"].includes(mode)
+      ["raise", "lower", "smooth", "grab", "inflate"].includes(mode)
     ) {
       brushMode = mode;
 
@@ -73,7 +73,8 @@ export function createSculptBrush(options = {}) {
         raise: "盛り上げ",
         lower: "へこませ",
         smooth: "スムーズ",
-        grab: "つまむ"
+        grab: "つまむ",
+        inflate: "膨らませる"
       };
 
       updateDebugPanel(
