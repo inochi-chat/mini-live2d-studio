@@ -26,14 +26,12 @@ import {
 } from "./tools.js";
 
 import {
-  initUI,
   refreshObjectList,
   refreshProperties
 } from "./ui.js?v=20261117-3";
 
 import { connectStudioUI } from "./ui-connection.js?v=20261121-1";
 import { getEditMode } from "./edit-mode.js";
-import { paintSelectedFaces } from "./face-paint.js";
 import { initProjectLoader } from "./project-io.js";
 import { createModelingTools } from "./modeling-tools/modeling-tools.js";
 import { createInsetTool } from "./modeling-tools/inset.js";
@@ -52,11 +50,13 @@ import { createFaceTool } from "./modeling-tools/create-face.js";
 import { createHitTestTools } from "./modeling-tools/hit-test.js";
 import { createDragTools } from "./modeling-tools/drag-tools.js";
 import { createBoxSelectionTool } from "./modeling-tools/box-selection.js";
+
 import { createSculptUI } from "./sculpt/sculpt-ui.js";
 import { createSculptBrush } from "./sculpt/brush.js";
 import { createSubdivideTool } from "./sculpt/subdivide-tool.js";
 import { createPointerEvents } from "./editing/pointer-events.js";
-import { initToolButtons } from "./ui-tool-buttons.js";
+
+import { initToolButtons } from "./ui-tool-buttons.js?v=20261121-1";
 
 // =========================
 // 初期設定
@@ -500,8 +500,6 @@ const mergeVerticesTool = createMergeVerticesTool({
 // スカルプトブラシ
 // =========================
 
-// 初期化に失敗してもアプリ全体を止めない
-
 let sculptBrush = {
   setEnabled() {},
   setMode() {},
@@ -632,10 +630,9 @@ const dragTools = createDragTools({
   updateDebugPanel
 });
 
-
- // =========================
- // ポインター操作
- // =========================
+// =========================
+// ポインター操作
+// =========================
 
 createPointerEvents({
   canvas,
@@ -672,17 +669,15 @@ createPointerEvents({
   updateDebugPanel
 });
 
-
 // =========================
 // プロジェクト読み込み
 // =========================
 
 initProjectLoader(loadProject);
 
-
- // =========================
- // UI接続
- // =========================
+// =========================
+// UI接続
+// =========================
 
 connectStudioUI({
   addObject,
@@ -717,51 +712,31 @@ connectStudioUI({
   saveProject
 });
 
-
 // =========================
-// 編集ツールボタン
+// 編集ツールボタン接続
 // =========================
 
-const insetButton = document.getElementById("insetButton");
-const bevelButton = document.getElementById("bevelButton");
-const loopCutButton = document.getElementById("loopCutButton");
-const mirrorButton = document.getElementById("mirrorButton");
-const extrudeButton = document.getElementById("extrudeButton");
+initToolButtons({
+  modelingTools,
+  insetTool,
+  extrudeTool,
+  loopCutTool,
+  mirrorTool,
+  mergeVerticesTool,
+  addVertexTool,
+  addEdgeTool,
+  createFaceToolInstance,
 
-if (mirrorButton) {
-  mirrorButton.addEventListener(
-    "click",
-    mirrorTool.mirrorSelectedObject
-  );
-}
+  getEditMode,
+  updateEditDisplay,
+  updateDebugPanel,
 
-if (loopCutButton) {
-  loopCutButton.addEventListener(
-    "click",
-    loopCutTool.loopCutSelectedObject
-  );
-}
+  getIsAddingVertex: () => isAddingVertex,
 
-if (bevelButton) {
-  bevelButton.addEventListener(
-    "click",
-    modelingTools.bevelSelectedObject
-  );
-}
-
-if (insetButton) {
-  insetButton.addEventListener(
-    "click",
-    insetTool.insetSelectedFaces
-  );
-}
-
-if (extrudeButton) {
-  extrudeButton.addEventListener(
-    "click",
-    extrudeTool.extrudeSelectedFaces
-  );
-}
+  setIsAddingVertex: (value) => {
+    isAddingVertex = value;
+  }
+});
 
 // =========================
 // TransformControls
@@ -791,95 +766,6 @@ refreshObjectList();
 refreshProperties();
 saveHistory();
 updateDebugPanel("準備完了");
-
-// =========================
-// 頂点結合ボタン
-// =========================
-
-const mergeVerticesButton =
-  document.getElementById("mergeVerticesButton");
-
-if (mergeVerticesButton) {
-  mergeVerticesButton.addEventListener(
-    "click",
-    mergeVerticesTool.mergeSelectedVertices
-  );
-}
-
-// =========================
-// 頂点追加
-// =========================
-
-const addVertexButton =
-  document.getElementById("addVertexButton");
-
-if (addVertexButton) {
-  addVertexButton.addEventListener("click", () => {
-    isAddingVertex = !isAddingVertex;
-
-    addVertexButton.textContent = isAddingVertex
-      ? "配置中（終了）"
-      : "＋ 頂点を追加";
-
-    updateDebugPanel(
-      isAddingVertex
-        ? "追加したい位置の表面をタップしてください"
-        : "頂点配置を終了しました"
-    );
-  });
-}
-
-// =========================
-// 辺作成
-// =========================
-
-const addEdgeButton =
-  document.getElementById("addEdgeButton");
-
-if (addEdgeButton) {
-  addEdgeButton.addEventListener("click", () => {
-    const result =
-      addEdgeTool.addEdgeBetweenSelectedVertices();
-
-    if (!result.success) {
-      alert(result.message);
-      return;
-    }
-
-    updateDebugPanel(result.message);
-    alert(result.message);
-  });
-}
-
-// =========================
-// 面作成
-// =========================
-
-const createFaceButton =
-  document.getElementById("createFaceButton");
-
-if (createFaceButton) {
-  createFaceButton.addEventListener("click", () => {
-    if (getEditMode() !== "vertex") {
-      alert("頂点モードに切り替えてください");
-      return;
-    }
-
-    const result =
-      createFaceToolInstance.createFaceFromSelectedVertices();
-
-    if (!result.success) {
-      alert(result.message);
-      return;
-    }
-
-    updateEditDisplay();
-
-    updateDebugPanel(result.message);
-    alert(result.message);
-  });
-}
-
 
 // =========================
 // スカルプトUI接続
