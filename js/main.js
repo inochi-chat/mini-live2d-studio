@@ -1328,4 +1328,18 @@ if (sculptInflateButton) {
   });
 }
 
+// =========================
+// Flatten（平らにする）ブラシ
+// =========================
+
+const sculptFlattenButton =
+  document.getElementById("sculptFlattenButton");
+
+if (sculptFlattenButton) {
+  sculptFlattenButton.addEventListener("click", () => {
+    sculptBrush.setMode("flatten");
+    updateDebugPanel("平らにするブラシを選択");
+  });
+}
+
 console.log("INOCHI 3D STUDIO 起動完了");
