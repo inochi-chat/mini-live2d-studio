@@ -54,6 +54,7 @@ import { createPointerEvents } from "./editing/pointer-events.js";
 import { createEditDisplay } from "./editing/edit-display.js?v=20261121-1";
 import { createEditHelpers } from "./editing/edit-helpers.js?v=20261121-2";
 import { createObjectSelection } from "./editing/object-selection.js?v=20261121-1";
+import { createObjectCleanup } from "./editing/object-cleanup.js?v=20261121-1";
 import { initToolButtons } from "./ui-tool-buttons.js?v=20261121-1";
 
 // =========================
@@ -283,24 +284,23 @@ const { selectMesh } = objectSelection;
 // 全オブジェクト削除
 // =========================
 
-function clearAllObjects() {
-  detachObject();
+const objectCleanup = createObjectCleanup({
+  detachObject,
 
-  clearVertexHelper();
-  clearEdgeHelper();
-  clearFaceHelper();
+  clearVertexHelper,
+  clearEdgeHelper,
+  clearFaceHelper,
 
-  selectedVertexIndices.clear();
-  selectedEdgeIndices.clear();
-  selectedFaceIndices.clear();
+  selectedVertexIndices,
+  selectedEdgeIndices,
+  selectedFaceIndices,
 
-  const objects = [...getObjects()];
+  getObjects,
+  selectObject,
+  deleteSelectedObject
+});
 
-  objects.forEach((object) => {
-    selectObject(object);
-    deleteSelectedObject();
-  });
-}
+const { clearAllObjects } = objectCleanup;
 
 // =========================
 // 履歴
