@@ -198,6 +198,7 @@ export function createSculptBrush(options = {}) {
     const originalPositions = positions.array.slice();
 
     const sign = brushMode === "lower" ? -1 : 1;
+    const isInflate = brushMode === "inflate";
     let moved = false;
 
     for (let i = 0; i < positions.count; i++) {
@@ -235,10 +236,17 @@ export function createSculptBrush(options = {}) {
           Math.min(1, brushStrength * 20 * weight)
         );
       } else {
-        vertex.addScaledVector(
-          normal,
-          brushStrength * weight * sign
-        );
+        if (isInflate) {
+  vertex.addScaledVector(
+    normal,
+    brushStrength * weight
+  );
+} else {
+  vertex.addScaledVector(
+    normal,
+    brushStrength * weight * sign
+  );
+}
       }
 
       positions.setXYZ(i, vertex.x, vertex.y, vertex.z);
