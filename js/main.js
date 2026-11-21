@@ -56,6 +56,7 @@ import { createSculptUI } from "./sculpt/sculpt-ui.js";
 import { createSculptBrush } from "./sculpt/brush.js";
 import { createSubdivideTool } from "./sculpt/subdivide-tool.js";
 import { createPointerEvents } from "./editing/pointer-events.js";
+import { initToolButtons } from "./ui-tool-buttons.js";
 
 // =========================
 // 初期設定
