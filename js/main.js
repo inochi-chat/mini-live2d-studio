@@ -1241,3 +1241,29 @@ if (sculptLowerButton) {
     updateDebugPanel("へこませブラシを選択");
   });
 }
+
+// =========================
+// ブラシサイズ・強さ
+// =========================
+
+const sculptRadiusInput =
+  document.getElementById("sculptRadius");
+
+const sculptStrengthInput =
+  document.getElementById("sculptStrength");
+
+if (sculptRadiusInput) {
+  sculptBrush.setRadius(sculptRadiusInput.value);
+
+  sculptRadiusInput.addEventListener("input", () => {
+    sculptBrush.setRadius(sculptRadiusInput.value);
+  });
+}
+
+if (sculptStrengthInput) {
+  sculptBrush.setStrength(sculptStrengthInput.value);
+
+  sculptStrengthInput.addEventListener("input", () => {
+    sculptBrush.setStrength(sculptStrengthInput.value);
+  });
+}
