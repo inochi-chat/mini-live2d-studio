@@ -1531,6 +1531,8 @@ $('togglePart').onclick = () => {
   const p = selected();
   if (!p) return;
 
+  saveUndo();
+  
   p.visible = !p.visible;
   updatePartList();
   render();
