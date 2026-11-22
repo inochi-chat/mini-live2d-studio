@@ -1032,6 +1032,7 @@ stage.addEventListener('pointerdown', e => {
     const handle = hitSelectedHandle(current, p, partScreenInfo);
 
     if (current && handle) {
+      saveUndo();
       const info = partScreenInfo(current);
 
       dragAction = {
@@ -1057,6 +1058,7 @@ stage.addEventListener('pointerdown', e => {
     const hit = hitPart(p, parts, partScreenInfo);
 
     if (hit) {
+      saveUndo();
       selectedId = hit.id;
 
       updatePartList();
