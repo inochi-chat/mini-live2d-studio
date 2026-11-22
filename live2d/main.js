@@ -475,6 +475,9 @@ function updatePartList() {
 
     visibility.onclick = e => {
       e.stopPropagation();
+
+      saveUndo();
+      
       p.visible = !p.visible;
       updatePartList();
       render();
