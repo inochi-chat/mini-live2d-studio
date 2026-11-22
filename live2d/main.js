@@ -32,6 +32,18 @@ const ctx = state.ctx;
 const W = state.W;
 const H = state.H;
 
+const partCategory = $('partCategory');
+
+// 分類テンプレートからメニューを作成
+partCategory.replaceChildren();
+
+partTemplates.forEach(template => {
+  const option = document.createElement('option');
+  option.value = template.id;
+  option.textContent = template.name;
+  partCategory.append(option);
+});
+  
 const sourceCanvas = state.sourceCanvas;
 let sourceCtx = sourceCanvas.getContext('2d');
 
