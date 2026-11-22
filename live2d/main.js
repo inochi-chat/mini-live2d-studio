@@ -1,6 +1,6 @@
 
 import { state } from './state.js';
-
+import { createHistoryManager } from './history.js';
 import {
   createPart,
   getSelectedPart
@@ -80,9 +80,6 @@ let startPoint = null;
 let freePoints = [];
 let lastPointer = null;
 let previewPoint = null;
-
-let undoStack = [];
-let redoStack = [];
 
 let animFrame = 0;
 let raf = null;
