@@ -1,6 +1,13 @@
 
 import { state } from './state.js';
 import { createHistoryManager } from './history.js';
+
+import {
+  canvasURL,
+  cloneCanvas,
+  imageFromURL
+} from './canvas-utils.js';
+
 import {
   createPart,
   getSelectedPart
