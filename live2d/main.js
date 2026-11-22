@@ -639,15 +639,14 @@ function updateValues() {
 }
 
 // 画像読み込み
-function loadImageFile(file) {
+async function loadImageFileToStage(file) {
   if (!file) return;
 
   status('画像を読み込み中…');
 
-  const url = URL.createObjectURL(file);
-  const im = new Image();
+  try {
+    const im = await loadImageFile(file);
 
-  im.onload = () => {
     sourceCanvas.width = im.width;
     sourceCanvas.height = im.height;
 
@@ -686,15 +685,11 @@ function loadImageFile(file) {
     render();
 
     status('画像を読み込んだよ。切り出したい部分を選んでね。');
-    URL.revokeObjectURL(url);
-  };
 
-  im.onerror = () => {
+  } catch (error) {
+    console.error(error);
     status('画像を読み込めなかったよ。', 'error');
-    URL.revokeObjectURL(url);
-  };
-
-  im.src = url;
+  }
 }
 
 // 四角切り抜き
