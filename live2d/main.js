@@ -364,6 +364,8 @@ function isChildOf(partId, targetId) {
 
 // パーツ追加
 function addPart(name, canvas, x, y) {
+  saveUndo();
+
   const part = createPart(
     nextId++,
     name,
