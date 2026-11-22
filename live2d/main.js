@@ -1291,10 +1291,10 @@ stage.addEventListener('pointercancel', finishPointer);
 
 /* ファイル読み込み */
 $('imageFile').onchange = e => {
-  loadImageFile(e.target.files[0]);
+  loadImageFileToStage(e.target.files[0]);
   e.target.value = '';
 };
-
+  
 $('psdFile').onchange = e => {
   const f = e.target.files[0];
 
