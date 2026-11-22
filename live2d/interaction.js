@@ -1,3 +1,4 @@
+
 export function stagePoint(stage, e, W, H) {
   const r = stage.getBoundingClientRect();
 
