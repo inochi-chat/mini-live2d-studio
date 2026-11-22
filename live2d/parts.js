@@ -1,3 +1,4 @@
+
 export function createPart(id, name, canvas, x, y) {
   return {
     id,
@@ -18,6 +19,7 @@ export function createPart(id, name, canvas, x, y) {
     parentId: null
   };
 }
+
 export function getSelectedPart(parts, selectedId) {
   return parts.find(p => p.id === selectedId);
 }
