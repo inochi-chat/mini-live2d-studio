@@ -666,8 +666,7 @@ function loadImageFile(file) {
 
     selectedId = null;
     nextId = 1;
-    undoStack = [];
-    redoStack = [];
+    history.clear();
 
     $('hideBase').checked = false;
 
@@ -933,8 +932,7 @@ async function importPSD(file) {
     $('hideBase').checked = true;
     selectedId = added[added.length - 1].id;
 
-    undoStack = [];
-    redoStack = [];
+    history.clear();
 
     viewZoom = 1;
     viewPanX = 0;
