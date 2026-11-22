@@ -333,7 +333,7 @@ function drawSelection(){
 
  if(!p || !p.visible)return;
 
- const h = selectionHandles(p);
+ const h = selectionHandles(p, partScreenInfo);
 
  ctx.save();
  ctx.strokeStyle = '#e8d7ff';
