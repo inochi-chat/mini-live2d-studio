@@ -1251,7 +1251,7 @@ $('parentPart').onchange = e=>{
 
  if(!p)return;
 
- setParent(p,e.target.value);
+ setParentFromModule(p, e.target.value, parts);
 
  syncEditor();
  updatePartList();
