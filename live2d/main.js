@@ -1385,12 +1385,15 @@ $('brushSize').oninput = e => {
   $('brushValue').textContent = brushSize;
 };
 
+
 /* Undo / Redo */
 $('undoEdit').onclick = async () => {
   if (!undoStack.length) return;
 
-  redoStack.push(canvasURL(sourceCanvas));
-  await restoreCanvas(undoStack.pop());
+  redoStack.push(createHistorySnapshot());
+
+  const snapshot = undoStack.pop();
+  await restoreSnapshot(snapshot);
 
   status('ひとつ戻したよ。');
 };
@@ -1398,11 +1401,14 @@ $('undoEdit').onclick = async () => {
 $('redoEdit').onclick = async () => {
   if (!redoStack.length) return;
 
-  undoStack.push(canvasURL(sourceCanvas));
-  await restoreCanvas(redoStack.pop());
+  undoStack.push(createHistorySnapshot());
+
+  const snapshot = redoStack.pop();
+  await restoreSnapshot(snapshot);
 
   status('やり直したよ。');
 };
+
 
 /* 表示設定 */
 $('hideBase').onchange = render;
