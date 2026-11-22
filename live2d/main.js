@@ -5,6 +5,7 @@ import {
   getSelectedPart
 } from './parts.js';
 
+import { partTemplates } from './templates/part-templates.js';
 import { drawPart } from './render.js';
 
 import {
