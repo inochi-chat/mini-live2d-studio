@@ -242,31 +242,60 @@ function render() {
   });
 }
 
+
+function createHistorySnapshot() {
+  return {
+    source: sourceCanvas.width && sourceCanvas.height
+      ? canvasURL(sourceCanvas)
+      : null,
+
+    parts: parts.map(p => ({ ...p })),
+    selectedId,
+    nextId,
+    baseImageData
+  };
+}
+
 function saveUndo() {
-  if (!sourceCanvas.width) return;
+  undoStack.push(createHistorySnapshot());
 
-  undoStack.push(canvasURL(sourceCanvas));
-
-  if (undoStack.length > 12) {
+  if (undoStack.length > 30) {
     undoStack.shift();
   }
 
   redoStack = [];
 }
 
-async function restoreCanvas(url) {
-  const im = await imageFromURL(url);
+async function restoreSnapshot(snapshot) {
+  if (snapshot.source) {
+    const im = await imageFromURL(snapshot.source);
 
-  sourceCanvas.width = im.width;
-  sourceCanvas.height = im.height;
+    sourceCanvas.width = im.width;
+    sourceCanvas.height = im.height;
 
-  sourceCtx = sourceCanvas.getContext('2d');
-  sourceCtx.drawImage(im, 0, 0);
+    sourceCtx = sourceCanvas.getContext('2d');
+    sourceCtx.drawImage(im, 0, 0);
+  } else {
+    sourceCanvas.width = 0;
+    sourceCanvas.height = 0;
+    sourceCtx = sourceCanvas.getContext('2d');
+  }
 
   state.sourceCtx = sourceCtx;
 
+  parts = snapshot.parts.map(p => ({ ...p }));
+  selectedId = snapshot.selectedId;
+  nextId = snapshot.nextId;
+  baseImageData = snapshot.baseImageData;
+
+  images.clear();
+  imageLoading.clear();
+
+  updatePartList();
+  syncEditor();
   render();
 }
+
 
 function calculateFit() {
   if (!sourceCanvas.width || !sourceCanvas.height) {
