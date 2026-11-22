@@ -536,6 +536,8 @@ function duplicateSelectedPart() {
   const p = selected();
   if (!p) return;
 
+  saveUndo();
+
   const copy = {
     ...p,
     id: nextId++,
