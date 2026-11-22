@@ -1455,6 +1455,7 @@ $('addCircle').onclick = () => addShape('circle');
 $('addRect').onclick = () => addShape('rect');
 
 /* パーツ名 */
+let previousPartName = null;
 $('partName').oninput = e => {
   const p = selected();
   if (!p) return;
