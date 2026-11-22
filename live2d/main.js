@@ -791,7 +791,9 @@ function syncEditor(){
  }
 
  $('partName').value = p.name;
+  partCategory.value = p.category || 'other';
  $('motionType').value = p.motion||'none';
+  
  parentSelect.value = p.parentId==null?'':String(p.parentId);
 
  $('posX').value = Math.max(-300,Math.min(900,Math.round(p.x+300)));
@@ -1525,6 +1527,20 @@ $('addRect').onclick = ()=>addShape('rect');
 $('partName').oninput = e=>{
  const p = selected();
 
+/* パーツ分類 */
+partCategory.onchange = e=>{
+ const p = selected();
+
+ if(!p)return;
+
+ p.category = e.target.value;
+
+ updatePartList();
+ render();
+
+ status('パーツの分類を変更したよ。');
+};
+  
  if(p){
   p.name = e.target.value;
 
