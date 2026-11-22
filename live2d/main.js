@@ -392,6 +392,8 @@ function movePart(id, direction) {
   const next = index + direction;
   if (next < 0 || next >= parts.length) return;
 
+  saveUndo();
+  
   [parts[index], parts[next]] =
     [parts[next], parts[index]];
 
