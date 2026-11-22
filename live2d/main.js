@@ -1307,7 +1307,7 @@ $('deletePart').onclick = ()=>{
 
  parts.forEach(child=>{
   if(child.parentId===removedId){
-   const wt = getWorldTransform(child);
+   const wt = getWorldTransformFromModule(child, parts);
 
    child.x = wt.x;
    child.y = wt.y;
