@@ -140,24 +140,6 @@ window.addEventListener('unhandledrejection', e => {
   );
 });
 
-const canvasURL = c => c.toDataURL('image/png');
-
-const cloneCanvas = c => {
-  const n = document.createElement('canvas');
-  n.width = c.width;
-  n.height = c.height;
-  n.getContext('2d').drawImage(c, 0, 0);
-  return n;
-};
-
-const imageFromURL = url => new Promise((resolve, reject) => {
-  const im = new Image();
-  im.onload = () => resolve(im);
-  im.onerror = () => reject(new Error('画像データを開けません'));
-  im.src = url;
-  if (im.complete && im.naturalWidth) resolve(im);
-});
-
 function downloadBlob(blob, name) {
   if (!blob) {
     status('書き出しに失敗したよ。', 'error');
