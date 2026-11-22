@@ -9,6 +9,10 @@ import {
 } from './canvas-utils.js';
 
 import {
+  loadImageFile
+} from './image-loader.js';
+
+import {
   createPart,
   getSelectedPart
 } from './parts.js';
