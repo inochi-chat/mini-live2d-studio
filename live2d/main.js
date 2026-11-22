@@ -1078,7 +1078,7 @@ stage.addEventListener('pointerdown',e=>{
   }
 
   const current = selected();
-  const handle = hitSelectedHandle(current,p);
+  const handle = hitSelectedHandle(current,p,partScreenInfo);
 
   if(current && handle){
    const info = partScreenInfo(current);
