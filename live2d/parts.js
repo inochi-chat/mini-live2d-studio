@@ -2,6 +2,7 @@ export function createPart(id, name, canvas, x, y) {
   return {
     id,
     name,
+    category: 'other',
     data: canvas.toDataURL('image/png'),
     x,
     y,
