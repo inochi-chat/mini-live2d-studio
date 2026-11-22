@@ -253,14 +253,14 @@ function createHistorySnapshot() {
   };
 }
 
+const history = createHistoryManager({
+  createSnapshot: createHistorySnapshot,
+  restoreSnapshot,
+  limit: 30
+});
+
 function saveUndo() {
-  undoStack.push(createHistorySnapshot());
-
-  if (undoStack.length > 30) {
-    undoStack.shift();
-  }
-
-  redoStack = [];
+  history.save();
 }
 
 async function restoreSnapshot(snapshot) {
@@ -1387,24 +1387,12 @@ $('brushSize').oninput = e => {
 
 /* Undo / Redo */
 $('undoEdit').onclick = async () => {
-  if (!undoStack.length) return;
-
-  redoStack.push(createHistorySnapshot());
-
-  const snapshot = undoStack.pop();
-  await restoreSnapshot(snapshot);
-
+  await history.undo();
   status('ひとつ戻したよ。');
 };
 
 $('redoEdit').onclick = async () => {
-  if (!redoStack.length) return;
-
-  undoStack.push(createHistorySnapshot());
-
-  const snapshot = redoStack.pop();
-  await restoreSnapshot(snapshot);
-
+  await history.redo();
   status('やり直したよ。');
 };
 
