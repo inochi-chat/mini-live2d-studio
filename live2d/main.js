@@ -232,6 +232,10 @@ function getWorldTransform(p, seen = new Set()) {
   return getWorldTransformFromModule(p, parts, seen);
 }
 
+function isChildOf(partId, targetId) {
+  return isChildOfFromModule(partId, targetId, parts);
+}
+  
 /* パーツの前後順を変更 */
 const collapsedParts = new Set();
 
