@@ -950,10 +950,11 @@ stage.addEventListener('pointermove',e=>{
     const dx = (p.x-dragAction.start.x)/fit.scale;
     const dy = (p.y-dragAction.start.y)/fit.scale;
 
-    worldToLocalPosition(
+    worldToLocalPositionFromModule(
      part,
-     dragAction.startWorld.x+dx,
-     dragAction.startWorld.y+dy
+     dragAction.startWorld.x + dx,
+     dragAction.startWorld.y + dy,
+     parts
     );
 
     syncEditor();
