@@ -1544,6 +1544,8 @@ $('deletePart').onclick = () => {
   const p = selected();
   if (!p) return;
 
+  saveUndo();
+
   const removedId = p.id;
 
   parts.forEach(child => {
