@@ -1,41 +1,29 @@
 
-import { getWorldTransform } from './hierarchy.js';
-
 // パーツの画面上の位置・大きさ・角度を計算
 export function partScreenInfo(part, options) {
   const {
-    parts,
     fit,
-    W,
-    H,
     viewZoom = 1,
     viewPanX = 0,
     viewPanY = 0,
-    getWorldTransform: getWorldTransformFn
+    artScale = 1,
+    getWorldTransform
   } = options;
 
-  const wt = getWorldTransformFn
-    ? getWorldTransformFn(part)
-    : getWorldTransform(part, parts);
+  const world = getWorldTransform(part);
 
-  const baseX = fit.ox + wt.x * fit.scale;
-  const baseY = fit.oy + wt.y * fit.scale;
-
-  const cx = (baseX - W / 2) * viewZoom
-    + W / 2 + viewPanX;
-
-  const cy = (baseY - H / 2) * viewZoom
-    + H / 2 + viewPanY;
-
-  const scale = fit.scale * viewZoom * wt.scale / 100;
+  const scale = fit.scale * viewZoom * artScale;
+  const cx = fit.ox + world.x * fit.scale;
+  const cy = fit.oy + world.y * fit.scale;
 
   return {
-    cx,
-    cy,
-    w: part.w * scale,
-    h: part.h * scale,
-    angle: wt.rotation * Math.PI / 180,
-    wt
+    cx: (cx - options.W / 2) * viewZoom
+      + options.W / 2 + viewPanX,
+    cy: (cy - options.H / 2) * viewZoom
+      + options.H / 2 + viewPanY,
+    w: part.w * scale * world.scale / 100,
+    h: part.h * scale * world.scale / 100,
+    angle: world.rotation * Math.PI / 180
   };
 }
 
