@@ -1097,7 +1097,7 @@ stage.addEventListener('pointerdown',e=>{
    return;
   }
 
-  const hit = hitPart(p);
+  const hit = hitPart(p, parts, partScreenInfo);
 
   if(hit){
    selectedId = hit.id;
