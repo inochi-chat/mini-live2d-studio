@@ -6,7 +6,11 @@ import {
 } from './parts.js';
 
 import { partTemplates } from './templates/part-templates.js';
-import { drawPart } from './render.js';
+
+import {
+  drawPart,
+  partScreenInfo as partScreenInfoFromModule
+} from './render.js';
 
 import {
   selectionHandles,
@@ -227,6 +231,19 @@ const sourcePoint = p => {
  return sourcePointFromModule(p,fit);
 };
 
+function partScreenInfo(part) {
+  return partScreenInfoFromModule(part, {
+    parts,
+    fit,
+    W,
+    H,
+    viewZoom,
+    viewPanX,
+    viewPanY,
+    getWorldTransform
+  });
+}
+  
 /* 親子階層のワールド座標を計算 */
 function getWorldTransform(p, seen = new Set()) {
   return getWorldTransformFromModule(p, parts, seen);
@@ -551,6 +568,27 @@ function loadImageFile(file){
 }
 
 function cropRect(a,b){
+
+// 新しいパーツを追加
+function addPart(name, canvas, x, y) {
+  const part = createPart(
+    nextId++,
+    name,
+    canvas,
+    x,
+    y
+  );
+
+  parts.push(part);
+  selectedId = part.id;
+
+  updatePartList();
+  syncEditor();
+  render();
+
+  return part;
+}
+  
  if(!sourceCanvas.width)return;
 
  const p1 = sourcePoint(a);
