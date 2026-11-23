@@ -1,6 +1,8 @@
 
 import { state } from './state.js';
 import { createHistoryManager } from './history.js';
+import { initFileEvents } from './file-events.js';
+
 
 import {
   canvasURL,
@@ -1211,103 +1213,11 @@ stage.addEventListener('pointerup', finishPointer);
 stage.addEventListener('pointercancel', finishPointer);
 
 /* ファイル読み込み */
-$('imageFile').addEventListener('change', e => {
-  const file = e.target.files?.[0];
-
-  if (!file) {
-    status('ファイルが選択されていません', 'error');
-    return;
-  }
-
-  status('ファイルを選択したよ：' + file.name);
-  loadImageFileToStage(file);
-
-  e.target.value = '';
+initFileEvents({
+  loadImageFileToStage,
+  importPSD,
+  status
 });
-  
-$('psdFile').onchange = e => {
-  const f = e.target.files[0];
-
-  if (!f) {
-    status('ファイルが選択されていないよ。');
-    return;
-  }
-
-  status('PSDを選択：' + f.name);
-  importPSD(f);
-  e.target.value = '';
-};
-
-/* モード切り替え */
-function setModeButtons() {
-  const map = {
-    rect: 'cropMode',
-    free: 'freeCropMode',
-    erase: 'brushErase',
-    restore: 'brushRestore',
-    normal: 'brushOff'
-  };
-
-  [
-    'cropMode',
-    'freeCropMode',
-    'brushErase',
-    'brushRestore',
-    'brushOff'
-  ].forEach(id => {
-    $(id).classList.toggle('active', map[mode] === id);
-  });
-}
-
-$('cropMode').onclick = () => {
-  mode = mode === 'rect' ? 'normal' : 'rect';
-  freePoints = [];
-  startPoint = null;
-  previewPoint = null;
-  setModeButtons();
-
-  status(
-    mode === 'rect'
-      ? 'ステージ上をドラッグして四角く切り出してね。'
-      : '通常モード'
-  );
-
-  render();
-};
-
-$('freeCropMode').onclick = () => {
-  mode = mode === 'free' ? 'normal' : 'free';
-  freePoints = [];
-  setModeButtons();
-
-  status(
-    mode === 'free'
-      ? '指で輪郭をなぞって、指を離すと切り出すよ。'
-      : '通常モード'
-  );
-
-  render();
-};
-
-$('brushErase').onclick = () => {
-  mode = 'erase';
-  setModeButtons();
-};
-
-$('brushRestore').onclick = () => {
-  mode = 'restore';
-  setModeButtons();
-};
-
-$('brushOff').onclick = () => {
-  mode = 'normal';
-  setModeButtons();
-};
-
-$('brushSize').oninput = e => {
-  brushSize = +e.target.value;
-  $('brushValue').textContent = brushSize;
-};
 
 
 /* Undo / Redo */
