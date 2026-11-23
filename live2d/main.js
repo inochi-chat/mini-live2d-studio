@@ -1626,9 +1626,8 @@ syncEditor();
 render();
 setModeButtons();
 
-status(
-  '準備完了。画像またはPSDを読み込んでね。通常モードで指1本移動・2本指ズームができるよ。'
+status('準備完了。画像またはPSDを読み込んでね。通常モードで指1本移動・2本指ズームができるよ。');
+
 status('JavaScriptは動いているよ！');
-);
 
 })();
