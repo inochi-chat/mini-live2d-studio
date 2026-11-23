@@ -37,11 +37,28 @@ export async function separateCharacter(sourceCanvas, onProgress = () => {}) {
       throw new Error('画像の解析結果を取得できなかったよ。');
     }
 
-    const canvas = result[0].toCanvas();
+    const output = result[0];
 
-    onProgress('解析が完了したよ！');
+let canvas;
 
-    return canvas;
+if (typeof output.toCanvas === 'function') {
+  canvas = output.toCanvas();
+} else {
+  const image = output instanceof Blob
+    ? await createImageBitmap(output)
+    : output;
+
+  canvas = document.createElement('canvas');
+  canvas.width = image.width;
+  canvas.height = image.height;
+
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(image, 0, 0);
+}
+
+onProgress('解析が完了したよ！');
+
+return canvas;
 
   } catch (error) {
     console.error('自動パーツ分けエラー:', error);
