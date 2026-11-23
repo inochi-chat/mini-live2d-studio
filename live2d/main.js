@@ -369,23 +369,20 @@ function updateZoomLabel() {
 
 
 function setViewZoom(value) {
-  viewZoom = clampZoom(value);
-  updateZoomLabel();
+  view.setViewZoom(value);
   render();
 }
 
 
 function resetViewOnly() {
-  viewZoom = 1;
-  viewPanX = 0;
-  viewPanY = 0;
-  updateZoomLabel();
+  view.resetViewOnly();
   render();
 }
 
 
 function fitView() {
-  resetViewOnly();
+  view.fitView();
+  render();
 }
 
 
