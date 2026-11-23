@@ -1412,6 +1412,14 @@ function deleteSelectedPart() {
   status('パーツを削除したよ。子パーツはその場に残したよ。');
 }
 
+/* パーツ追加・複製・削除イベント */
+initPartEvents({
+  addShape,
+  duplicateSelectedPart,
+  deleteSelectedPart
+});
+
+  
 /* JSON保存 */
 function saveProject() {
   try {
