@@ -1412,7 +1412,7 @@ $('deletePart').onclick = () => {
 };
 
 /* JSON保存 */
-$('saveProject').onclick = () => {
+function saveProject() {
   try {
     const data = {
       version: 8,
@@ -1432,13 +1432,14 @@ $('saveProject').onclick = () => {
 
     status('プロジェクトを保存したよ。');
 
-  } catch (e) {
+    } catch (e) {
     status('保存できなかったよ：' + e.message, 'error');
   }
+}
 };
 
 /* JSON読み込み */
-$('loadProject').onchange = async e => {
+async function loadProject(e) {
   const f = e.target.files[0];
   if (!f) return;
 
@@ -1510,8 +1511,8 @@ $('loadProject').onchange = async e => {
     );
   }
 
-  e.target.value = '';
-};
+    e.target.value = '';
+}
 
 /* PNG書き出し */
 $('downloadImage').onclick = () => {
@@ -1527,6 +1528,11 @@ $('downloadImage').onclick = () => {
     downloadBlob(b, 'mini-live2d.png');
   });
 };
+
+initProjectIO({
+  saveProject,
+  loadProject
+});
 
 /* 初期化 */
 calculateFit();
