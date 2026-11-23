@@ -449,7 +449,7 @@ async function runAutoSeparation() {
 
   } catch (error) {
     console.error(error);
-    status('自動パーツ分けに失敗したよ：' + error.message);
+    status('エラー詳細：' + (error.stack || error.message));
 
   } finally {
     button.disabled = false;
