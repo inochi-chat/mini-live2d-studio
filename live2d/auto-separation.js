@@ -30,17 +30,16 @@ export async function separateCharacter(sourceCanvas, onProgress = () => {}) {
 
     onProgress('イラストを解析しています…');
 
-const imageData = await new Promise(resolve => {
-  sourceCanvas.toBlob(blob => resolve(blob), 'image/png');
-});
+    const imageData = await new Promise((resolve, reject) => {
+      sourceCanvas.toBlob(blob => {
+        if (blob) resolve(blob);
+        else reject(new Error('画像データを作成できなかったよ。'));
+      }, 'image/png');
+    });
 
-if (!imageData) {
-  throw new Error('画像データを作成できなかったよ。');
-}
-
-const result = await segmenter(
-  await createImageBitmap(imageData)
-);
+    const result = await segmenter(
+      await createImageBitmap(imageData)
+    );
 
     if (!result || !result[0]) {
       throw new Error('画像の解析結果を取得できなかったよ。');
@@ -48,26 +47,42 @@ const result = await segmenter(
 
     const output = result[0];
 
-let canvas;
+    let source;
 
-if (typeof output.toCanvas === 'function') {
-  canvas = output.toCanvas();
-} else {
-  const image = output instanceof Blob
-    ? await createImageBitmap(output)
-    : output;
+    if (typeof output.toCanvas === 'function') {
+      source = output.toCanvas();
+    } else if (output instanceof Blob) {
+      source = await createImageBitmap(output);
+    } else {
+      source = output;
+    }
 
-  canvas = document.createElement('canvas');
-  canvas.width = image.width;
-  canvas.height = image.height;
+    const canvas = document.createElement('canvas');
+    canvas.width = source.width;
+    canvas.height = source.height;
 
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(image, 0, 0);
-}
+    const ctx = canvas.getContext('2d');
 
-onProgress('解析が完了したよ！');
+    if (source instanceof ImageData) {
+      ctx.putImageData(source, 0, 0);
+    } else if (source.data && !('getContext' in source)) {
+      const image = new ImageData(
+        new Uint8ClampedArray(source.data),
+        source.width,
+        source.height
+      );
+      ctx.putImageData(image, 0, 0);
+    } else {
+      ctx.drawImage(source, 0, 0);
+    }
 
-return canvas;
+    if (typeof canvas.toDataURL !== 'function') {
+      throw new Error('通常のCanvasへの変換に失敗したよ。');
+    }
+
+    onProgress('解析が完了したよ！');
+
+    return canvas;
 
   } catch (error) {
     console.error('自動パーツ分けエラー:', error);
