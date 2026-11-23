@@ -26,6 +26,11 @@ import {
 } from './crop.js';
 
 import {
+  eraseCanvas,
+  restoreCanvas
+} from './eraser.js';
+
+import {
   createPart,
   getSelectedPart
 } from './parts.js';
