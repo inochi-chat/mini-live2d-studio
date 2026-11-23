@@ -727,14 +727,12 @@ function cropRect(a, b) {
 
   if (r - x < 2 || bt - y < 2) return;
 
-  const c = document.createElement('canvas');
-  c.width = r - x;
-  c.height = bt - y;
-
-  c.getContext('2d').drawImage(
+  const c = cropRectCanvas(
     sourceCanvas,
-    x, y, c.width, c.height,
-    0, 0, c.width, c.height
+    x,
+    y,
+    r - x,
+    bt - y
   );
 
   addPart(
