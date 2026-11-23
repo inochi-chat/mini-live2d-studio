@@ -7,6 +7,7 @@ import { initModeEvents } from './mode-events.js';
 import { initPartEvents } from './part-events.js';
 import { initEditorEvents } from './editor-events.js';
 import { initViewEvents } from './view-events.js';
+import { initStageEvents } from './stage-events.js';
 
 import {
   canvasURL,
@@ -113,7 +114,6 @@ let brushSize = 24;
 let drawing = false;
 let startPoint = null;
 let freePoints = [];
-let lastPointer = null;
 let previewPoint = null;
 
 let animFrame = 0;
@@ -126,10 +126,6 @@ let viewZoom = 1;
 let viewPanX = 0;
 let viewPanY = 0;
 let artScale = 1;
-
-let viewPointers = new Map();
-let gesture = null;
-let dragAction = null;
 
 const collapsedParts = new Set();
 
@@ -915,306 +911,81 @@ function brushAt(p) {
   render();
 }
 
+
 /* ステージ操作 */
-stage.addEventListener('pointerdown', e => {
-  const p = stagePoint(e);
+initStageEvents({
+  stage,
 
-  lastPointer = e;
-  viewPointers.set(e.pointerId, p);
+  getMode: () => mode,
+  getParts: () => parts,
+  getSelected: selected,
+  setSelectedId: id => {
+    selectedId = id;
+  },
 
-  stage.setPointerCapture(e.pointerId);
+  partScreenInfo,
+  hitSelectedHandle,
+  hitPart,
 
-  if (mode === 'normal') {
-    if (viewPointers.size >= 2) {
-      dragAction = null;
+  saveUndo,
+  updatePartList,
+  syncEditor,
+  render,
 
-      const pts = [...viewPointers.values()];
+  stagePoint,
 
-      gesture = {
-        distance: Math.hypot(
-          pts[1].x - pts[0].x,
-          pts[1].y - pts[0].y
-        ),
-        zoom: viewZoom,
-        mid: {
-          x: (pts[0].x + pts[1].x) / 2,
-          y: (pts[0].y + pts[1].y) / 2
-        },
-        panX: viewPanX,
-        panY: viewPanY
-      };
+  getFit: () => fit,
 
-      return;
-    }
+  getViewZoom: () => viewZoom,
+  setViewZoom: value => {
+    viewZoom = clampZoom(value);
+    updateZoomLabel();
+  },
 
-    const current = selected();
-    const handle = hitSelectedHandle(current, p, partScreenInfo);
+  getViewPan: () => ({
+    x: viewPanX,
+    y: viewPanY
+  }),
 
-    if (current && handle) {
-      saveUndo();
-      const info = partScreenInfo(current);
+  setViewPan: (x, y) => {
+    viewPanX = x;
+    viewPanY = y;
+  },
 
-      dragAction = {
-        type: handle,
-        id: current.id,
-        start: p,
-        center: { x: info.cx, y: info.cy },
-        startDistance: Math.max(
-          1,
-          Math.hypot(p.x - info.cx, p.y - info.cy)
-        ),
-        startAngle: Math.atan2(
-          p.y - info.cy,
-          p.x - info.cx
-        ),
-        startScale: current.scale,
-        startRotation: current.rotation
-      };
+  clampZoom,
+  clampPan,
+  getPinchRatio,
 
-      return;
-    }
+  worldToLocalPosition: (part, x, y) => {
+    worldToLocalPositionFromModule(part, x, y, parts);
+  },
 
-    const hit = hitPart(p, parts, partScreenInfo);
+  cropRect,
+  cropFree,
+  brushAt,
 
-    if (hit) {
-      saveUndo();
-      selectedId = hit.id;
+  getDrawing: () => drawing,
+  setDrawing: value => {
+    drawing = value;
+  },
 
-      updatePartList();
-      syncEditor();
+  getStartPoint: () => startPoint,
+  setStartPoint: value => {
+    startPoint = value;
+  },
 
-      const info = partScreenInfo(hit);
+  setPreviewPoint: value => {
+    previewPoint = value;
+  },
 
-      dragAction = {
-        type: 'move',
-        id: hit.id,
-        start: p,
-        startWorld: {
-          x: info.wt.x,
-          y: info.wt.y
-        }
-      };
+  getFreePoints: () => freePoints,
+  setFreePoints: value => {
+    freePoints = value;
+  },
 
-      render();
-      return;
-    }
-
-    dragAction = {
-      type: 'pan',
-      last: p
-    };
-
-    gesture = { last: p };
-    return;
-  }
-
-  if (viewPointers.size >= 2) return;
-
-  if (
-    !sourceCanvas.width &&
-    ['rect', 'free', 'erase', 'restore'].includes(mode)
-  ) {
-    return;
-  }
-
-  if (mode === 'rect') {
-    startPoint = p;
-    previewPoint = p;
-    render();
-    return;
-  }
-
-  if (mode === 'free') {
-    freePoints = [p];
-    drawing = true;
-    render();
-    return;
-  }
-
-  if (mode === 'erase' || mode === 'restore') {
-    saveUndo();
-    drawing = true;
-    brushAt(p);
-  }
+  getSourceCanvas: () => sourceCanvas
 });
 
-stage.addEventListener('pointermove', e => {
-  if (viewPointers.has(e.pointerId)) {
-    viewPointers.set(e.pointerId, stagePoint(e));
-  }
-
-  if (mode === 'normal' && viewPointers.size) {
-    const pts = [...viewPointers.values()];
-
-    if (pts.length >= 2) {
-      dragAction = null;
-
-      const mid = {
-        x: (pts[0].x + pts[1].x) / 2,
-        y: (pts[0].y + pts[1].y) / 2
-      };
-
-      if (!gesture || !gesture.distance) {
-        gesture = {
-          distance: Math.hypot(
-            pts[1].x - pts[0].x,
-            pts[1].y - pts[0].y
-          ),
-          zoom: viewZoom,
-          mid,
-          panX: viewPanX,
-          panY: viewPanY
-        };
-      }
-
-      const dist = Math.max(
-        1,
-        Math.hypot(
-          pts[1].x - pts[0].x,
-          pts[1].y - pts[0].y
-        )
-      );
-
-      const ratio = getPinchRatio(dist, gesture.distance);
-
-      viewZoom = clampZoom(gesture.zoom * ratio);
-
-      viewPanX = clampPan(
-        gesture.panX + mid.x - gesture.mid.x
-      );
-
-      viewPanY = clampPan(
-        gesture.panY + mid.y - gesture.mid.y
-      );
-
-      updateZoomLabel();
-      render();
-
-    } else if (dragAction) {
-      const p = pts[0];
-      const part = parts.find(q => q.id === dragAction.id);
-
-      if (dragAction.type === 'pan') {
-        viewPanX = clampPan(
-          viewPanX + p.x - dragAction.last.x
-        );
-
-        viewPanY = clampPan(
-          viewPanY + p.y - dragAction.last.y
-        );
-
-        dragAction.last = p;
-        render();
-
-      } else if (part && dragAction.type === 'move') {
-        const dx = (p.x - dragAction.start.x) / fit.scale;
-        const dy = (p.y - dragAction.start.y) / fit.scale;
-
-        worldToLocalPositionFromModule(
-          part,
-          dragAction.startWorld.x + dx,
-          dragAction.startWorld.y + dy,
-          parts
-        );
-
-        syncEditor();
-        render();
-
-      } else if (part && dragAction.type === 'scale') {
-        const distance = Math.max(
-          1,
-          Math.hypot(
-            p.x - dragAction.center.x,
-            p.y - dragAction.center.y
-          )
-        );
-
-        part.scale = Math.max(
-          5,
-          Math.min(
-            800,
-            dragAction.startScale *
-            distance / dragAction.startDistance
-          )
-        );
-
-        syncEditor();
-        render();
-
-      } else if (part && dragAction.type === 'rotate') {
-        const angle = Math.atan2(
-          p.y - dragAction.center.y,
-          p.x - dragAction.center.x
-        );
-
-        let delta =
-          (angle - dragAction.startAngle) * 180 / Math.PI;
-
-        if (delta > 180) delta -= 360;
-        if (delta < -180) delta += 360;
-
-        part.rotation = Math.max(
-          -360,
-          Math.min(360, dragAction.startRotation + delta)
-        );
-
-        syncEditor();
-        render();
-      }
-    }
-
-    return;
-  }
-
-  if (!drawing && mode !== 'rect') return;
-
-  lastPointer = e;
-
-  const p = stagePoint(e);
-
-  if (mode === 'free') {
-    freePoints.push(p);
-    render();
-
-  } else if (mode === 'erase' || mode === 'restore') {
-    brushAt(p);
-
-  } else if (mode === 'rect') {
-    previewPoint = p;
-    render();
-  }
-});
-
-function finishPointer(e) {
-  viewPointers.delete(e.pointerId);
-
-  if (mode === 'normal') {
-    dragAction = null;
-    gesture = null;
-    return;
-  }
-
-  const p = stagePoint(e);
-
-  if (mode === 'rect' && startPoint) {
-    cropRect(startPoint, p);
-    startPoint = null;
-    previewPoint = null;
-  }
-
-  if (mode === 'free' && drawing) {
-    cropFree(freePoints);
-    freePoints = [];
-  }
-
-  drawing = false;
-  lastPointer = null;
-
-  render();
-}
-
-stage.addEventListener('pointerup', finishPointer);
-stage.addEventListener('pointercancel', finishPointer);
 
 /* ファイル読み込み */
 initFileEvents({
