@@ -17,6 +17,10 @@ import {
 } from './psd-loader.js';
 
 import {
+  createPartsFromPSD
+} from './psd-parts.js';
+
+import {
   createPart,
   getSelectedPart
 } from './parts.js';
