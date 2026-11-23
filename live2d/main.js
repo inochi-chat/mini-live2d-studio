@@ -21,6 +21,11 @@ import {
 } from './psd-parts.js';
 
 import {
+  cropRectCanvas,
+  cropFreeCanvas
+} from './crop.js';
+
+import {
   createPart,
   getSelectedPart
 } from './parts.js';
