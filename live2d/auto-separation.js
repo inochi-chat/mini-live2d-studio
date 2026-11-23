@@ -30,8 +30,17 @@ export async function separateCharacter(sourceCanvas, onProgress = () => {}) {
 
     onProgress('イラストを解析しています…');
 
-    const imageData = sourceCanvas.toDataURL('image/png');
-    const result = await segmenter(imageData);
+const imageData = await new Promise(resolve => {
+  sourceCanvas.toBlob(blob => resolve(blob), 'image/png');
+});
+
+if (!imageData) {
+  throw new Error('画像データを作成できなかったよ。');
+}
+
+const result = await segmenter(
+  await createImageBitmap(imageData)
+);
 
     if (!result || !result[0]) {
       throw new Error('画像の解析結果を取得できなかったよ。');
