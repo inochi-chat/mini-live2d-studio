@@ -1211,10 +1211,19 @@ stage.addEventListener('pointerup', finishPointer);
 stage.addEventListener('pointercancel', finishPointer);
 
 /* ファイル読み込み */
-$('imageFile').onchange = e => {
-  loadImageFileToStage(e.target.files[0]);
+$('imageFile').addEventListener('change', e => {
+  const file = e.target.files?.[0];
+
+  if (!file) {
+    status('ファイルが選択されていません', 'error');
+    return;
+  }
+
+  status('ファイルを選択したよ：' + file.name);
+  loadImageFileToStage(file);
+
   e.target.value = '';
-};
+});
   
 $('psdFile').onchange = e => {
   const f = e.target.files[0];
