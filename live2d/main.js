@@ -4,6 +4,7 @@ import { createHistoryManager } from './history.js';
 import { initFileEvents } from './file-events.js';
 import { initProjectIO } from './project-io.js';
 import { initModeEvents } from './mode-events.js';
+import { initPartEvents } from './part-events.js';
 
 import {
   canvasURL,
