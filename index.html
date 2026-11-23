@@ -157,6 +157,28 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/ag-psd@31.0.3/dist/bundle.js"></script>
+<script>
+window.addEventListener('error', function(e) {
+  const box = document.getElementById('status');
+  if (box) {
+    box.innerHTML =
+      '<strong>JavaScript読み込みエラー</strong><div>' +
+      (e.message || '不明なエラー') +
+      '</div>';
+  }
+});
+
+window.addEventListener('unhandledrejection', function(e) {
+  const box = document.getElementById('status');
+  if (box) {
+    box.innerHTML =
+      '<strong>モジュール読み込みエラー</strong><div>' +
+      (e.reason?.message || String(e.reason)) +
+      '</div>';
+  }
+});
+</script>
+
 <script type="module" src="./live2d/main.js"></script>
  
 </body>
