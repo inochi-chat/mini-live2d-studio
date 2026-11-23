@@ -823,18 +823,14 @@ function brushAt(p) {
   const q = sourcePoint(p);
   const r = brushSize / 2 / fit.scale;
 
+  console.log('BRUSH:', mode, q, 'radius:', r);
+
   if (!Number.isFinite(r)) return;
 
   if (mode === 'erase') {
     eraseCanvas(sourceCtx, q.x, q.y, r);
   } else {
-    restoreCanvas(
-      sourceCtx,
-      originalCanvas,
-      q.x,
-      q.y,
-      r
-    );
+    restoreCanvas(sourceCtx, originalCanvas, q.x, q.y, r);
   }
 
   render();
