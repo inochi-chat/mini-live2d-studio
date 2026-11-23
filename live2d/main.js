@@ -18,17 +18,9 @@ import {
   imageFromURL
 } from './canvas-utils.js';
 
-import {
-  loadImageFile
-} from './image-loader.js';
-
-import {
-  readPSDFile
-} from './psd-loader.js';
-
-import {
-  createPartsFromPSD
-} from './psd-parts.js';
+import { loadImageFile } from './image-loader.js';
+import { readPSDFile } from './psd-loader.js';
+import { createPartsFromPSD } from './psd-parts.js';
 
 import {
   cropRectCanvas,
@@ -71,6 +63,7 @@ import {
   getPinchRatio,
   clampPan
 } from './interaction.js';
+
 
 (() => {
 'use strict';
@@ -132,9 +125,9 @@ let artScale = 1;
 
 const collapsedParts = new Set();
 
-// パーツ画像キャッシュ
 const images = new Map();
 const imageLoading = new Map();
+
 
 function status(message, type = 'info') {
   const box = $('status');
@@ -151,6 +144,7 @@ function status(message, type = 'info') {
   box.append(title, line);
 }
 
+
 window.addEventListener('error', e => {
   status(
     (e.message || 'JavaScriptエラー') +
@@ -166,6 +160,7 @@ window.addEventListener('unhandledrejection', e => {
     'error'
   );
 });
+
 
 function downloadBlob(blob, name) {
   if (!blob) {
@@ -185,6 +180,7 @@ function downloadBlob(blob, name) {
 
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
+
 
 // パーツ画像を必要に応じて読み込む
 function preparePartImages() {
@@ -225,6 +221,7 @@ function preparePartImages() {
   }
 }
 
+
 // 描画処理
 function render() {
   calculateFit();
@@ -236,7 +233,15 @@ function render() {
     imageMap.set(id, entry.image);
   });
 
-  console.log('animation:', $('animation').checked, 'motion:', parts.map(p => p.motion), 'sway:', parts.map(p => p.sway));
+  console.log(
+    'animation:',
+    $('animation').checked,
+    'motion:',
+    parts.map(p => p.motion),
+    'sway:',
+    parts.map(p => p.sway)
+  );
+
   renderStage(ctx, {
     W,
     H,
@@ -270,9 +275,11 @@ function createHistorySnapshot() {
   };
 }
 
+
 function saveUndo() {
   history.save();
 }
+
 
 async function restoreSnapshot(snapshot) {
   if (snapshot.source) {
@@ -304,7 +311,8 @@ async function restoreSnapshot(snapshot) {
   render();
 }
 
-  const history = createHistoryManager({
+
+const history = createHistoryManager({
   createSnapshot: createHistorySnapshot,
   restoreSnapshot,
   limit: 30
@@ -331,6 +339,7 @@ function calculateFit() {
   };
 }
 
+
 function updateZoomLabel() {
   $('zoomLabel').textContent =
     '表示 ' + Math.round(viewZoom * 100) + '%';
@@ -339,11 +348,13 @@ function updateZoomLabel() {
     Math.round(artScale * 100);
 }
 
+
 function setViewZoom(value) {
   viewZoom = clampZoom(value);
   updateZoomLabel();
   render();
 }
+
 
 function resetViewOnly() {
   viewZoom = 1;
@@ -353,15 +364,18 @@ function resetViewOnly() {
   render();
 }
 
+
 function fitView() {
   resetViewOnly();
 }
+
 
 const stagePoint = e =>
   stagePointFromModule(stage, e, W, H);
 
 const sourcePoint = p =>
   sourcePointFromModule(p, fit);
+
 
 function partScreenInfo(part) {
   return partScreenInfoFromModule(part, {
@@ -371,31 +385,39 @@ function partScreenInfo(part) {
   });
 }
 
+
 function getWorldTransform(p, seen = new Set()) {
   return getWorldTransformFromModule(p, parts, seen);
 }
 
+
 function isChildOf(partId, targetId) {
   return isChildOfFromModule(partId, targetId, parts);
 }
+
 
 // パーツ追加
 function addPart(name, canvas, x, y) {
   return partActions.addPart(name, canvas, x, y);
 }
 
+
 // 前後順
 function movePart(id, direction) {
   partActions.movePart(id, direction);
 }
 
+
 // パーツ一覧
 const { updatePartList } = createPartList({
   parts: () => parts,
+
   getSelectedId: () => selectedId,
+
   setSelectedId: id => {
     selectedId = id;
   },
+
   collapsedParts,
   saveUndo,
   syncEditor,
@@ -403,37 +425,150 @@ const { updatePartList } = createPartList({
   movePart
 });
 
+
 const partActions = createPartActions({
   getParts: () => parts,
+
   setParts: value => {
     parts = value;
   },
+
   getSelectedId: () => selectedId,
+
   setSelectedId: id => {
     selectedId = id;
   },
+
   getNextId: () => nextId,
+
   setNextId: id => {
     nextId = id;
   },
+
   createPart,
   saveUndo,
   updatePartList,
   syncEditor,
   render,
   status,
+
   getWorldTransform: p => getWorldTransform(p),
+
   getImages: () => images,
   getImageLoading: () => imageLoading
 });
-  
+
+
 function selected() {
   return getSelectedPart(parts, selectedId);
 }
 
+
+// ★ エディターと選択中パーツの同期
+function syncEditor() {
+  const p = selected();
+
+  [
+    'partName',
+    'partCategory',
+    'posX',
+    'posY',
+    'scale',
+    'rotation',
+    'sway',
+    'speed',
+    'motionType',
+    'parentPart',
+    'togglePart',
+    'duplicatePart',
+    'deletePart'
+  ].forEach(id => {
+    $(id).disabled = !p;
+  });
+
+  const parentSelect = $('parentPart');
+  parentSelect.replaceChildren();
+
+  const none = document.createElement('option');
+  none.value = '';
+  none.textContent = 'なし（親パーツ）';
+  parentSelect.append(none);
+
+  parts.forEach(q => {
+    if (!p || q.id === p.id || isChildOf(q.id, p.id)) {
+      return;
+    }
+
+    const option = document.createElement('option');
+    option.value = q.id;
+    option.textContent = q.name || ('パーツ ' + q.id);
+
+    parentSelect.append(option);
+  });
+
+  if (!p) {
+    $('partName').value = '';
+    partCategory.value = 'other';
+    parentSelect.value = '';
+
+    updateValues();
+    return;
+  }
+
+  $('partName').value = p.name;
+  partCategory.value = p.category || 'other';
+  $('motionType').value = p.motion || 'none';
+
+  parentSelect.value =
+    p.parentId == null ? '' : String(p.parentId);
+
+  $('posX').value =
+    Math.max(-300, Math.min(900, Math.round(p.x + 300)));
+
+  $('posY').value =
+    Math.max(-300, Math.min(900, Math.round(p.y + 300)));
+
+  $('scale').value =
+    Math.max(5, Math.min(800, p.scale));
+
+  $('rotation').value =
+    Math.max(-180, Math.min(180, p.rotation));
+
+  $('sway').value = p.sway;
+  $('speed').value = p.speed;
+
+  updateValues();
+}
+
+
+// ★ 数値表示の更新
+function updateValues() {
+  [
+    'posX',
+    'posY',
+    'scale',
+    'rotation',
+    'sway',
+    'speed'
+  ].forEach(id => {
+    const el = $(id);
+    const out = $(id + 'Value');
+
+    if (out) {
+      out.textContent =
+        id === 'posX' || id === 'posY'
+          ? Number(el.value) - 300
+          : el.value;
+    }
+  });
+}
+
+
+// パーツ複製
 function duplicateSelectedPart() {
   partActions.duplicateSelectedPart();
 }
+
 
 // 画像読み込み
 async function loadImageFileToStage(file) {
@@ -489,6 +624,7 @@ async function loadImageFileToStage(file) {
   }
 }
 
+
 // 四角切り抜き
 function cropRect(a, b) {
   if (!sourceCanvas.width) return;
@@ -529,6 +665,7 @@ function cropRect(a, b) {
   status('パーツを追加したよ。');
 }
 
+
 // 自由切り抜き
 function cropFree(points) {
   if (points.length < 3 || !sourceCanvas.width) return;
@@ -549,6 +686,7 @@ function cropFree(points) {
 
   status('自由切り抜きパーツを追加したよ。');
 }
+
 
 // 円・四角パーツ
 function addShape(type) {
@@ -576,6 +714,7 @@ function addShape(type) {
   );
 }
 
+
 // PSD読み込み
 async function importPSD(file) {
   if (!file) return;
@@ -600,6 +739,7 @@ async function importPSD(file) {
 
     sourceCanvas.width = psd.width;
     sourceCanvas.height = psd.height;
+
     sourceCtx = sourceCanvas.getContext('2d');
 
     if (psd.canvas) {
@@ -616,18 +756,18 @@ async function importPSD(file) {
     state.originalCtx = originalCtx;
 
     parts = [];
-images.clear();
-imageLoading.clear();
+    images.clear();
+    imageLoading.clear();
 
-selectedId = null;
-nextId = 1;
+    selectedId = null;
+    nextId = 1;
 
-const result = createPartsFromPSD(psd, nextId);
+    const result = createPartsFromPSD(psd, nextId);
 
-parts = result.parts;
-nextId = result.nextId;
+    parts = result.parts;
+    nextId = result.nextId;
 
-const added = parts;
+    const added = parts;
 
     if (!added.length) {
       throw new Error(
@@ -657,12 +797,14 @@ const added = parts;
 
   } catch (err) {
     console.error(err);
+
     status(
       'PSDの読み込みに失敗：' + (err?.message || String(err)),
       'error'
     );
   }
 }
+
 
 // 消しゴム・復元
 function brushAt(p) {
@@ -696,6 +838,7 @@ initStageEvents({
   getMode: () => mode,
   getParts: () => parts,
   getSelected: selected,
+
   setSelectedId: id => {
     selectedId = id;
   },
@@ -714,6 +857,7 @@ initStageEvents({
   getFit: () => fit,
 
   getViewZoom: () => viewZoom,
+
   setViewZoom: value => {
     viewZoom = clampZoom(value);
     updateZoomLabel();
@@ -742,11 +886,13 @@ initStageEvents({
   brushAt,
 
   getDrawing: () => drawing,
+
   setDrawing: value => {
     drawing = value;
   },
 
   getStartPoint: () => startPoint,
+
   setStartPoint: value => {
     startPoint = value;
   },
@@ -756,6 +902,7 @@ initStageEvents({
   },
 
   getFreePoints: () => freePoints,
+
   setFreePoints: value => {
     freePoints = value;
   },
@@ -771,6 +918,7 @@ initFileEvents({
   status
 });
 
+
 /* モード切り替え */
 const modeButtons = {
   normal: $('brushOff'),
@@ -780,11 +928,13 @@ const modeButtons = {
   restore: $('brushRestore')
 };
 
+
 function setModeButtons() {
   Object.entries(modeButtons).forEach(([key, button]) => {
     button.classList.toggle('active', mode === key);
   });
 }
+
 
 function changeMode(nextMode) {
   mode = nextMode;
@@ -798,8 +948,10 @@ function changeMode(nextMode) {
   render();
 }
 
+
 initModeEvents({
   changeMode,
+
   setBrushSize: value => {
     brushSize = value;
   }
@@ -807,7 +959,7 @@ initModeEvents({
 
 setModeButtons();
 
-  
+
 /* Undo / Redo */
 $('undoEdit').onclick = async () => {
   await history.undo();
@@ -827,9 +979,11 @@ initViewEvents({
   getViewZoom: () => viewZoom,
   fitView,
   resetViewOnly,
+
   setArtScale: value => {
     artScale = value;
   },
+
   updateZoomLabel
 });
 
@@ -859,6 +1013,7 @@ function deleteSelectedPart() {
   partActions.deleteSelectedPart();
 }
 
+
 /* パーツ追加・複製・削除イベント */
 initPartEvents({
   addShape,
@@ -866,7 +1021,7 @@ initPartEvents({
   deleteSelectedPart
 });
 
-  
+
 /* JSON保存 */
 function saveProject() {
   try {
@@ -888,10 +1043,11 @@ function saveProject() {
 
     status('プロジェクトを保存したよ。');
 
-    } catch (e) {
+  } catch (e) {
     status('保存できなかったよ：' + e.message, 'error');
   }
 }
+
 
 /* JSON読み込み */
 async function loadProject(e) {
@@ -966,8 +1122,9 @@ async function loadProject(e) {
     );
   }
 
-    e.target.value = '';
+  e.target.value = '';
 }
+
 
 /* PNG書き出し */
 $('downloadImage').onclick = () => {
@@ -984,10 +1141,12 @@ $('downloadImage').onclick = () => {
   });
 };
 
+
 initProjectIO({
   saveProject,
   loadProject
 });
+
 
 /* 初期化 */
 calculateFit();
@@ -996,6 +1155,7 @@ updatePartList();
 syncEditor();
 render();
 setModeButtons();
+
 
 /* アニメーション */
 const animationController = createAnimation({
@@ -1008,6 +1168,7 @@ const animationController = createAnimation({
   }
 });
 
+
 $('animation').addEventListener('change', () => {
   if ($('animation').checked) {
     animationController.start();
@@ -1017,9 +1178,11 @@ $('animation').addEventListener('change', () => {
   }
 });
 
+
 if ($('animation').checked) {
   animationController.start();
 }
+
 
 status('準備完了。画像またはPSDを読み込んでね。通常モードで指1本移動・2本指ズームができるよ。');
 
