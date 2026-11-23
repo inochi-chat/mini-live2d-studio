@@ -1082,11 +1082,7 @@ async function loadProject(e) {
     artScale = data.artScale || 1;
     $('artScale').value = Math.round(artScale * 100);
 
-    viewZoom = 1;
-    viewPanX = 0;
-    viewPanY = 0;
-
-    updateZoomLabel();
+    view.resetViewOnly();
 
     selectedId = parts.length
       ? parts[parts.length - 1].id
