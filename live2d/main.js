@@ -967,6 +967,10 @@ initFileEvents({
   status
 });
 
+document
+  .getElementById('autoSeparate')
+  .addEventListener('click', runAutoSeparation);
+  
 
 /* モード切り替え */
 const modeButtons = {
