@@ -750,7 +750,8 @@ function cropRect(a, b) {
   status('パーツを追加したよ。');
 }
 
-// 自由切り抜きfunction cropFree(points) {
+// 自由切り抜き
+function cropFree(points) {
   if (points.length < 3 || !sourceCanvas.width) return;
 
   const pts = points.map(sourcePoint);
