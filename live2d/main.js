@@ -267,8 +267,33 @@ function render() {
 view = createView({
   W,
   H,
+
   getSourceCanvas: () => sourceCanvas,
-  render,
+
+  getViewZoom: () => viewZoom,
+  getViewPan: () => ({
+    x: viewPanX,
+    y: viewPanY
+  }),
+  getArtScale: () => artScale,
+
+  setViewZoomState: value => {
+    viewZoom = value;
+  },
+
+  setViewPanState: (x, y) => {
+    viewPanX = x;
+    viewPanY = y;
+  },
+
+  setArtScaleState: value => {
+    artScale = value;
+  },
+
+  setFit: value => {
+    fit = value;
+  },
+
   updateZoomLabel
 });  
 
