@@ -996,9 +996,7 @@ initViewEvents({
   fitView,
   resetViewOnly,
 
-  setArtScale: value => {
-    artScale = value;
-  },
+  setArtScale: value => view.setArtScale(value),
 
   updateZoomLabel
 });
