@@ -745,58 +745,15 @@ function cropRect(a, b) {
   status('パーツを追加したよ。');
 }
 
-// 自由切り抜き
-function cropFree(points) {
+// 自由切り抜きfunction cropFree(points) {
   if (points.length < 3 || !sourceCanvas.width) return;
 
   const pts = points.map(sourcePoint);
 
-  const minX = Math.max(
-    0,
-    Math.floor(Math.min(...pts.map(p => p.x)))
-  );
+  const result = cropFreeCanvas(sourceCanvas, pts);
+  if (!result) return;
 
-  const minY = Math.max(
-    0,
-    Math.floor(Math.min(...pts.map(p => p.y)))
-  );
-
-  const maxX = Math.min(
-    sourceCanvas.width,
-    Math.ceil(Math.max(...pts.map(p => p.x)))
-  );
-
-  const maxY = Math.min(
-    sourceCanvas.height,
-    Math.ceil(Math.max(...pts.map(p => p.y)))
-  );
-
-  if (maxX - minX < 2 || maxY - minY < 2) return;
-
-  const c = document.createElement('canvas');
-  c.width = maxX - minX;
-  c.height = maxY - minY;
-
-  const cc = c.getContext('2d');
-
-  cc.save();
-  cc.beginPath();
-
-  pts.forEach((p, i) => {
-    if (i) cc.lineTo(p.x - minX, p.y - minY);
-    else cc.moveTo(p.x - minX, p.y - minY);
-  });
-
-  cc.closePath();
-  cc.clip();
-
-  cc.drawImage(
-    sourceCanvas,
-    minX, minY, c.width, c.height,
-    0, 0, c.width, c.height
-  );
-
-  cc.restore();
+  const { canvas: c, x: minX, y: minY } = result;
 
   addPart(
     '自由切り抜き',
