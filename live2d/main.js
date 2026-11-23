@@ -619,10 +619,7 @@ async function loadImageFileToStage(file) {
 
     $('hideBase').checked = false;
 
-    viewZoom = 1;
-    viewPanX = 0;
-    viewPanY = 0;
-    artScale = 1;
+    view.resetAllView();
 
     $('artScale').value = 100;
 
