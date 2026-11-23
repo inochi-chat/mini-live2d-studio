@@ -13,6 +13,10 @@ import {
 } from './image-loader.js';
 
 import {
+  readPSDFile
+} from './psd-loader.js';
+
+import {
   createPart,
   getSelectedPart
 } from './parts.js';
@@ -839,11 +843,7 @@ async function importPSD(file) {
   await new Promise(r => setTimeout(r, 30));
 
   try {
-    const buffer = await file.arrayBuffer();
-
-    const psd = window.agPsd.readPsd(buffer, {
-      skipThumbnail: true
-    });
+    const psd = await readPSDFile(file);
 
     if (!psd.width || !psd.height) {
       throw new Error('PSDのサイズを取得できません');
