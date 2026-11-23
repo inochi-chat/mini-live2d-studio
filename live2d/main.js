@@ -403,19 +403,7 @@ function addPart(name, canvas, x, y) {
 
 // 前後順
 function movePart(id, direction) {
-  const index = parts.findIndex(p => p.id === id);
-  if (index < 0) return;
-
-  const next = index + direction;
-  if (next < 0 || next >= parts.length) return;
-
-  saveUndo();
-  
-  [parts[index], parts[next]] =
-    [parts[next], parts[index]];
-
-  updatePartList();
-  render();
+  partActions.movePart(id, direction);
 }
 
 // パーツ一覧
@@ -432,6 +420,30 @@ const { updatePartList } = createPartList({
   movePart
 });
 
+const partActions = createPartActions({
+  getParts: () => parts,
+  setParts: value => {
+    parts = value;
+  },
+  getSelectedId: () => selectedId,
+  setSelectedId: id => {
+    selectedId = id;
+  },
+  getNextId: () => nextId,
+  setNextId: id => {
+    nextId = id;
+  },
+  createPart,
+  saveUndo,
+  updatePartList,
+  syncEditor,
+  render,
+  status,
+  getWorldTransform: p => getWorldTransform(p),
+  getImages: () => images,
+  getImageLoading: () => imageLoading
+});
+  
 function selected() {
   return getSelectedPart(parts, selectedId);
 }
