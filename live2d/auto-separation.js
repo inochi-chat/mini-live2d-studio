@@ -6,6 +6,8 @@ export async function separateCharacter(sourceCanvas, onProgress = () => {}) {
     throw new Error('読み込まれた画像が見つからないよ。');
   }
 
+  let imageUrl = null;
+
   try {
     if (!modelPromise) {
       modelPromise = (async () => {
@@ -18,7 +20,7 @@ export async function separateCharacter(sourceCanvas, onProgress = () => {}) {
         return await pipeline(
           'background-removal',
           'Xenova/modnet',
-          { dtype: 'q8' }
+          { dtype: 'fp32' }
         );
       })().catch(error => {
         modelPromise = null;
@@ -28,66 +30,53 @@ export async function separateCharacter(sourceCanvas, onProgress = () => {}) {
 
     const segmenter = await modelPromise;
 
-    onProgress('イラストを解析しています…');
+    onProgress('画像を準備しています…');
 
-    const imageData = await new Promise((resolve, reject) => {
-      sourceCanvas.toBlob(blob => {
-        if (blob) resolve(blob);
+    const blob = await new Promise((resolve, reject) => {
+      sourceCanvas.toBlob(result => {
+        if (result) resolve(result);
         else reject(new Error('画像データを作成できなかったよ。'));
       }, 'image/png');
     });
 
-const imageUrl = await new Promise((resolve, reject) => {
-  const reader = new FileReader();
+    imageUrl = URL.createObjectURL(blob);
 
-  reader.onload = () => resolve(reader.result);
-  reader.onerror = () => reject(
-    new Error('画像の読み込みに失敗したよ。')
-  );
+    onProgress('AIで背景を解析しています…');
 
-  reader.readAsDataURL(imageData);
-});
-
-const result = await segmenter(imageUrl);
+    const result = await segmenter(imageUrl);
 
     if (!result || !result[0]) {
-      throw new Error('画像の解析結果を取得できなかったよ。');
+      throw new Error('解析結果が見つからなかったよ。');
     }
 
     const output = result[0];
 
-    let source;
-
-    if (typeof output.toCanvas === 'function') {
-      source = output.toCanvas();
-    } else if (output instanceof Blob) {
-      source = await createImageBitmap(output);
-    } else {
-      source = output;
+    if (typeof output.toBlob !== 'function') {
+      throw new Error('AIの出力画像を取得できなかったよ。');
     }
 
+    onProgress('画像を変換しています…');
+
+    const outputBlob = await output.toBlob();
+
+    if (!outputBlob) {
+      throw new Error('変換後の画像が空だったよ。');
+    }
+
+    const bitmap = await createImageBitmap(outputBlob);
+
     const canvas = document.createElement('canvas');
-    canvas.width = source.width;
-    canvas.height = source.height;
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
 
     const ctx = canvas.getContext('2d');
 
-    if (source instanceof ImageData) {
-      ctx.putImageData(source, 0, 0);
-    } else if (source.data && !('getContext' in source)) {
-      const image = new ImageData(
-        new Uint8ClampedArray(source.data),
-        source.width,
-        source.height
-      );
-      ctx.putImageData(image, 0, 0);
-    } else {
-      ctx.drawImage(source, 0, 0);
+    if (!ctx) {
+      throw new Error('Canvasを作成できなかったよ。');
     }
 
-    if (typeof canvas.toDataURL !== 'function') {
-      throw new Error('通常のCanvasへの変換に失敗したよ。');
-    }
+    ctx.drawImage(bitmap, 0, 0);
+    bitmap.close();
 
     onProgress('解析が完了したよ！');
 
@@ -96,5 +85,10 @@ const result = await segmenter(imageUrl);
   } catch (error) {
     console.error('自動パーツ分けエラー:', error);
     throw error;
+
+  } finally {
+    if (imageUrl) {
+      URL.revokeObjectURL(imageUrl);
+    }
   }
 }
