@@ -266,12 +266,6 @@ function createHistorySnapshot() {
   };
 }
 
-const history = createHistoryManager({
-  createSnapshot: createHistorySnapshot,
-  restoreSnapshot,
-  limit: 30
-});
-
 function saveUndo() {
   history.save();
 }
@@ -305,6 +299,12 @@ async function restoreSnapshot(snapshot) {
   syncEditor();
   render();
 }
+
+  const history = createHistoryManager({
+  createSnapshot: createHistorySnapshot,
+  restoreSnapshot,
+  limit: 30
+});
 
 
 function calculateFit() {
