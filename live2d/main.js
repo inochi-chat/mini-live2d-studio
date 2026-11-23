@@ -39,6 +39,8 @@ import {
   getSelectedPart
 } from './parts.js';
 
+import { separateCharacter } from './auto-separation.js';
+
 import { partTemplates } from './templates/part-templates.js';
 
 import {
