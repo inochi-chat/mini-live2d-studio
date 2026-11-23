@@ -360,7 +360,11 @@ function calculateFit() {
 
 
 function updateZoomLabel() {
-  view.updateLabel();
+  $('zoomLabel').textContent =
+    '表示 ' + Math.round(viewZoom * 100) + '%';
+
+  $('artScaleValue').textContent =
+    Math.round(artScale * 100);
 }
 
 
