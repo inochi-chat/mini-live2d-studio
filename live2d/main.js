@@ -381,24 +381,7 @@ function isChildOf(partId, targetId) {
 
 // パーツ追加
 function addPart(name, canvas, x, y) {
-  saveUndo();
-
-  const part = createPart(
-    nextId++,
-    name,
-    canvas,
-    x,
-    y
-  );
-
-  parts.push(part);
-  selectedId = part.id;
-
-  updatePartList();
-  syncEditor();
-  render();
-
-  return part;
+  return partActions.addPart(name, canvas, x, y);
 }
 
 // 前後順
