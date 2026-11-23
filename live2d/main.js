@@ -893,27 +893,18 @@ function brushAt(p) {
 
   if (!Number.isFinite(r)) return;
 
-  sourceCtx.save();
-  sourceCtx.beginPath();
-  sourceCtx.arc(q.x, q.y, r, 0, Math.PI * 2);
-  sourceCtx.clip();
-
   if (mode === 'erase') {
-    sourceCtx.clearRect(
-      q.x - r - 1,
-      q.y - r - 1,
-      r * 2 + 2,
-      r * 2 + 2
-    );
+    eraseCanvas(sourceCtx, q.x, q.y, r);
   } else {
-    sourceCtx.drawImage(
+    restoreCanvas(
+      sourceCtx,
       originalCanvas,
-      q.x - r, q.y - r, r * 2, r * 2,
-      q.x - r, q.y - r, r * 2, r * 2
+      q.x,
+      q.y,
+      r
     );
   }
 
-  sourceCtx.restore();
   render();
 }
 
