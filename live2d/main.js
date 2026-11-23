@@ -1283,9 +1283,6 @@ initViewEvents({
   updateZoomLabel
 });
 
-/* パーツ追加 */
-$('addCircle').onclick = () => addShape('circle');
-$('addRect').onclick = () => addShape('rect');
 
 /* パーツ名 */
 let previousPartName = null;
@@ -1377,8 +1374,6 @@ $('togglePart').onclick = () => {
   render();
 };
 
-/* 複製 */
-$('duplicatePart').onclick = duplicateSelectedPart;
 
 /* 削除 */
 function deleteSelectedPart() {
