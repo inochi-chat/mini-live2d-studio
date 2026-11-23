@@ -2,7 +2,7 @@
 import { state } from './state.js';
 import { createHistoryManager } from './history.js';
 import { initFileEvents } from './file-events.js';
-
+import { initProjectIO } from './project-io.js';
 
 import {
   canvasURL,
