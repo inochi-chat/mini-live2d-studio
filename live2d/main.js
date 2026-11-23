@@ -1436,7 +1436,6 @@ function saveProject() {
     status('保存できなかったよ：' + e.message, 'error');
   }
 }
-};
 
 /* JSON読み込み */
 async function loadProject(e) {
