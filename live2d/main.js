@@ -8,6 +8,7 @@ import { initPartEvents } from './part-events.js';
 import { initEditorEvents } from './editor-events.js';
 import { initViewEvents } from './view-events.js';
 import { initStageEvents } from './stage-events.js';
+import { createAnimation } from './animation.js';
 
 import {
   canvasURL,
@@ -1250,6 +1251,30 @@ updatePartList();
 syncEditor();
 render();
 setModeButtons();
+
+/* アニメーション */
+const animationController = createAnimation({
+  render,
+
+  getEnabled: () => $('animation').checked,
+
+  onTimeUpdate: time => {
+    motionTime = time;
+  }
+});
+
+$('animation').addEventListener('change', () => {
+  if ($('animation').checked) {
+    animationController.start();
+  } else {
+    animationController.stop();
+    render();
+  }
+});
+
+if ($('animation').checked) {
+  animationController.start();
+}
 
 status('準備完了。画像またはPSDを読み込んでね。通常モードで指1本移動・2本指ズームができるよ。');
 
