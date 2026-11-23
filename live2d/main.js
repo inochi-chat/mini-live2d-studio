@@ -873,38 +873,7 @@ initEditorEvents({
 
 /* 削除 */
 function deleteSelectedPart() {
-  const p = selected();
-  if (!p) return;
-
-  saveUndo();
-
-  const removedId = p.id;
-
-  parts.forEach(child => {
-    if (child.parentId === removedId) {
-      const wt = getWorldTransformFromModule(child, parts);
-
-      child.x = wt.x;
-      child.y = wt.y;
-      child.scale = wt.scale;
-      child.rotation = wt.rotation;
-      child.parentId = null;
-    }
-  });
-
-  parts = parts.filter(q => q.id !== removedId);
-  images.delete(removedId);
-  imageLoading.delete(removedId);
-
-  selectedId = parts.length
-    ? parts[parts.length - 1].id
-    : null;
-
-  updatePartList();
-  syncEditor();
-  render();
-
-  status('パーツを削除したよ。子パーツはその場に残したよ。');
+  partActions.deleteSelectedPart();
 }
 
 /* パーツ追加・複製・削除イベント */
