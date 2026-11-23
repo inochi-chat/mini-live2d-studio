@@ -260,6 +260,13 @@ function render() {
   });
 }
 
+view = createView({
+  W,
+  H,
+  getSourceCanvas: () => sourceCanvas,
+  render,
+  updateZoomLabel
+});  
 
 function createHistorySnapshot() {
   return {
