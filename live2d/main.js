@@ -1270,50 +1270,17 @@ $('redoEdit').onclick = async () => {
 
 
 /* 表示設定 */
-$('hideBase').onchange = render;
-
-$('animation').onchange = () => {
-  if ($('animation').checked) {
-    if (!raf) {
-      lastTick = 0;
-
-      const tick = now => {
-        if (lastTick) {
-          motionTime += Math.min(
-            0.05,
-            (now - lastTick) / 1000
-          );
-        }
-
-        lastTick = now;
-        animFrame++;
-
-        render();
-        raf = requestAnimationFrame(tick);
-      };
-
-      raf = requestAnimationFrame(tick);
-    }
-  } else {
-    if (raf) cancelAnimationFrame(raf);
-
-    raf = null;
-    lastTick = 0;
-
-    render();
-  }
-};
-
-$('zoomIn').onclick = () => setViewZoom(viewZoom * 1.2);
-$('zoomOut').onclick = () => setViewZoom(viewZoom / 1.2);
-$('fitView').onclick = fitView;
-$('resetView').onclick = resetViewOnly;
-
-$('artScale').oninput = e => {
-  artScale = +e.target.value / 100;
-  updateZoomLabel();
-  render();
-};
+initViewEvents({
+  render,
+  setViewZoom,
+  getViewZoom: () => viewZoom,
+  fitView,
+  resetViewOnly,
+  setArtScale: value => {
+    artScale = value;
+  },
+  updateZoomLabel
+});
 
 /* パーツ追加 */
 $('addCircle').onclick = () => addShape('circle');
