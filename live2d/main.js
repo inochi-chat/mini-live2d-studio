@@ -326,23 +326,7 @@ const history = createHistoryManager({
 
 
 function calculateFit() {
-  if (!sourceCanvas.width || !sourceCanvas.height) {
-    fit = { scale: 1, ox: 0, oy: 0 };
-    return;
-  }
-
-  const base = Math.min(
-    W / sourceCanvas.width,
-    H / sourceCanvas.height
-  ) * viewZoom;
-
-  const s = base * artScale;
-
-  fit = {
-    scale: s,
-    ox: (W - sourceCanvas.width * s) / 2 + viewPanX,
-    oy: (H - sourceCanvas.height * s) / 2 + viewPanY
-  };
+  fit = view.calculateFit();
 }
 
 
