@@ -1219,7 +1219,47 @@ initFileEvents({
   status
 });
 
+/* モード切り替え */
+const modeButtons = {
+  normal: $('brushOff'),
+  rect: $('cropMode'),
+  free: $('freeCropMode'),
+  erase: $('brushErase'),
+  restore: $('brushRestore')
+};
 
+function setModeButtons() {
+  Object.entries(modeButtons).forEach(([key, button]) => {
+    button.classList.toggle('active', mode === key);
+  });
+}
+
+function changeMode(nextMode) {
+  mode = nextMode;
+
+  drawing = false;
+  startPoint = null;
+  previewPoint = null;
+  freePoints = [];
+
+  setModeButtons();
+  render();
+}
+
+$('brushOff').onclick = () => changeMode('normal');
+$('cropMode').onclick = () => changeMode('rect');
+$('freeCropMode').onclick = () => changeMode('free');
+$('brushErase').onclick = () => changeMode('erase');
+$('brushRestore').onclick = () => changeMode('restore');
+
+$('brushSize').oninput = e => {
+  brushSize = Number(e.target.value);
+  $('brushValue').textContent = brushSize;
+};
+
+setModeButtons();
+
+  
 /* Undo / Redo */
 $('undoEdit').onclick = async () => {
   await history.undo();
