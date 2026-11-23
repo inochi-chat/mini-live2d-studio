@@ -11,6 +11,8 @@ import { initStageEvents } from './stage-events.js';
 import { createAnimation } from './animation.js';
 import { createPartList } from './part-list.js';
 import { createPartActions } from './part-actions.js';
+import { createView } from './view.js';
+
 
 import {
   canvasURL,
