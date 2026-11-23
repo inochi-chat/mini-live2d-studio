@@ -870,59 +870,19 @@ async function importPSD(file) {
     state.sourceCtx = sourceCtx;
     state.originalCtx = originalCtx;
 
-    const added = [];
-
-    function walk(layers, parent = '') {
-      (layers || []).forEach(layer => {
-        if (layer.hidden) return;
-
-        if (layer.children?.length) {
-          walk(layer.children, layer.name || parent);
-          return;
-        }
-
-        const c = layer.canvas;
-        if (!c || !c.width || !c.height) return;
-
-        const left = Number.isFinite(layer.left) ? layer.left : 0;
-        const top = Number.isFinite(layer.top) ? layer.top : 0;
-
-        const name =
-          (parent ? parent + ' / ' : '') +
-          (layer.name || 'レイヤー ' + (added.length + 1));
-
-        const p = {
-          id: nextId++,
-          name,
-          category: 'other',
-          data: canvasURL(c),
-          x: left + c.width / 2,
-          y: top + c.height / 2,
-          w: c.width,
-          h: c.height,
-          scale: 100,
-          rotation: 0,
-          sway: 4,
-          speed: 10,
-          motion: 'none',
-          visible: true,
-          phase: Math.random() * 6.28,
-          parentId: null
-        };
-
-        parts.push(p);
-        added.push(p);
-      });
-    }
-
     parts = [];
-    images.clear();
-    imageLoading.clear();
+images.clear();
+imageLoading.clear();
 
-    selectedId = null;
-    nextId = 1;
+selectedId = null;
+nextId = 1;
 
-    walk(psd.children || []);
+const result = createPartsFromPSD(psd, nextId);
+
+parts = result.parts;
+nextId = result.nextId;
+
+const added = parts;
 
     if (!added.length) {
       throw new Error(
