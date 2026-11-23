@@ -3,6 +3,7 @@ import { state } from './state.js';
 import { createHistoryManager } from './history.js';
 import { initFileEvents } from './file-events.js';
 import { initProjectIO } from './project-io.js';
+import { initModeEvents } from './mode-events.js';
 
 import {
   canvasURL,
@@ -1246,16 +1247,12 @@ function changeMode(nextMode) {
   render();
 }
 
-$('brushOff').onclick = () => changeMode('normal');
-$('cropMode').onclick = () => changeMode('rect');
-$('freeCropMode').onclick = () => changeMode('free');
-$('brushErase').onclick = () => changeMode('erase');
-$('brushRestore').onclick = () => changeMode('restore');
-
-$('brushSize').oninput = e => {
-  brushSize = Number(e.target.value);
-  $('brushValue').textContent = brushSize;
-};
+initModeEvents({
+  changeMode,
+  setBrushSize: value => {
+    brushSize = value;
+  }
+});
 
 setModeButtons();
 
