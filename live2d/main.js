@@ -419,6 +419,43 @@ function addPart(name, canvas, x, y) {
   return partActions.addPart(name, canvas, x, y);
 }
 
+async function runAutoSeparation() {
+  const sourceCanvas = state.sourceCanvas;
+
+  if (!sourceCanvas || !sourceCanvas.width) {
+    status('先にイラストを読み込んでね。');
+    return;
+  }
+
+  const button = document.getElementById('autoSeparate');
+
+  try {
+    button.disabled = true;
+    status('AIモデルを準備しているよ…');
+
+    const separatedCanvas = await separateCharacter(
+      sourceCanvas,
+      message => status(message)
+    );
+
+    addPart(
+      'キャラクター（背景除去）',
+      separatedCanvas,
+      300,
+      300
+    );
+
+    status('キャラクターをパーツ一覧に追加したよ！');
+
+  } catch (error) {
+    console.error(error);
+    status('自動パーツ分けに失敗したよ：' + error.message);
+
+  } finally {
+    button.disabled = false;
+  }
+}
+  
 
 // 前後順
 function movePart(id, direction) {
