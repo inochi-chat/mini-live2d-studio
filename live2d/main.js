@@ -1381,7 +1381,7 @@ $('togglePart').onclick = () => {
 $('duplicatePart').onclick = duplicateSelectedPart;
 
 /* 削除 */
-$('deletePart').onclick = () => {
+function deleteSelectedPart() {
   const p = selected();
   if (!p) return;
 
@@ -1414,7 +1414,7 @@ $('deletePart').onclick = () => {
   render();
 
   status('パーツを削除したよ。子パーツはその場に残したよ。');
-};
+}
 
 /* JSON保存 */
 function saveProject() {
