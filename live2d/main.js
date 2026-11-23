@@ -120,6 +120,10 @@ let motionTime = 0;
 let lastTick = 0;
 
 let fit = { scale: 1, ox: 0, oy: 0 };
+let viewZoom = 1;
+let viewPanX = 0;
+let viewPanY = 0;
+let artScale = 1;
 let view;
 
 const collapsedParts = new Set();
@@ -331,11 +335,7 @@ function calculateFit() {
 
 
 function updateZoomLabel() {
-  $('zoomLabel').textContent =
-    '表示 ' + Math.round(viewZoom * 100) + '%';
-
-  $('artScaleValue').textContent =
-    Math.round(artScale * 100);
+  view.updateLabel();
 }
 
 
