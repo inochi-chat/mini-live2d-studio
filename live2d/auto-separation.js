@@ -37,9 +37,18 @@ export async function separateCharacter(sourceCanvas, onProgress = () => {}) {
       }, 'image/png');
     });
 
-    const result = await segmenter(
-      await createImageBitmap(imageData)
-    );
+const imageUrl = await new Promise((resolve, reject) => {
+  const reader = new FileReader();
+
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = () => reject(
+    new Error('画像の読み込みに失敗したよ。')
+  );
+
+  reader.readAsDataURL(imageData);
+});
+
+const result = await segmenter(imageUrl);
 
     if (!result || !result[0]) {
       throw new Error('画像の解析結果を取得できなかったよ。');
