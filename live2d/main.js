@@ -234,6 +234,7 @@ function render() {
     imageMap.set(id, entry.image);
   });
 
+  console.log('animation:', $('animation').checked, 'motion:', parts.map(p => p.motion), 'sway:', parts.map(p => p.sway));
   renderStage(ctx, {
     W,
     H,
