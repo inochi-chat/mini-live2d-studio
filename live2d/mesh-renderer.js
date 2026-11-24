@@ -13,33 +13,26 @@ export function drawDeformedImage(ctx, image, mesh, options = {}) {
     rotation = 0
   } = options;
 
+  const sw = image.naturalWidth || image.width;
+  const sh = image.naturalHeight || image.height;
+
+  if (!sw || !sh || !mesh.width || !mesh.height) return;
+
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(rotation);
   ctx.scale(scaleX, scaleY);
 
-  const sourceWidth = image.naturalWidth || image.width;
-  const sourceHeight = image.naturalHeight || image.height;
-
-  if (!sourceWidth || !sourceHeight) {
-    ctx.restore();
-    return;
-  }
-
   mesh.triangles.forEach(triangle => {
-    const [i0, i1, i2] = triangle;
+    const source = triangle.map(index => {
+      const p = mesh.originalVertices[index];
+      return {
+        x: p.x * sw / mesh.width,
+        y: p.y * sh / mesh.height
+      };
+    });
 
-    const source = [
-      mesh.originalVertices[i0],
-      mesh.originalVertices[i1],
-      mesh.originalVertices[i2]
-    ];
-
-    const target = [
-      mesh.vertices[i0],
-      mesh.vertices[i1],
-      mesh.vertices[i2]
-    ];
+    const target = triangle.map(index => mesh.vertices[index]);
 
     drawTriangle(ctx, image, source, target);
   });
@@ -52,38 +45,26 @@ function drawTriangle(ctx, image, source, target) {
   const [s0, s1, s2] = source;
   const [t0, t1, t2] = target;
 
-  const sw = image.naturalWidth || image.width;
-  const sh = image.naturalHeight || image.height;
-
-  const sx = sw / (Math.max(...source.map(p => p.x)) || 1);
-  const sy = sh / (Math.max(...source.map(p => p.y)) || 1);
+  const u1 = s1.x - s0.x;
+  const v1 = s1.y - s0.y;
+  const u2 = s2.x - s0.x;
+  const v2 = s2.y - s0.y;
 
   const a = t1.x - t0.x;
   const b = t1.y - t0.y;
   const c = t2.x - t0.x;
   const d = t2.y - t0.y;
 
-  const det = a * d - b * c;
+  const det = u1 * v2 - u2 * v1;
   if (Math.abs(det) < 0.0001) return;
 
-  const sourceA = (s1.x - s0.x) * sx;
-  const sourceB = (s1.y - s0.y) * sy;
-  const sourceC = (s2.x - s0.x) * sx;
-  const sourceD = (s2.y - s0.y) * sy;
+  const m11 = (a * v2 - c * v1) / det;
+  const m12 = (b * v2 - d * v1) / det;
+  const m21 = (c * u1 - a * u2) / det;
+  const m22 = (d * u1 - b * u2) / det;
 
-  const inv = 1 / (sourceA * sourceD - sourceB * sourceC);
-  if (!Number.isFinite(inv)) return;
-
-  const m11 = (a * sourceD - c * sourceB) * inv;
-  const m12 = (b * sourceD - d * sourceB) * inv;
-  const m21 = (c * sourceA - a * sourceC) * inv;
-  const m22 = (d * sourceA - b * sourceC) * inv;
-
-  const sourceX = s0.x * sx;
-  const sourceY = s0.y * sy;
-
-  const tx = t0.x - m11 * sourceX - m21 * sourceY;
-  const ty = t0.y - m12 * sourceX - m22 * sourceY;
+  const tx = t0.x - m11 * s0.x - m21 * s0.y;
+  const ty = t0.y - m12 * s0.x - m22 * s0.y;
 
   ctx.save();
 
@@ -95,7 +76,7 @@ function drawTriangle(ctx, image, source, target) {
   ctx.clip();
 
   ctx.transform(m11, m12, m21, m22, tx, ty);
-  ctx.drawImage(image, 0, 0, sw, sh);
+  ctx.drawImage(image, 0, 0);
 
   ctx.restore();
 }
