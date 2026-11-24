@@ -785,7 +785,12 @@ async function importPSD(file) {
   }
 }
 
-
+// ファイルコントローラー
+const fileController = createFileController({
+  loadImageFile: loadImageFileToStage,
+  importPSD
+});
+  
 // 消しゴム・復元
 function brushAt(p) {
   if (!sourceCanvas.width) return;
@@ -895,8 +900,8 @@ initStageEvents({
 
 /* ファイル読み込み */
 initFileEvents({
-  loadImageFileToStage,
-  importPSD,
+  loadImageFileToStage: fileController.loadImage,
+  importPSD: fileController.loadPSD,
   status
 });
 
