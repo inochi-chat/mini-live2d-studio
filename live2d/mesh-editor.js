@@ -1,4 +1,6 @@
 
+// メッシュ編集機能全体を管理
+
 import {
   createMesh,
   moveMeshVertex,
@@ -6,148 +8,202 @@ import {
 } from './mesh-deformer.js';
 
 import {
-  drawDeformedImage
+  drawDeformedImage,
+  drawMeshGrid
 } from './mesh-renderer.js';
 
-import {
-  createMeshInteraction
-} from './mesh-interaction.js';
 
-// メッシュ編集機能全体を管理
 export function createMeshEditor(options = {}) {
   const {
-    canvas,
     getImage,
     getPart,
-    getPointerPosition,
     onChange = () => {}
   } = options;
 
-  let mesh = null;
   let partId = null;
-  let enabled = false;
+  let selectedVertex = -1;
 
-  // 選択パーツのメッシュを生成
+
+  // 現在選択中のパーツを取得
+  function getCurrentPart() {
+    const part = getPart?.();
+
+    if (!part || part.id !== partId) {
+      return null;
+    }
+
+    return part;
+  }
+
+
+  // 現在のパーツのメッシュを取得
+  function getMesh() {
+    const part = getCurrentPart();
+
+    if (!part || !part.mesh) {
+      return null;
+    }
+
+    return part.mesh;
+  }
+
+
+  // メッシュを初期化
   function initialize(columns = 4, rows = 4) {
     const part = getPart?.();
     const image = getImage?.();
 
-    if (!part || !image) return false;
+    if (!part || !image) {
+      return false;
+    }
 
-    const width = image.naturalWidth || image.width;
-    const height = image.naturalHeight || image.height;
+    const width = part.w || image.naturalWidth || image.width;
+    const height = part.h || image.naturalHeight || image.height;
 
-    if (!width || !height) return false;
+    if (!width || !height) {
+      return false;
+    }
 
-    mesh = createMesh(width, height, columns, rows);
+    // 既存メッシュがあれば再利用
+    if (
+      part.mesh &&
+      part.mesh.vertices &&
+      part.mesh.originalVertices &&
+      part.mesh.triangles
+    ) {
+      partId = part.id;
+      selectedVertex = -1;
+      onChange();
+      return true;
+    }
+
+    // 新しいメッシュをパーツに保存
+    part.mesh = createMesh(width, height, columns, rows);
+
     partId = part.id;
+    selectedVertex = -1;
 
     onChange();
     return true;
   }
 
-  // メッシュを取得
-  function getMesh() {
-    return mesh;
+
+  // 編集対象を切り替える
+  function setPart(part) {
+    partId = part?.id ?? null;
+    selectedVertex = -1;
   }
 
-  // メッシュ編集モード
-  function setEnabled(value) {
-    enabled = Boolean(value);
+
+  // メッシュがあるか確認
+  function hasMesh() {
+    return Boolean(getMesh());
+  }
+
+
+  // 頂点を探す
+  function findVertex(x, y, radius = 14) {
+    const mesh = getMesh();
+
+    if (!mesh) return -1;
+
+    let nearest = -1;
+    let nearestDistance = radius * radius;
+
+    mesh.vertices.forEach((vertex, index) => {
+      const dx = vertex.x - x;
+      const dy = vertex.y - y;
+      const distance = dx * dx + dy * dy;
+
+      if (distance <= nearestDistance) {
+        nearest = index;
+        nearestDistance = distance;
+      }
+    });
+
+    return nearest;
+  }
+
+
+  // 選択頂点を設定
+  function selectVertex(index) {
+    const mesh = getMesh();
+
+    if (!mesh || index < 0 || index >= mesh.vertices.length) {
+      selectedVertex = -1;
+    } else {
+      selectedVertex = index;
+    }
+
     onChange();
   }
 
-  function isEnabled() {
-    return enabled;
-  }
 
   // 頂点を移動
   function moveVertex(index, x, y) {
-    if (!mesh) return;
+    const mesh = getMesh();
+
+    if (!mesh) return false;
+
+    if (index < 0 || index >= mesh.vertices.length) {
+      return false;
+    }
 
     moveMeshVertex(mesh, index, x, y);
+
     onChange();
+    return true;
   }
 
-  // メッシュを初期状態に戻す
+
+  // メッシュをリセット
   function reset() {
-    if (!mesh) return;
+    const mesh = getMesh();
+
+    if (!mesh) return false;
 
     resetMesh(mesh);
+    selectedVertex = -1;
+
     onChange();
+    return true;
   }
+
 
   // 変形した画像を描画
   function draw(ctx, image, drawOptions = {}) {
-    if (!enabled || !mesh || !image) return;
+    const mesh = getMesh();
+
+    if (!mesh || !image) return;
 
     drawDeformedImage(ctx, image, mesh, drawOptions);
   }
 
+
   // メッシュの格子を描画
-  function drawGrid(ctx) {
-    if (!enabled || !mesh) return;
+  function drawGrid(ctx, drawOptions = {}) {
+    const mesh = getMesh();
 
-    ctx.save();
+    if (!mesh) return;
 
-    ctx.strokeStyle = '#bda0ff';
-    ctx.lineWidth = 1;
-    ctx.fillStyle = '#ffffff';
-
-    mesh.triangles.forEach(triangle => {
-      const [a, b, c] = triangle.map(
-        index => mesh.vertices[index]
-      );
-
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-      ctx.lineTo(c.x, c.y);
-      ctx.closePath();
-      ctx.stroke();
+    drawMeshGrid(ctx, mesh, {
+      ...drawOptions,
+      selectedVertex
     });
-
-    mesh.vertices.forEach((vertex, index) => {
-      ctx.beginPath();
-      ctx.arc(vertex.x, vertex.y, 4, 0, Math.PI * 2);
-      ctx.fill();
-
-      if (interaction.getSelectedVertex() === index) {
-        ctx.strokeStyle = '#ffb347';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      }
-    });
-
-    ctx.restore();
   }
 
-  // 頂点操作
-  const interaction = createMeshInteraction({
-    getMesh,
-    getPointerPosition,
-    onChange
-  });
-
-  function attach() {
-    if (canvas) interaction.attach(canvas);
-  }
-
-  function detach() {
-    if (canvas) interaction.detach(canvas);
-  }
 
   return {
     initialize,
     getMesh,
-    setEnabled,
-    isEnabled,
+    hasMesh,
+    setPart,
+    findVertex,
+    selectVertex,
     moveVertex,
     reset,
     draw,
     drawGrid,
-    attach,
-    detach,
-    getSelectedVertex: interaction.getSelectedVertex
+    getSelectedVertex: () => selectedVertex
   };
 }
