@@ -277,6 +277,58 @@ function render() {
 }
 
 
+function createHistorySnapshot() {
+  return {
+    source: sourceCanvas.width && sourceCanvas.height
+      ? canvasURL(sourceCanvas)
+      : null,
+
+    parts: parts.map(clonePart),
+    selectedId,
+    nextId,
+    baseImageData
+  };
+}
+
+async function restoreSnapshot(snapshot) {
+  if (snapshot.source) {
+    const im = await imageFromURL(snapshot.source);
+
+    sourceCanvas.width = im.width;
+    sourceCanvas.height = im.height;
+
+    sourceCtx = sourceCanvas.getContext('2d');
+    sourceCtx.drawImage(im, 0, 0);
+  } else {
+    sourceCanvas.width = 0;
+    sourceCanvas.height = 0;
+    sourceCtx = sourceCanvas.getContext('2d');
+  }
+
+  state.sourceCtx = sourceCtx;
+
+  parts = snapshot.parts.map(clonePart);
+  selectedId = snapshot.selectedId;
+  nextId = snapshot.nextId;
+  baseImageData = snapshot.baseImageData;
+
+  images.clear();
+  imageLoading.clear();
+
+  updatePartList();
+  syncEditor();
+  render();
+}
+
+const historyController = createHistoryController({
+  createSnapshot: createHistorySnapshot,
+  restoreSnapshot,
+  limit: 30
+});
+
+const history = historyController.history;
+const saveUndo = historyController.saveUndo;
+
 
 // パーツ追加
 function addPart(name, canvas, x, y) {
