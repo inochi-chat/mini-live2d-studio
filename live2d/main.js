@@ -12,6 +12,7 @@ import { createAnimation } from './animation.js';
 import { createPartList } from './part-list.js?v=2';
 import { createPartActions } from './part-actions.js';
 import { createView } from './view.js';
+import { createMeshEditor } from './mesh-editor.js';
 
 
 import {
@@ -132,7 +133,7 @@ const collapsedParts = new Set();
 
 const images = new Map();
 const imageLoading = new Map();
-
+let meshEditor = null;
 
 function clonePart(part) {
   return {
