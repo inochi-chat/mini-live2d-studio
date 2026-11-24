@@ -534,6 +534,20 @@ function selected() {
   return getSelectedPart(parts, selectedId);
 }
 
+// メッシュエディターを初期化
+meshEditor = createMeshEditor({
+  getImage: () => {
+    const part = selected();
+    return part ? images.get(part.id)?.image || null : null;
+  },
+
+  getPart: selected,
+
+  onChange: () => {
+    render();
+  }
+});
+  
 
 // ★ エディターと選択中パーツの同期
 function syncEditor() {
