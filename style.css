@@ -73,3 +73,31 @@ hr{border:0;border-top:1px solid #403956;margin:13px 0}
   font-size: 13px;
   line-height: 1.6;
 }
+
+/* スマホのパーツ一覧をコンパクトにする */
+@media(max-width:760px){
+  #parts{
+    max-height:300px;
+    gap:4px;
+  }
+
+  .tree-row{
+    min-height:34px;
+    padding:3px 5px;
+    gap:4px;
+  }
+
+  .tree-indent{
+    font-size:12px;
+  }
+
+  .tree-row button{
+    padding:5px 7px;
+    min-width:28px;
+    font-size:12px;
+  }
+
+  .tree-toggle{
+    width:28px;
+  }
+}
