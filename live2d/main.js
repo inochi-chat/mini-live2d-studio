@@ -986,7 +986,9 @@ initStageEvents({
     freePoints = value;
   },
 
-  getSourceCanvas: () => sourceCanvas
+  getSourceCanvas: () => sourceCanvas,
+
+  meshEditor
 });
 
 
@@ -1008,7 +1010,8 @@ const modeButtons = {
   rect: $('cropMode'),
   free: $('freeCropMode'),
   erase: $('brushErase'),
-  restore: $('brushRestore')
+  restore: $('brushRestore'),
+  mesh: $('meshMode')
 };
 
 
