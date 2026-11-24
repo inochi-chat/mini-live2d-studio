@@ -278,7 +278,8 @@ function render() {
     startPoint,
     currentPoint: previewPoint,
     freePoints,
-    mode
+    mode,
+    meshEditor
   });
 }
 
