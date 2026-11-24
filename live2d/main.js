@@ -1129,9 +1129,15 @@ $('downloadImage').onclick = () => {
 };
 
 
-initProjectIO({
+// プロジェクトコントローラー
+const projectController = createProjectController({
   saveProject,
   loadProject
+});
+
+initProjectIO({
+  saveProject: projectController.save,
+  loadProject: projectController.load
 });
 
 
