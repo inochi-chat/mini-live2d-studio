@@ -64,6 +64,18 @@ export function createPartList({
         updatePartList();
       };
 
+      // パーツのサムネイル
+      const thumb = document.createElement('img');
+      thumb.className = 'tree-thumb';
+      thumb.alt = '';
+      thumb.draggable = false;
+
+      if (p.data) {
+        thumb.src = p.data;
+      } else {
+        thumb.classList.add('empty');
+      }
+
       const name = document.createElement('div');
       name.className = 'tree-indent';
       name.textContent =
@@ -107,7 +119,15 @@ export function createPartList({
         movePart(p.id, -1);
       };
 
-      row.append(toggle, name, visibility, front, back);
+      row.append(
+        toggle,
+        thumb,
+        name,
+        visibility,
+        front,
+        back
+      );
+
       row.onclick = selectPart;
       wrapper.append(row);
 
