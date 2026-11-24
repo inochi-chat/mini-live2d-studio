@@ -1,17 +1,20 @@
-export function initModeEvents({
-  changeMode,
-  setBrushSize
-}) {
+
+export function initModeEvents({ changeMode, setBrushSize }) {
   const modes = {
     brushOff: 'normal',
     cropMode: 'rect',
     freeCropMode: 'free',
     brushErase: 'erase',
-    brushRestore: 'restore'
+    brushRestore: 'restore',
+    meshMode: 'mesh'
   };
 
   Object.entries(modes).forEach(([id, mode]) => {
-    document.getElementById(id).addEventListener('click', () => {
+    const button = document.getElementById(id);
+
+    if (!button) return;
+
+    button.addEventListener('click', () => {
       changeMode(mode);
     });
   });
@@ -21,6 +24,7 @@ export function initModeEvents({
 
   brushSize.addEventListener('input', e => {
     const value = Number(e.target.value);
+
     brushValue.textContent = value;
     setBrushSize(value);
   });
