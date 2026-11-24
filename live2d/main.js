@@ -320,7 +320,7 @@ function createHistorySnapshot() {
       ? canvasURL(sourceCanvas)
       : null,
 
-    parts: parts.map(p => ({ ...p })),
+    parts: parts.map(clonePart),
     selectedId,
     nextId,
     baseImageData
