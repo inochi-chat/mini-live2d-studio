@@ -1,6 +1,6 @@
 
 import { state } from './state.js';
-import { createHistoryManager } from './history.js';
+import { createHistoryController } from './app/history-controller.js';
 import { initFileEvents } from './file-events.js';
 import { initProjectIO } from './project-io.js';
 import { initModeEvents } from './mode-events.js';
@@ -240,7 +240,6 @@ function preparePartImages() {
     if (!activeIds.has(id)) images.delete(id);
   }
 }
-
 
 
 // 描画コントローラー
