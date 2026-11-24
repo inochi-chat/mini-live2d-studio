@@ -350,7 +350,7 @@ async function restoreSnapshot(snapshot) {
 
   state.sourceCtx = sourceCtx;
 
-  parts = snapshot.parts.map(p => ({ ...p }));
+  parts = snapshot.parts.map(clonePart);
   selectedId = snapshot.selectedId;
   nextId = snapshot.nextId;
   baseImageData = snapshot.baseImageData;
