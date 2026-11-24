@@ -134,6 +134,21 @@ const images = new Map();
 const imageLoading = new Map();
 
 
+function clonePart(part) {
+  return {
+    ...part,
+    mesh: part.mesh
+      ? {
+          ...part.mesh,
+          vertices: part.mesh.vertices.map(v => ({ ...v })),
+          originalVertices: part.mesh.originalVertices.map(v => ({ ...v })),
+          triangles: part.mesh.triangles.map(t => [...t])
+        }
+      : undefined
+  };
+}
+
+  
 function status(message, type = 'info') {
   const box = $('status');
   box.replaceChildren();
