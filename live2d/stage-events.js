@@ -33,13 +33,37 @@ export function initStageEvents({
   setPreviewPoint,
   getFreePoints,
   setFreePoints,
-  getSourceCanvas
+  getSourceCanvas,
+  meshEditor
 }) {
   const viewPointers = new Map();
 
   let gesture = null;
   let dragAction = null;
   let lastPointer = null;
+  let meshDrag = null;
+
+  // ステージ座標をメッシュの画像内座標に変換
+  function toMeshPoint(point, part) {
+    const info = partScreenInfo(part);
+    const factor = info.w / part.w;
+
+    if (!Number.isFinite(factor) || factor <= 0) {
+      return null;
+    }
+
+    const dx = point.x - info.cx;
+    const dy = point.y - info.cy;
+
+    const cos = Math.cos(info.angle);
+    const sin = Math.sin(info.angle);
+
+    return {
+      x: (dx * cos + dy * sin) / factor + part.w / 2,
+      y: (-dx * sin + dy * cos) / factor + part.h / 2,
+      factor
+    };
+  }
 
   stage.addEventListener('pointerdown', e => {
     const p = stagePoint(e);
@@ -50,6 +74,43 @@ export function initStageEvents({
     stage.setPointerCapture(e.pointerId);
 
     const mode = getMode();
+
+    // メッシュ編集
+    if (mode === 'mesh') {
+      const part = getSelected();
+
+      if (!part || !meshEditor) return;
+
+      meshEditor.setPart(part);
+
+      if (!meshEditor.hasMesh()) {
+        if (!meshEditor.initialize()) return;
+      }
+
+      const local = toMeshPoint(p, part);
+
+      if (!local) return;
+
+      const index = meshEditor.findVertex(
+        local.x,
+        local.y,
+        14 / local.factor
+      );
+
+      if (index < 0) return;
+
+      saveUndo();
+
+      meshEditor.selectVertex(index);
+
+      meshDrag = {
+        index,
+        partId: part.id
+      };
+
+      e.preventDefault();
+      return;
+    }
 
     if (mode === 'normal') {
       if (viewPointers.size >= 2) {
@@ -178,6 +239,31 @@ export function initStageEvents({
     }
 
     const mode = getMode();
+
+    // メッシュ頂点の移動
+    if (mode === 'mesh' && meshDrag) {
+      const part = getParts().find(
+        p => p.id === meshDrag.partId
+      );
+
+      if (!part) return;
+
+      const local = toMeshPoint(
+        stagePoint(e),
+        part
+      );
+
+      if (!local) return;
+
+      meshEditor.moveVertex(
+        meshDrag.index,
+        local.x,
+        local.y
+      );
+
+      e.preventDefault();
+      return;
+    }
 
     if (mode === 'normal' && viewPointers.size) {
       const pts = [...viewPointers.values()];
@@ -332,6 +418,11 @@ export function initStageEvents({
     viewPointers.delete(e.pointerId);
 
     const mode = getMode();
+
+    if (mode === 'mesh') {
+      meshDrag = null;
+      return;
+    }
 
     if (mode === 'normal') {
       dragAction = null;
