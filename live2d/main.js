@@ -9,7 +9,7 @@ import { initEditorEvents } from './editor-events.js';
 import { initViewEvents } from './view-events.js';
 import { initStageEvents } from './stage-events.js';
 import { createAnimation } from './animation.js';
-import { createPartList } from './part-list.js';
+import { createPartList } from './part-list.js?v=2';
 import { createPartActions } from './part-actions.js';
 import { createView } from './view.js';
 
