@@ -2,6 +2,7 @@
 import { state } from './state.js';
 import { createHistoryController } from './app/history-controller.js';
 import { createFileController } from './app/file-controller.js';
+import { createProjectController } from './app/project-controller.js';
 import { initFileEvents } from './file-events.js';
 import { initProjectIO } from './project-io.js';
 import { initModeEvents } from './mode-events.js';
