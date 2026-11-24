@@ -13,7 +13,7 @@ import { createPartList } from './part-list.js?v=2';
 import { createPartActions } from './part-actions.js';
 import { createView } from './view.js';
 import { createMeshEditor } from './mesh-editor.js';
-
+import { createRenderController } from './app/render-controller.js';
 
 import {
   canvasURL,
@@ -45,8 +45,7 @@ import { separateCharacter } from './auto-separation.js';
 import { partTemplates } from './templates/part-templates.js';
 
 import {
-  partScreenInfo as partScreenInfoFromModule,
-  renderStage
+  partScreenInfo as partScreenInfoFromModule
 } from './render.js?v=2';
 
 import {
@@ -243,27 +242,18 @@ function preparePartImages() {
 }
 
 
-// 描画処理
-function render() {
-  calculateFit();
-  preparePartImages();
 
-  const imageMap = new Map();
+// 描画コントローラー
+const renderController = createRenderController({
+  ctx,
 
-  images.forEach((entry, id) => {
-    imageMap.set(id, entry.image);
-  });
+  calculateFit,
 
-  console.log(
-    'animation:',
-    $('animation').checked,
-    'motion:',
-    parts.map(p => p.motion),
-    'sway:',
-    parts.map(p => p.sway)
-  );
+  preparePartImages,
 
-  renderStage(ctx, {
+  getImages: () => images,
+
+  getRenderOptions: () => ({
     W,
     H,
     sourceCanvas,
@@ -272,7 +262,6 @@ function render() {
     selectedId,
     fit,
     getWorldTransform,
-    images: imageMap,
     motionTime,
     animation: $('animation').checked,
     startPoint,
@@ -280,155 +269,14 @@ function render() {
     freePoints,
     mode,
     meshEditor
-  });
-}
-
-view = createView({
-  W,
-  H,
-
-  getSourceCanvas: () => sourceCanvas,
-
-  getViewZoom: () => viewZoom,
-  getViewPan: () => ({
-    x: viewPanX,
-    y: viewPanY
-  }),
-  getArtScale: () => artScale,
-
-  setViewZoomState: value => {
-    viewZoom = value;
-  },
-
-  setViewPanState: (x, y) => {
-    viewPanX = x;
-    viewPanY = y;
-  },
-
-  setArtScaleState: value => {
-    artScale = value;
-  },
-
-  setFit: value => {
-    fit = value;
-  },
-
-  updateZoomLabel
-});  
-
-function createHistorySnapshot() {
-  return {
-    source: sourceCanvas.width && sourceCanvas.height
-      ? canvasURL(sourceCanvas)
-      : null,
-
-    parts: parts.map(clonePart),
-    selectedId,
-    nextId,
-    baseImageData
-  };
-}
-
-
-function saveUndo() {
-  history.save();
-}
-
-
-async function restoreSnapshot(snapshot) {
-  if (snapshot.source) {
-    const im = await imageFromURL(snapshot.source);
-
-    sourceCanvas.width = im.width;
-    sourceCanvas.height = im.height;
-
-    sourceCtx = sourceCanvas.getContext('2d');
-    sourceCtx.drawImage(im, 0, 0);
-  } else {
-    sourceCanvas.width = 0;
-    sourceCanvas.height = 0;
-    sourceCtx = sourceCanvas.getContext('2d');
-  }
-
-  state.sourceCtx = sourceCtx;
-
-  parts = snapshot.parts.map(clonePart);
-  selectedId = snapshot.selectedId;
-  nextId = snapshot.nextId;
-  baseImageData = snapshot.baseImageData;
-
-  images.clear();
-  imageLoading.clear();
-
-  updatePartList();
-  syncEditor();
-  render();
-}
-
-
-const history = createHistoryManager({
-  createSnapshot: createHistorySnapshot,
-  restoreSnapshot,
-  limit: 30
+  })
 });
 
-
-function calculateFit() {
-  fit = view.calculateFit();
+// 描画処理
+function render() {
+  renderController.render();
 }
 
-
-function updateZoomLabel() {
-  $('zoomLabel').textContent =
-    '表示 ' + Math.round(viewZoom * 100) + '%';
-
-  $('artScaleValue').textContent =
-    Math.round(artScale * 100);
-}
-
-
-function setViewZoom(value) {
-  view.setViewZoom(value);
-  render();
-}
-
-
-function resetViewOnly() {
-  view.resetViewOnly();
-  render();
-}
-
-
-function fitView() {
-  view.fitView();
-  render();
-}
-
-
-const stagePoint = e =>
-  stagePointFromModule(stage, e, W, H);
-
-const sourcePoint = p =>
-  sourcePointFromModule(p, fit);
-
-
-function partScreenInfo(part) {
-  return partScreenInfoFromModule(part, {
-    parts,
-    fit,
-    getWorldTransform
-  });
-}
-
-
-function getWorldTransform(p, seen = new Set()) {
-  return getWorldTransformFromModule(p, parts, seen);
-}
-
-
-function isChildOf(partId, targetId) {
-  return isChildOfFromModule(partId, targetId, parts);
-}
 
 
 // パーツ追加
