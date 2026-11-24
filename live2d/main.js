@@ -47,7 +47,7 @@ import { partTemplates } from './templates/part-templates.js';
 import {
   partScreenInfo as partScreenInfoFromModule,
   renderStage
-} from './render.js';
+} from './render.js?v=2';
 
 import {
   hitSelectedHandle,
