@@ -1,6 +1,10 @@
 
 import { getWorldTransform } from './hierarchy.js';
 import { selectionHandles } from './selection.js';
+import {
+  drawDeformedImage,
+  drawMeshGrid
+} from './mesh-renderer.js';
 
 // パーツの画面上の位置・大きさ・角度を計算
 export function partScreenInfo(part, options) {
@@ -24,7 +28,7 @@ export function partScreenInfo(part, options) {
   };
 }
 
-// パーツ1個を描画
+// パーツ1個を通常描画
 export function drawPart(ctx, part, image, options) {
   if (!part.visible || !image) return;
 
@@ -68,7 +72,8 @@ export function renderStage(ctx, options) {
     startPoint = null,
     currentPoint = null,
     freePoints = [],
-    mode = 'normal'
+    mode = 'normal',
+    meshEditor = null
   } = options;
 
   ctx.clearRect(0, 0, W, H);
@@ -89,14 +94,13 @@ export function renderStage(ctx, options) {
     );
   }
 
-  // パーツ
+  // パーツ描画
   parts.forEach(part => {
     if (!part.visible) return;
 
     const image = images.get(part.id);
     if (!image) return;
 
-    const wt = getWorldTransformFn(part);
     const info = partScreenInfo(part, {
       parts,
       fit,
@@ -107,7 +111,7 @@ export function renderStage(ctx, options) {
     let y = info.cy;
     let width = info.w;
     let height = info.h;
-    let rotation = info.angle;
+    const rotation = info.angle;
 
     // 簡易アニメーション
     if (animation && part.motion !== 'none') {
@@ -135,19 +139,63 @@ export function renderStage(ctx, options) {
       }
     }
 
-    drawPart(ctx, part, image, {
-      x,
-      y,
-      width,
-      height,
-      rotation
-    });
+    // メッシュがあるパーツは変形描画
+    if (
+      part.mesh &&
+      part.mesh.vertices &&
+      part.mesh.triangles
+    ) {
+      drawDeformedImage(ctx, image, part.mesh, {
+        x,
+        y,
+        scaleX: width / part.w,
+        scaleY: height / part.h,
+        rotation
+      });
+    } else {
+      drawPart(ctx, part, image, {
+        x,
+        y,
+        width,
+        height,
+        rotation
+      });
+    }
   });
 
-  // 選択中パーツの枠と操作ハンドル
   const selected = parts.find(p => p.id === selectedId);
 
-  if (selected && selected.visible) {
+  // メッシュ編集モードのグリッド
+  if (
+    mode === 'mesh' &&
+    selected &&
+    selected.visible &&
+    selected.mesh
+  ) {
+    const info = partScreenInfo(selected, {
+      parts,
+      fit,
+      getWorldTransform: getWorldTransformFn
+    });
+
+    drawMeshGrid(ctx, selected.mesh, {
+      x: info.cx,
+      y: info.cy,
+      scaleX: info.w / selected.w,
+      scaleY: info.h / selected.h,
+      rotation: info.angle,
+      selectedVertex: meshEditor
+        ? meshEditor.getSelectedVertex()
+        : -1
+    });
+  }
+
+  // 通常モードの選択枠と操作ハンドル
+  if (
+    mode !== 'mesh' &&
+    selected &&
+    selected.visible
+  ) {
     const h = selectionHandles(
       selected,
       part => partScreenInfo(part, {
@@ -173,14 +221,13 @@ export function renderStage(ctx, options) {
 
     ctx.setLineDash([]);
 
-    // 回転ハンドルへの線
     const top = h.corners[0];
+
     ctx.beginPath();
     ctx.moveTo(top.x, top.y);
     ctx.lineTo(h.rotate.x, h.rotate.y);
     ctx.stroke();
 
-    // 四隅の拡大縮小ハンドル
     h.corners.forEach(p => {
       ctx.beginPath();
       ctx.fillStyle = '#ffffff';
@@ -190,7 +237,6 @@ export function renderStage(ctx, options) {
       ctx.stroke();
     });
 
-    // 回転ハンドル
     ctx.beginPath();
     ctx.fillStyle = '#ffd36e';
     ctx.strokeStyle = '#8d65c9';
@@ -226,12 +272,13 @@ export function renderStage(ctx, options) {
     ctx.setLineDash([5, 4]);
 
     ctx.beginPath();
+
     freePoints.forEach((p, i) => {
       if (i === 0) ctx.moveTo(p.x, p.y);
       else ctx.lineTo(p.x, p.y);
     });
-    ctx.stroke();
 
+    ctx.stroke();
     ctx.restore();
   }
 }
